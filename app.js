@@ -417,7 +417,20 @@ function openTransactionModal(type, transaction = null) {
     document.getElementById('transactionId').value = transaction ? transaction.id : '';
     document.getElementById('transactionAmount').value = transaction ? transaction.amount.toLocaleString('id-ID') : '';
     document.getElementById('transactionDescription').value = transaction ? transaction.description : '';
-    document.getElementById('transactionDate').value = transaction ? transaction.date : new Date().toISOString().split('T')[0];
+
+    // Fix: Gunakan waktu lokal user, bukan UTC/ISO
+    let defaultDate;
+    if (transaction) {
+        defaultDate = transaction.date;
+    } else {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        defaultDate = `${year}-${month}-${day}`;
+    }
+
+    document.getElementById('transactionDate').value = defaultDate;
 
     renderCategoryGrid(type);
     if (transaction) {
