@@ -494,40 +494,67 @@ async function saveTransaction(e) {
 
         // Check if editing existing transaction
         const editId = form.dataset.editId;
-        const id = editId || document.getElementById('transactionId').value || generateId();
+        // Kalau create, biarkan ID kosong biar DB/Supabase yg generate (UUID) 
+        // ATAU kita generate UUID valid. generateId() kita cuma random string pendek, bisa konflik atau ditolak UUID.
+        // Sebaiknya biarkan Supabase generate ID untuk create baru, kecuali kita pakai UUID generator.
+        // Tapi fungsi generateId() di app.js bukan UUID. Mari lihat implementasi generateId tadi.
+        // generateId = Date.now().toString(36) + Math.random().toString(36)...
+        // Ini BUKAN UUID valid. Supabase pakai tipe uuid defaultnya gen_random_uuid().
+        // Jadi jangan kirim ID jika create baru!
+
         const type = document.getElementById('transactionType').value;
         const amount = parseAmount(document.getElementById('transactionAmount').value);
         if (!amount) { throw new Error('Masukkan nominal'); }
 
-        const transactionData = {
-            id, // Supabase usually ignores ID on create unless specified, but logic uses it
-            type,
-            amount,
-            categoryId: state.selectedCategory,
-            description: document.getElementById('transactionDescription').value,
-            date: document.getElementById('transactionDate').value,
-            createdAt: new Date().toISOString()
+        const dateVal = document.getElementById('transactionDate').value;
+        const descVal = document.getElementById('transactionDescription').value;
+
+        // Payload untuk Database (snake_case)
+        const dbPayload = {
+            type: type,
+            amount: amount,
+            category_id: state.selectedCategory,
+            description: descVal,
+            date: dateVal,
+            created_at: new Date().toISOString()
         };
 
-        let savedTransaction;
+        // Jangan kirim ID buatan sendiri karena bukan UUID valid
+        // if (id) dbPayload.id = id; 
+
+        let savedDataFromDB;
 
         if (editId) {
             // Update
-            const { data, error } = await API.transactions.update(editId, transactionData);
-            if (error) throw new Error(error);
-            savedTransaction = data[0];
-
-            // Update local state
-            const idx = state.transactions.findIndex(t => t.id === editId);
-            if (idx >= 0) state.transactions[idx] = savedTransaction;
+            const { data, error } = await API.transactions.update(editId, dbPayload);
+            if (error) throw error; // Lempar object error penuh
+            savedDataFromDB = data; // data dari .single() adalah object langsung
         } else {
             // Create
-            const { data, error } = await API.transactions.create(transactionData);
-            if (error) throw new Error(error);
-            savedTransaction = data[0];
+            const { data, error } = await API.transactions.create(dbPayload);
+            if (error) throw error;
+            savedDataFromDB = data;
+        }
 
-            // Update local state
-            state.transactions.unshift(savedTransaction);
+        // Konversi balik ke Local State format (camelCase)
+        // savedDataFromDB dari Supabase formatnya snake_case (id, category_id, user_id, dll)
+        const localTransaction = {
+            id: savedDataFromDB.id,
+            type: savedDataFromDB.type,
+            amount: savedDataFromDB.amount,
+            categoryId: savedDataFromDB.category_id,
+            description: savedDataFromDB.description,
+            date: savedDataFromDB.date,
+            createdAt: savedDataFromDB.created_at,
+            userId: savedDataFromDB.user_id
+        };
+
+        // Update local state
+        if (editId) {
+            const idx = state.transactions.findIndex(t => t.id === editId);
+            if (idx >= 0) state.transactions[idx] = localTransaction;
+        } else {
+            state.transactions.unshift(localTransaction);
         }
 
         // Reset edit mode
@@ -545,7 +572,9 @@ async function saveTransaction(e) {
 
     } catch (error) {
         console.error('Save transaction error:', error);
-        showToast(error.message || 'Gagal menyimpan transaksi', 'error');
+        // Tampilkan pesan error yang proper
+        const msg = error.message || (error.details ? error.details : JSON.stringify(error));
+        showToast('Gagal: ' + msg, 'error');
     } finally {
         submitBtn.textContent = originalBtnText;
         submitBtn.disabled = false;
