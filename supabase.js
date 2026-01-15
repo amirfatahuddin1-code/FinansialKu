@@ -345,6 +345,75 @@
         }
     };
 
+    // ========== TELEGRAM SYNC API ==========
+
+    const telegramAPI = {
+        // Get pending (unsynced) transactions from Telegram
+        async getPending() {
+            const { user } = await authAPI.getUser();
+            if (!user) return { data: null, error: 'Not authenticated' };
+
+            const { data, error } = await supabaseClient
+                .from('telegram_transactions')
+                .select('*')
+                .eq('user_id', user.id)
+                .eq('synced', false)
+                .order('created_at', { ascending: true });
+            return { data, error };
+        },
+
+        // Mark transactions as synced
+        async markSynced(ids) {
+            const { data, error } = await supabaseClient
+                .from('telegram_transactions')
+                .update({ synced: true })
+                .in('id', ids);
+            return { data, error };
+        },
+
+        // Link Telegram account
+        async linkTelegram(telegramUserId, telegramUsername) {
+            const { user } = await authAPI.getUser();
+            if (!user) return { data: null, error: 'Not authenticated' };
+
+            const { data, error } = await supabaseClient
+                .from('telegram_user_links')
+                .upsert({
+                    user_id: user.id,
+                    telegram_user_id: telegramUserId,
+                    telegram_username: telegramUsername
+                }, { onConflict: 'user_id' })
+                .select()
+                .single();
+            return { data, error };
+        },
+
+        // Get linked Telegram account
+        async getLinkedAccount() {
+            const { user } = await authAPI.getUser();
+            if (!user) return { data: null, error: 'Not authenticated' };
+
+            const { data, error } = await supabaseClient
+                .from('telegram_user_links')
+                .select('*')
+                .eq('user_id', user.id)
+                .single();
+            return { data, error };
+        },
+
+        // Unlink Telegram account
+        async unlinkTelegram() {
+            const { user } = await authAPI.getUser();
+            if (!user) return { data: null, error: 'Not authenticated' };
+
+            const { data, error } = await supabaseClient
+                .from('telegram_user_links')
+                .delete()
+                .eq('user_id', user.id);
+            return { data, error };
+        }
+    };
+
     // ========== EXPORT TO GLOBAL ==========
 
     window.FinansialKuAPI = {
@@ -356,7 +425,8 @@
         budgets: budgetsAPI,
         savings: savingsAPI,
         events: eventsAPI,
-        eventItems: eventItemsAPI
+        eventItems: eventItemsAPI,
+        telegram: telegramAPI
     };
 
     console.log('FinansialKu Supabase API loaded');

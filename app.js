@@ -1362,38 +1362,21 @@ function loadTheme() {
     }
 }
 
-// ========== Telegram Sync ==========
+// ========== Telegram Sync (Supabase) ==========
 function loadSyncSettings() {
-    const saved = localStorage.getItem(STORAGE_KEYS.SYNC_SERVER);
-    if (saved) {
-        const settings = JSON.parse(saved);
-        state.syncServerUrl = settings.url || 'http://localhost:3001';
-        state.syncEnabled = settings.enabled || false;
-    }
+    // Auto-enable sync - no configuration needed with Supabase
+    state.syncEnabled = true;
     updateSyncUI();
-    if (state.syncEnabled) startAutoSync();
+    startAutoSync();
 }
 
 function saveSyncSettings() {
-    const urlInput = document.getElementById('syncServerUrl');
-    if (urlInput) {
-        state.syncServerUrl = urlInput.value || 'http://localhost:3001';
-        localStorage.setItem(STORAGE_KEYS.SYNC_SERVER, JSON.stringify({
-            url: state.syncServerUrl,
-            enabled: state.syncEnabled
-        }));
-        showToast('Pengaturan sync disimpan');
-        checkSyncServerHealth();
-    }
+    showToast('Sync otomatis aktif dengan Supabase');
 }
 
 function toggleSyncEnabled() {
     const toggle = document.getElementById('toggleSync');
     state.syncEnabled = toggle?.checked || false;
-    localStorage.setItem(STORAGE_KEYS.SYNC_SERVER, JSON.stringify({
-        url: state.syncServerUrl,
-        enabled: state.syncEnabled
-    }));
     if (state.syncEnabled) {
         startAutoSync();
         showToast('Auto-sync diaktifkan');
@@ -1418,15 +1401,12 @@ function stopAutoSync() {
 }
 
 async function checkSyncServerHealth() {
-    try {
-        const response = await fetch(`${state.syncServerUrl}/api/health`, { method: 'GET', timeout: 5000 });
-        if (response.ok) {
-            updateSyncStatus('connected');
-            return true;
-        }
-    } catch (e) {
-        updateSyncStatus('disconnected');
+    // With Supabase, always connected if API is available
+    if (window.FinansialKuAPI) {
+        updateSyncStatus('connected');
+        return true;
     }
+    updateSyncStatus('disconnected');
     return false;
 }
 
@@ -1439,69 +1419,69 @@ function updateSyncStatus(status) {
 }
 
 function updateSyncUI() {
-    const urlInput = document.getElementById('syncServerUrl');
     const toggle = document.getElementById('toggleSync');
-    if (urlInput) urlInput.value = state.syncServerUrl;
     if (toggle) toggle.checked = state.syncEnabled;
+
+    // Hide server URL input (not needed with Supabase)
+    const urlInput = document.getElementById('syncServerUrl');
+    if (urlInput) urlInput.parentElement.style.display = 'none';
 }
 
 async function syncFromTelegram() {
     if (!state.syncEnabled) return;
+    if (!window.FinansialKuAPI?.telegram) return;
 
     try {
-        const response = await fetch(`${state.syncServerUrl}/api/transactions`);
-        if (!response.ok) return;
+        const API = window.FinansialKuAPI;
+        const { data: pendingTransactions, error } = await API.telegram.getPending();
 
-        const data = await response.json();
-        const newTransactions = data.transactions || [];
-
-        if (newTransactions.length === 0) return;
+        if (error || !pendingTransactions || pendingTransactions.length === 0) return;
 
         const ids = [];
-        newTransactions.forEach(t => {
-            // Check if transaction already exists (by id or originalMessage)
+        for (const t of pendingTransactions) {
+            // Check if transaction already exists
             const exists = state.transactions.find(existing =>
-                existing.id === t.id ||
-                (existing.source?.startsWith('telegram') && existing.originalMessage && t.originalMessage && existing.originalMessage === t.originalMessage)
+                existing.originalMessage && t.original_message &&
+                existing.originalMessage === t.original_message
             );
+
             if (!exists) {
+                // Create transaction in main transactions table
                 const transaction = {
-                    id: t.id || generateId(),
                     type: t.type,
                     amount: t.amount,
-                    categoryId: t.categoryId,
+                    categoryId: t.category_id,
                     description: (t.description || 'Transaksi Telegram') + ' 📱',
                     date: t.date,
-                    source: t.source || 'telegram',
-                    originalMessage: t.originalMessage || '',
-                    createdAt: t.createdAt || new Date().toISOString()
+                    source: 'telegram',
+                    originalMessage: t.original_message
                 };
-                state.transactions.unshift(transaction);
-                ids.push(t.id);
+
+                const saved = await saveTransaction(transaction);
+                if (saved) {
+                    state.transactions.unshift({
+                        ...saved,
+                        categoryId: saved.category_id
+                    });
+                    ids.push(t.id);
+                }
             } else {
-                ids.push(t.id); // Still mark as synced
+                ids.push(t.id); // Mark as synced anyway
             }
-        });
+        }
 
         if (ids.length > 0) {
-            saveTransactions();
+            // Mark as synced in Supabase
+            await API.telegram.markSynced(ids);
             updateDashboard();
 
-            // Mark as synced on server
-            await fetch(`${state.syncServerUrl}/api/transactions/mark-synced`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ids })
-            });
-
-            const newCount = newTransactions.filter(t =>
-                !state.transactions.find(existing => existing.id === t.id && existing.source !== 'telegram')
-            ).length;
-
+            const newCount = ids.length;
             if (newCount > 0) {
                 showToast(`📱 ${newCount} transaksi baru dari Telegram!`, 'success');
             }
         }
+
+        updateSyncStatus('connected');
     } catch (e) {
         console.error('Sync error:', e);
         updateSyncStatus('disconnected');
