@@ -479,38 +479,77 @@ function deleteCategory(categoryId, type) {
     showToast('Kategori dihapus', 'success');
 }
 
-function saveTransaction(e) {
+async function saveTransaction(e) {
     e.preventDefault();
     if (!state.selectedCategory) { showToast('Pilih kategori', 'warning'); return; }
 
-    // Check if editing existing transaction
     const form = document.getElementById('transactionForm');
-    const editId = form.dataset.editId;
-    const id = editId || document.getElementById('transactionId').value || generateId();
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalBtnText = submitBtn.textContent;
+    submitBtn.textContent = 'Menyimpan...';
+    submitBtn.disabled = true;
 
-    const type = document.getElementById('transactionType').value;
-    const amount = parseAmount(document.getElementById('transactionAmount').value);
-    if (!amount) { showToast('Masukkan nominal', 'warning'); return; }
+    try {
+        const API = window.FinansialKuAPI;
 
-    const transaction = {
-        id,
-        type,
-        amount,
-        categoryId: state.selectedCategory,
-        description: document.getElementById('transactionDescription').value,
-        date: document.getElementById('transactionDate').value,
-        createdAt: new Date().toISOString()
-    };
+        // Check if editing existing transaction
+        const editId = form.dataset.editId;
+        const id = editId || document.getElementById('transactionId').value || generateId();
+        const type = document.getElementById('transactionType').value;
+        const amount = parseAmount(document.getElementById('transactionAmount').value);
+        if (!amount) { throw new Error('Masukkan nominal'); }
 
-    const idx = state.transactions.findIndex(t => t.id === id);
-    if (idx >= 0) { state.transactions[idx] = transaction; } else { state.transactions.unshift(transaction); }
+        const transactionData = {
+            id, // Supabase usually ignores ID on create unless specified, but logic uses it
+            type,
+            amount,
+            categoryId: state.selectedCategory,
+            description: document.getElementById('transactionDescription').value,
+            date: document.getElementById('transactionDate').value,
+            createdAt: new Date().toISOString()
+        };
 
-    // Reset edit mode
-    delete form.dataset.editId;
-    document.getElementById('transactionModalTitle').textContent = 'Tambah Transaksi';
+        let savedTransaction;
 
-    saveTransactions(); closeModal('transactionModal'); updateDashboard(); checkBudgetWarnings();
-    showToast(idx >= 0 ? 'Transaksi diperbarui' : 'Transaksi ditambahkan');
+        if (editId) {
+            // Update
+            const { data, error } = await API.transactions.update(editId, transactionData);
+            if (error) throw new Error(error);
+            savedTransaction = data[0];
+
+            // Update local state
+            const idx = state.transactions.findIndex(t => t.id === editId);
+            if (idx >= 0) state.transactions[idx] = savedTransaction;
+        } else {
+            // Create
+            const { data, error } = await API.transactions.create(transactionData);
+            if (error) throw new Error(error);
+            savedTransaction = data[0];
+
+            // Update local state
+            state.transactions.unshift(savedTransaction);
+        }
+
+        // Reset edit mode
+        delete form.dataset.editId;
+        document.getElementById('transactionModalTitle').textContent = 'Tambah Transaksi';
+
+        closeModal('transactionModal');
+        updateDashboard();
+        checkBudgetWarnings();
+        showToast(editId ? 'Transaksi diperbarui' : 'Transaksi ditambahkan', 'success');
+
+        // Clear form
+        document.getElementById('transactionAmount').value = '';
+        document.getElementById('transactionDescription').value = '';
+
+    } catch (error) {
+        console.error('Save transaction error:', error);
+        showToast(error.message || 'Gagal menyimpan transaksi', 'error');
+    } finally {
+        submitBtn.textContent = originalBtnText;
+        submitBtn.disabled = false;
+    }
 }
 
 async function deleteTransaction(id) {
