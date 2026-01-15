@@ -349,16 +349,31 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase.js"></script>
     <script>
-        const { auth } = window.FinansialKuAPI;
+        // Wait for FinansialKuAPI to be available
+        let auth;
         let mode = 'login';
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
-            // Check if already logged in
-            const { session } = await auth.getSession();
-            if (session) {
-                window.location.href = 'index.html';
+            // Check if API is loaded
+            if (!window.FinansialKuAPI) {
+                console.error('FinansialKuAPI not loaded!');
+                document.getElementById('loginError').textContent = 'Error: Gagal memuat API. Refresh halaman.';
+                document.getElementById('loginError').classList.add('show');
                 return;
+            }
+
+            auth = window.FinansialKuAPI.auth;
+
+            try {
+                // Check if already logged in
+                const { session } = await auth.getSession();
+                if (session) {
+                    window.location.href = 'index.html';
+                    return;
+                }
+            } catch (err) {
+                console.error('Session check error:', err);
             }
 
             // Tab switching
