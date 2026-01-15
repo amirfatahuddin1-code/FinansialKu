@@ -96,6 +96,15 @@ serve(async (req) => {
             return fallback?.id || null
         }
 
+        // Helper untuk tanggal WIB (UTC+7)
+        // Solusi Hard-coded: Geser waktu server (UTC) sejauh +7 jam
+        const getWIBDate = () => {
+            const now = new Date();
+            const utc = now.getTime() + (now.getTimezoneOffset() * 60000); // Konversi ke murni UTC dulu
+            const wibTime = new Date(utc + (7 * 60 * 60 * 1000)); // Tambah 7 Jam
+            return wibTime.toISOString().slice(0, 10); // Ambil YYYY-MM-DD
+        }
+
         // KASUS A: INPUT ADALAH STRUK (Receipt) -> ARRAY 'transactions'
         if (body.transactions && Array.isArray(body.transactions)) {
             const { store, date } = body
@@ -110,7 +119,7 @@ serve(async (req) => {
                     amount: Number(item.price),
                     category_id: categoryId,
                     description: store ? `${store} - ${item.name}` : item.name,
-                    date: date || new Date().toISOString().split('T')[0],
+                    date: date || getWIBDate(), // Prioritize tanggal struk, fallback ke NOW
                     created_at: new Date().toISOString()
                 })
             }
@@ -126,7 +135,8 @@ serve(async (req) => {
                 amount: Number(body.amount),
                 category_id: categoryId,
                 description: body.description || body.originalMessage || 'Transaksi Telegram',
-                date: body.date || new Date().toISOString().split('T')[0],
+                // FORCE use server time (WIB) untuk chat manual, abaikan tanggal kiriman n8n yang mungkin UTC
+                date: getWIBDate(),
                 created_at: new Date().toISOString()
             })
         }
