@@ -1187,6 +1187,7 @@ async function init() {
     updateDashboard();
     loadSyncSettings();
     initCalculators();
+    initTelegramSettings();
 }
 
 async function checkAuth() {
@@ -2120,6 +2121,243 @@ function calculateEducation() {
     `;
     document.getElementById('educationResult').style.display = 'block';
     showToast('Perhitungan selesai!', 'success');
+}
+
+// ========== Telegram Linking ==========
+let telegramLinkingCode = null;
+
+function generateLinkingCode() {
+    // Generate a random 6-digit code
+    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+    telegramLinkingCode = code;
+
+    // Store the code temporarily (in reality, this would be stored in the database)
+    localStorage.setItem('telegram_linking_code', JSON.stringify({
+        code: code,
+        createdAt: Date.now(),
+        expiresAt: Date.now() + (10 * 60 * 1000) // 10 minutes
+    }));
+
+    return code;
+}
+
+function copyLinkingCode() {
+    const codeElement = document.getElementById('linkingCode');
+    const code = codeElement.textContent;
+
+    if (code && code !== '------') {
+        navigator.clipboard.writeText(code).then(() => {
+            showToast('Kode berhasil disalin!', 'success');
+        }).catch(() => {
+            showToast('Gagal menyalin kode', 'error');
+        });
+    }
+}
+
+async function checkTelegramLinkStatus() {
+    const API = window.FinansialKuAPI;
+    if (!API) return;
+
+    try {
+        const { data: link, error } = await API.telegram.getLinkedAccount();
+
+        const statusBox = document.getElementById('telegramLinkStatus');
+        const statusIcon = document.getElementById('telegramStatusIcon');
+        const statusTitle = document.getElementById('telegramStatusTitle');
+        const statusDesc = document.getElementById('telegramStatusDesc');
+        const linkedInfo = document.getElementById('linkedAccountInfo');
+        const linkInstructions = document.getElementById('linkInstructions');
+        const manualLinkSection = document.getElementById('manualLinkSection');
+
+        if (link && !error) {
+            // Linked
+            statusIcon.style.background = 'var(--success-light)';
+            statusIcon.style.color = 'var(--success)';
+            statusIcon.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 24px; height: 24px;">
+                <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>`;
+            statusTitle.textContent = 'Terhubung';
+            statusDesc.textContent = 'Akun Telegram Anda sudah terhubung. Kirim transaksi langsung via chat!';
+
+            // Show linked account info
+            linkedInfo.style.display = 'block';
+            document.getElementById('linkedUsername').textContent = link.telegram_username ? `@${link.telegram_username}` : `ID: ${link.telegram_user_id}`;
+            document.getElementById('linkedDate').textContent = `Terhubung sejak ${formatDate(link.linked_at)}`;
+
+            // Hide instructions
+            linkInstructions.style.display = 'none';
+            manualLinkSection.style.display = 'none';
+        } else {
+            // Not linked
+            statusIcon.style.background = 'var(--warning-light)';
+            statusIcon.style.color = 'var(--warning)';
+            statusIcon.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 24px; height: 24px;">
+                <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>`;
+            statusTitle.textContent = 'Belum Terhubung';
+            statusDesc.textContent = 'Hubungkan akun Telegram Anda untuk input transaksi via chat';
+
+            // Hide linked info, show instructions
+            linkedInfo.style.display = 'none';
+            linkInstructions.style.display = 'block';
+            manualLinkSection.style.display = 'block';
+
+            // Generate linking code
+            const code = generateLinkingCode();
+            document.getElementById('linkingCode').textContent = code;
+        }
+    } catch (err) {
+        console.error('Error checking Telegram link status:', err);
+    }
+}
+
+async function linkTelegramManually() {
+    const telegramUserId = document.getElementById('manualTelegramUserId').value.trim();
+    const telegramUsername = document.getElementById('manualTelegramUsername').value.trim().replace('@', '');
+
+    if (!telegramUserId) {
+        showToast('Masukkan Telegram User ID', 'warning');
+        return;
+    }
+
+    const API = window.FinansialKuAPI;
+    if (!API) {
+        showToast('API tidak tersedia', 'error');
+        return;
+    }
+
+    try {
+        const { data, error } = await API.telegram.linkTelegram(telegramUserId, telegramUsername);
+
+        if (error) {
+            showToast('Gagal menghubungkan: ' + error.message, 'error');
+            return;
+        }
+
+        showToast('🎉 Telegram berhasil dihubungkan!', 'success');
+        checkTelegramLinkStatus();
+    } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+    }
+}
+
+async function unlinkTelegram() {
+    if (!confirm('Yakin ingin memutuskan koneksi Telegram? Anda tidak bisa lagi input transaksi via chat.')) {
+        return;
+    }
+
+    const API = window.FinansialKuAPI;
+    if (!API) {
+        showToast('API tidak tersedia', 'error');
+        return;
+    }
+
+    try {
+        const { error } = await API.telegram.unlinkTelegram();
+
+        if (error) {
+            showToast('Gagal memutuskan: ' + error.message, 'error');
+            return;
+        }
+
+        showToast('Koneksi Telegram diputus', 'success');
+        checkTelegramLinkStatus();
+    } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+    }
+}
+
+async function syncTelegramTransactions() {
+    const API = window.FinansialKuAPI;
+    if (!API) {
+        showToast('API tidak tersedia', 'error');
+        return;
+    }
+
+    const syncBtn = document.getElementById('syncTelegramBtn');
+    if (syncBtn) {
+        syncBtn.classList.add('syncing');
+    }
+
+    try {
+        // Get pending transactions from Telegram
+        const { data: pending, error } = await API.telegram.getPending();
+
+        if (error) {
+            showToast('Gagal sync: ' + error.message, 'error');
+            return;
+        }
+
+        if (!pending || pending.length === 0) {
+            showToast('Tidak ada transaksi baru dari Telegram', 'info');
+            return;
+        }
+
+        // Process each pending transaction
+        const syncedIds = [];
+        for (const t of pending) {
+            // Create transaction in main transactions table
+            const transaction = {
+                type: t.type,
+                amount: t.amount,
+                categoryId: t.category_id,
+                description: t.description || t.original_message,
+                date: t.date,
+                source: 'telegram'
+            };
+
+            const result = await saveTransaction(transaction);
+            if (result) {
+                syncedIds.push(t.id);
+            }
+        }
+
+        // Mark as synced
+        if (syncedIds.length > 0) {
+            await API.telegram.markSynced(syncedIds);
+            showToast(`✅ ${syncedIds.length} transaksi dari Telegram disinkronkan!`, 'success');
+            await loadData();
+            updateDashboard();
+        }
+    } catch (err) {
+        showToast('Error sync: ' + err.message, 'error');
+    } finally {
+        if (syncBtn) {
+            syncBtn.classList.remove('syncing');
+        }
+    }
+}
+
+function initTelegramSettings() {
+    // Open telegram settings modal
+    const openBtn = document.getElementById('openTelegramSettings');
+    if (openBtn) {
+        openBtn.addEventListener('click', () => {
+            openModal('telegramSettingsModal');
+            checkTelegramLinkStatus();
+        });
+    }
+
+    // Close buttons
+    const closeBtn = document.getElementById('closeTelegramSettings');
+    const closeBtnFooter = document.getElementById('closeTelegramSettingsBtn');
+    if (closeBtn) closeBtn.addEventListener('click', () => closeModal('telegramSettingsModal'));
+    if (closeBtnFooter) closeBtnFooter.addEventListener('click', () => closeModal('telegramSettingsModal'));
+
+    // Unlink button
+    const unlinkBtn = document.getElementById('unlinkTelegramBtn');
+    if (unlinkBtn) {
+        unlinkBtn.addEventListener('click', unlinkTelegram);
+    }
+
+    // Sync button
+    const syncBtn = document.getElementById('syncTelegramBtn');
+    if (syncBtn) {
+        syncBtn.addEventListener('click', syncTelegramTransactions);
+    }
 }
 
 document.addEventListener('DOMContentLoaded', init);

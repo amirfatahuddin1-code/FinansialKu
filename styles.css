@@ -2984,3 +2984,85 @@ input[type="range"]::-webkit-slider-thumb:hover {
     background: var(--danger-light);
     color: var(--danger);
 }
+
+/* ========== Modal Extensions ========== */
+.modal-content.modal-medium {
+    max-width: 600px;
+}
+
+.modal-content.modal-small {
+    max-width: 450px;
+}
+
+/* ========== Telegram Styles ========== */
+.telegram-status-box {
+    transition: all var(--transition-base);
+}
+
+.telegram-status-box:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+#linkingCode {
+    font-family: 'Courier New', monospace;
+    letter-spacing: 3px;
+    background: var(--bg-secondary);
+    padding: 0 var(--space-2);
+    border-radius: var(--radius-sm);
+}
+
+.telegram-info ol {
+    margin-left: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.telegram-info li {
+    padding-left: var(--space-1);
+}
+
+/* Sync Button Animation */
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.btn-icon.syncing svg {
+    animation: spin 1s linear infinite;
+    color: var(--accent-primary-light);
+}
+
+/* Details/Summary Styles */
+details summary {
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+details summary::-webkit-details-marker {
+    display: none;
+}
+
+details summary::after {
+    content: '+';
+    font-size: 1.25em;
+    font-weight: bold;
+    transition: transform var(--transition-fast);
+}
+
+details[open] summary::after {
+    transform: rotate(45deg);
+}
+
+details[open] summary {
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: var(--space-4);
+}

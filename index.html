@@ -1075,9 +1075,16 @@
     <!-- Telegram Settings Modal -->
     <div class="modal" id="telegramSettingsModal">
         <div class="modal-overlay"></div>
-        <div class="modal-content modal-small">
+        <div class="modal-content modal-medium">
             <div class="modal-header">
-                <h3>📱 Pengaturan Telegram</h3>
+                <h3>
+                    <svg viewBox="0 0 24 24" fill="currentColor"
+                        style="width: 24px; height: 24px; color: #0088cc; vertical-align: middle; margin-right: 8px;">
+                        <path
+                            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z" />
+                    </svg>
+                    Hubungkan Telegram
+                </h3>
                 <button class="btn-close" id="closeTelegramSettings">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="6" x2="6" y2="18" />
@@ -1086,42 +1093,162 @@
                 </button>
             </div>
             <div class="telegram-settings-content" style="padding: var(--space-6);">
-                <div class="telegram-info"
-                    style="background: var(--bg-card); padding: var(--space-4); border-radius: var(--radius-lg); margin-bottom: var(--space-4);">
-                    <h4 style="margin-bottom: var(--space-2);">Cara Setup:</h4>
-                    <ol
-                        style="padding-left: var(--space-4); color: var(--text-secondary); font-size: var(--font-size-sm);">
-                        <li>Buat bot via <a href="https://t.me/botfather" target="_blank"
-                                style="color: var(--accent-primary-light);">@BotFather</a></li>
-                        <li>Import workflow dari <code>n8n/</code></li>
-                        <li>Jalankan: <code>cd server && npm start</code></li>
-                        <li>Kirim pesan ke bot!</li>
-                    </ol>
-                </div>
-
-                <div class="form-group">
-                    <label>Sync Server URL</label>
-                    <input type="text" id="syncServerUrl" placeholder="http://localhost:3001">
-                </div>
-
-                <div class="form-group">
-                    <label>Status</label>
-                    <div style="display: flex; align-items: center; gap: var(--space-3);">
-                        <span class="sync-status disconnected" id="syncStatus">Tidak terhubung</span>
-                        <button class="btn-text" onclick="checkSyncServerHealth()">Cek</button>
+                <!-- Status Box -->
+                <div id="telegramLinkStatus" class="telegram-status-box"
+                    style="background: var(--bg-card); padding: var(--space-5); border-radius: var(--radius-xl); margin-bottom: var(--space-5); border: 1px solid var(--border-color);">
+                    <div style="display: flex; align-items: center; gap: var(--space-4);">
+                        <div id="telegramStatusIcon"
+                            style="width: 48px; height: 48px; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; background: var(--warning-light); color: var(--warning);">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                style="width: 24px; height: 24px;">
+                                <path
+                                    d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                                <line x1="12" y1="9" x2="12" y2="13" />
+                                <line x1="12" y1="17" x2="12.01" y2="17" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h4 id="telegramStatusTitle"
+                                style="margin-bottom: var(--space-1); color: var(--text-primary);">Belum Terhubung</h4>
+                            <p id="telegramStatusDesc"
+                                style="font-size: var(--font-size-sm); color: var(--text-secondary); margin: 0;">
+                                Hubungkan akun Telegram Anda untuk input transaksi via chat</p>
+                        </div>
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label style="display: flex; align-items: center; gap: var(--space-3); cursor: pointer;">
-                        <input type="checkbox" id="toggleSync" style="width: 18px; height: 18px;">
-                        <span>Auto-sync setiap 30 detik</span>
-                    </label>
+                <!-- Linked Account Info (hidden by default) -->
+                <div id="linkedAccountInfo"
+                    style="display: none; background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%); padding: var(--space-5); border-radius: var(--radius-xl); margin-bottom: var(--space-5); border: 1px solid rgba(16, 185, 129, 0.3);">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: var(--space-3);">
+                            <div
+                                style="width: 40px; height: 40px; border-radius: var(--radius-full); background: var(--success); display: flex; align-items: center; justify-content: center;">
+                                <svg viewBox="0 0 24 24" fill="currentColor"
+                                    style="width: 22px; height: 22px; color: white;">
+                                    <path
+                                        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <p style="font-weight: 600; color: var(--text-primary); margin: 0;" id="linkedUsername">
+                                    @username</p>
+                                <p style="font-size: var(--font-size-xs); color: var(--text-muted); margin: 0;"
+                                    id="linkedDate">Terhubung sejak...</p>
+                            </div>
+                        </div>
+                        <button class="btn-secondary btn-small" id="unlinkTelegramBtn" style="color: var(--danger);">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                style="width: 16px; height: 16px;">
+                                <path d="M18 6L6 18M6 6l12 12" />
+                            </svg>
+                            Putuskan
+                        </button>
+                    </div>
                 </div>
 
-                <div class="form-actions">
+                <!-- Link Instructions -->
+                <div id="linkInstructions" class="telegram-info"
+                    style="background: var(--bg-card); padding: var(--space-5); border-radius: var(--radius-xl); margin-bottom: var(--space-5); border: 1px solid var(--border-color);">
+                    <h4 style="margin-bottom: var(--space-4); display: flex; align-items: center; gap: var(--space-2);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            style="width: 20px; height: 20px; color: var(--accent-primary);">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M12 16v-4M12 8h.01" />
+                        </svg>
+                        Cara Menghubungkan
+                    </h4>
+                    <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+                        <div style="display: flex; gap: var(--space-3); align-items: flex-start;">
+                            <span
+                                style="width: 24px; height: 24px; border-radius: var(--radius-full); background: var(--accent-gradient); color: white; display: flex; align-items: center; justify-content: center; font-size: var(--font-size-xs); font-weight: 700; flex-shrink: 0;">1</span>
+                            <div>
+                                <p style="margin: 0; color: var(--text-primary); font-weight: 500;">Buka Bot Telegram
+                                </p>
+                                <p
+                                    style="margin: 4px 0 0 0; font-size: var(--font-size-sm); color: var(--text-secondary);">
+                                    Klik tombol di bawah untuk membuka bot FinansialKu
+                                </p>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: var(--space-3); align-items: flex-start;">
+                            <span
+                                style="width: 24px; height: 24px; border-radius: var(--radius-full); background: var(--accent-gradient); color: white; display: flex; align-items: center; justify-content: center; font-size: var(--font-size-xs); font-weight: 700; flex-shrink: 0;">2</span>
+                            <div>
+                                <p style="margin: 0; color: var(--text-primary); font-weight: 500;">Kirim Kode
+                                    Verifikasi</p>
+                                <p
+                                    style="margin: 4px 0 0 0; font-size: var(--font-size-sm); color: var(--text-secondary);">
+                                    Kirim kode berikut ke bot:
+                                </p>
+                                <div
+                                    style="margin-top: var(--space-3); background: var(--bg-secondary); padding: var(--space-3) var(--space-4); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: space-between; border: 1px dashed var(--border-color-hover);">
+                                    <code id="linkingCode"
+                                        style="font-size: var(--font-size-lg); font-weight: 700; color: var(--accent-primary-light); letter-spacing: 2px;">------</code>
+                                    <button class="btn-icon" onclick="copyLinkingCode()" title="Salin kode"
+                                        style="width: 32px; height: 32px;">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            style="width: 16px; height: 16px;">
+                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                            <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: var(--space-3); align-items: flex-start;">
+                            <span
+                                style="width: 24px; height: 24px; border-radius: var(--radius-full); background: var(--accent-gradient); color: white; display: flex; align-items: center; justify-content: center; font-size: var(--font-size-xs); font-weight: 700; flex-shrink: 0;">3</span>
+                            <div>
+                                <p style="margin: 0; color: var(--text-primary); font-weight: 500;">Mulai Input
+                                    Transaksi!</p>
+                                <p
+                                    style="margin: 4px 0 0 0; font-size: var(--font-size-sm); color: var(--text-secondary);">
+                                    Contoh: <code
+                                        style="background: var(--bg-secondary); padding: 2px 6px; border-radius: 4px;">makan 50000</code>
+                                    atau <code
+                                        style="background: var(--bg-secondary); padding: 2px 6px; border-radius: 4px;">gaji +5000000</code>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Manual Link Form -->
+                <div id="manualLinkSection" style="margin-bottom: var(--space-5);">
+                    <details
+                        style="background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid var(--border-color);">
+                        <summary
+                            style="padding: var(--space-4); cursor: pointer; color: var(--text-secondary); font-size: var(--font-size-sm);">
+                            Hubungkan Manual (jika sudah tahu Telegram User ID)
+                        </summary>
+                        <div style="padding: 0 var(--space-4) var(--space-4);">
+                            <div class="form-group" style="margin-bottom: var(--space-3);">
+                                <label>Telegram User ID</label>
+                                <input type="text" id="manualTelegramUserId" placeholder="123456789">
+                            </div>
+                            <div class="form-group" style="margin-bottom: var(--space-3);">
+                                <label>Username (opsional)</label>
+                                <input type="text" id="manualTelegramUsername" placeholder="@username">
+                            </div>
+                            <button class="btn-primary btn-small" id="linkManuallyBtn" onclick="linkTelegramManually()">
+                                Hubungkan
+                            </button>
+                        </div>
+                    </details>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="form-actions" style="display: flex; gap: var(--space-3);">
+                    <a href="https://t.me/finansialku_bot" target="_blank" class="btn-primary"
+                        style="flex: 1; text-align: center; text-decoration: none;">
+                        <svg viewBox="0 0 24 24" fill="currentColor" style="width: 18px; height: 18px;">
+                            <path
+                                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z" />
+                        </svg>
+                        Buka Bot Telegram
+                    </a>
                     <button type="button" class="btn-secondary" id="closeTelegramSettingsBtn">Tutup</button>
-                    <button type="button" class="btn-primary" id="saveSyncSettings">Simpan</button>
                 </div>
             </div>
         </div>

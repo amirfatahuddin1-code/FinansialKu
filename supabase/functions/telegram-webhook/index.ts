@@ -35,6 +35,18 @@ serve(async (req) => {
         const telegramUsername = message.from.username || ''
         const text = message.text.trim()
 
+        // Handle Commands
+        if (text === '/start' || text === '/id') {
+            return new Response(JSON.stringify({
+                method: 'sendMessage',
+                chat_id: message.chat.id,
+                text: `👋 Halo @${telegramUsername}!\n\nID Telegram Anda adalah:\n\`${telegramUserId}\`\n\nSilakan salin ID tersebut dan masukkan ke aplikasi FinansialKu (Menu Telegram > Hubungkan Manual) untuk menghubungkan akun.\n\nSetelah terhubung, Anda bisa mencatat keuangan dengan format:\n_makan 50000_\n_gaji +5000000_`,
+                parse_mode: 'Markdown'
+            }), {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            })
+        }
+
         // Parse transaction from message
         // Format: "makan 50000" or "gaji +5000000" or "transport -25000"
         const parsed = parseTransaction(text)
@@ -57,8 +69,10 @@ serve(async (req) => {
             // User not linked, send instruction message via Telegram Bot API
             console.log('User not linked:', telegramUserId)
             return new Response(JSON.stringify({
-                ok: true,
-                message: 'User not linked'
+                method: 'sendMessage',
+                chat_id: message.chat.id,
+                text: `⚠️ Akun belum terhubung.\n\nID Telegram Anda: \`${telegramUserId}\`\n\nSilakan hubungkan akun Anda di aplikasi FinansialKu terlebih dahulu.`,
+                parse_mode: 'Markdown'
             }), {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             })
