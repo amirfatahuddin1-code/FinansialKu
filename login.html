@@ -349,171 +349,173 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase.js"></script>
     <script>
-        // Wait for FinansialKuAPI to be available
-        let auth;
-        let mode = 'login';
+        // Use IIFE to avoid global scope conflicts
+        (function () {
+            let authAPI;
+            let mode = 'login';
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', async () => {
-            // Check if API is loaded
-            if (!window.FinansialKuAPI) {
-                console.error('FinansialKuAPI not loaded!');
-                document.getElementById('loginError').textContent = 'Error: Gagal memuat API. Refresh halaman.';
-                document.getElementById('loginError').classList.add('show');
-                return;
-            }
-
-            auth = window.FinansialKuAPI.auth;
-
-            try {
-                // Check if already logged in
-                const { session } = await auth.getSession();
-                if (session) {
-                    window.location.href = 'index.html';
+            // Initialize
+            document.addEventListener('DOMContentLoaded', async () => {
+                // Check if API is loaded
+                if (!window.FinansialKuAPI) {
+                    console.error('FinansialKuAPI not loaded!');
+                    document.getElementById('loginError').textContent = 'Error: Gagal memuat API. Refresh halaman.';
+                    document.getElementById('loginError').classList.add('show');
                     return;
                 }
-            } catch (err) {
-                console.error('Session check error:', err);
-            }
 
-            // Tab switching
-            document.querySelectorAll('.login-tab').forEach(tab => {
-                tab.addEventListener('click', () => {
-                    document.querySelectorAll('.login-tab').forEach(t => t.classList.remove('active'));
-                    tab.classList.add('active');
-                    mode = tab.dataset.mode;
-                    updateFormMode();
+                authAPI = window.FinansialKuAPI.auth;
+
+                try {
+                    // Check if already logged in
+                    const { session } = await authAPI.getSession();
+                    if (session) {
+                        window.location.href = 'index.html';
+                        return;
+                    }
+                } catch (err) {
+                    console.error('Session check error:', err);
+                }
+
+                // Tab switching
+                document.querySelectorAll('.login-tab').forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        document.querySelectorAll('.login-tab').forEach(t => t.classList.remove('active'));
+                        tab.classList.add('active');
+                        mode = tab.dataset.mode;
+                        updateFormMode();
+                    });
                 });
+
+                // Form submit
+                document.getElementById('loginForm').addEventListener('submit', handleSubmit);
+
+                // Google login
+                document.getElementById('googleBtn').addEventListener('click', handleGoogleLogin);
             });
 
-            // Form submit
-            document.getElementById('loginForm').addEventListener('submit', handleSubmit);
+            function updateFormMode() {
+                const nameGroup = document.getElementById('nameGroup');
+                const confirmGroup = document.getElementById('confirmGroup');
+                const subtitle = document.getElementById('loginSubtitle');
+                const submitBtn = document.getElementById('submitBtn');
 
-            // Google login
-            document.getElementById('googleBtn').addEventListener('click', handleGoogleLogin);
-        });
-
-        function updateFormMode() {
-            const nameGroup = document.getElementById('nameGroup');
-            const confirmGroup = document.getElementById('confirmGroup');
-            const subtitle = document.getElementById('loginSubtitle');
-            const submitBtn = document.getElementById('submitBtn');
-
-            if (mode === 'register') {
-                nameGroup.style.display = 'block';
-                confirmGroup.style.display = 'block';
-                subtitle.textContent = 'Buat akun baru';
-                submitBtn.querySelector('span').textContent = 'Daftar';
-            } else {
-                nameGroup.style.display = 'none';
-                confirmGroup.style.display = 'none';
-                subtitle.textContent = 'Masuk ke akun Anda';
-                submitBtn.querySelector('span').textContent = 'Masuk';
-            }
-
-            hideMessages();
-        }
-
-        async function handleSubmit(e) {
-            e.preventDefault();
-            hideMessages();
-
-            const email = document.getElementById('emailInput').value.trim();
-            const password = document.getElementById('passwordInput').value;
-            const submitBtn = document.getElementById('submitBtn');
-
-            submitBtn.classList.add('loading');
-            submitBtn.disabled = true;
-
-            try {
                 if (mode === 'register') {
-                    await handleRegister(email, password);
+                    nameGroup.style.display = 'block';
+                    confirmGroup.style.display = 'block';
+                    subtitle.textContent = 'Buat akun baru';
+                    submitBtn.querySelector('span').textContent = 'Daftar';
                 } else {
-                    await handleLogin(email, password);
+                    nameGroup.style.display = 'none';
+                    confirmGroup.style.display = 'none';
+                    subtitle.textContent = 'Masuk ke akun Anda';
+                    submitBtn.querySelector('span').textContent = 'Masuk';
                 }
-            } finally {
-                submitBtn.classList.remove('loading');
-                submitBtn.disabled = false;
-            }
-        }
 
-        async function handleRegister(email, password) {
-            const name = document.getElementById('nameInput').value.trim();
-            const confirm = document.getElementById('confirmInput').value;
-
-            if (!name) {
-                showError('Masukkan nama Anda');
-                return;
+                hideMessages();
             }
 
-            if (password.length < 6) {
-                showError('Password minimal 6 karakter');
-                return;
+            async function handleSubmit(e) {
+                e.preventDefault();
+                hideMessages();
+
+                const email = document.getElementById('emailInput').value.trim();
+                const password = document.getElementById('passwordInput').value;
+                const submitBtn = document.getElementById('submitBtn');
+
+                submitBtn.classList.add('loading');
+                submitBtn.disabled = true;
+
+                try {
+                    if (mode === 'register') {
+                        await handleRegister(email, password);
+                    } else {
+                        await handleLogin(email, password);
+                    }
+                } finally {
+                    submitBtn.classList.remove('loading');
+                    submitBtn.disabled = false;
+                }
             }
 
-            if (password !== confirm) {
-                showError('Password tidak cocok');
-                return;
+            async function handleRegister(email, password) {
+                const name = document.getElementById('nameInput').value.trim();
+                const confirm = document.getElementById('confirmInput').value;
+
+                if (!name) {
+                    showError('Masukkan nama Anda');
+                    return;
+                }
+
+                if (password.length < 6) {
+                    showError('Password minimal 6 karakter');
+                    return;
+                }
+
+                if (password !== confirm) {
+                    showError('Password tidak cocok');
+                    return;
+                }
+
+                const { data, error } = await authAPI.signUp(email, password, name);
+
+                if (error) {
+                    showError(error.message);
+                    return;
+                }
+
+                if (data.user && !data.session) {
+                    showSuccess('Akun berhasil dibuat! Cek email untuk verifikasi.');
+                } else {
+                    showSuccess('Akun berhasil dibuat! Mengalihkan...');
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1000);
+                }
             }
 
-            const { data, error } = await auth.signUp(email, password, name);
+            async function handleLogin(email, password) {
+                const { data, error } = await authAPI.signIn(email, password);
 
-            if (error) {
-                showError(error.message);
-                return;
-            }
+                if (error) {
+                    if (error.message.includes('Invalid login')) {
+                        showError('Email atau password salah');
+                    } else {
+                        showError(error.message);
+                    }
+                    return;
+                }
 
-            if (data.user && !data.session) {
-                showSuccess('Akun berhasil dibuat! Cek email untuk verifikasi.');
-            } else {
-                showSuccess('Akun berhasil dibuat! Mengalihkan...');
+                showSuccess('Login berhasil! Mengalihkan...');
                 setTimeout(() => {
                     window.location.href = 'index.html';
                 }, 1000);
             }
-        }
 
-        async function handleLogin(email, password) {
-            const { data, error } = await auth.signIn(email, password);
-
-            if (error) {
-                if (error.message.includes('Invalid login')) {
-                    showError('Email atau password salah');
-                } else {
+            async function handleGoogleLogin() {
+                const { error } = await authAPI.signInWithGoogle();
+                if (error) {
                     showError(error.message);
                 }
-                return;
             }
 
-            showSuccess('Login berhasil! Mengalihkan...');
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 1000);
-        }
-
-        async function handleGoogleLogin() {
-            const { error } = await auth.signInWithGoogle();
-            if (error) {
-                showError(error.message);
+            function showError(message) {
+                const el = document.getElementById('loginError');
+                el.textContent = message;
+                el.classList.add('show');
             }
-        }
 
-        function showError(message) {
-            const el = document.getElementById('loginError');
-            el.textContent = message;
-            el.classList.add('show');
-        }
+            function showSuccess(message) {
+                const el = document.getElementById('loginSuccess');
+                el.textContent = message;
+                el.classList.add('show');
+            }
 
-        function showSuccess(message) {
-            const el = document.getElementById('loginSuccess');
-            el.textContent = message;
-            el.classList.add('show');
-        }
-
-        function hideMessages() {
-            document.getElementById('loginError').classList.remove('show');
-            document.getElementById('loginSuccess').classList.remove('show');
-        }
+            function hideMessages() {
+                document.getElementById('loginError').classList.remove('show');
+                document.getElementById('loginSuccess').classList.remove('show');
+            }
+        })(); // Close IIFE
     </script>
 </body>
 
