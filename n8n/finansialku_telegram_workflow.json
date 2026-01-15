@@ -1,0 +1,214 @@
+{
+  "name": "FinansialKu Telegram Bot",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": ["message"]
+      },
+      "id": "telegram-trigger",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [250, 300],
+      "credentials": {
+        "telegramApi": {
+          "id": "TELEGRAM_CREDENTIAL_ID",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "ai-agent",
+      "name": "AI Agent - Parse Transaction",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.6,
+      "position": [500, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "OPENAI_CREDENTIAL_ID",
+          "name": "OpenAI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Kamu adalah asisten keuangan yang membantu mengekstrak informasi transaksi dari pesan dalam bahasa Indonesia.\n\nEkstrak informasi dari pesan berikut dan kembalikan dalam format JSON:\n\nPesan: \"{{ $json.message.text }}\"\n\nAturan parsing:\n- Angka dengan \"rb\", \"ribu\", \"k\" = ribuan (50rb = 50000)\n- Angka dengan \"jt\", \"juta\" = jutaan (5jt = 5000000)\n- Default type adalah \"expense\" kecuali ada kata: gaji, bonus, transfer masuk, dapat, terima\n- Kategori expense: food, transport, shopping, entertainment, health, bills, education, other\n- Kategori income: salary, bonus, investment, freelance, other\n\nKembalikan HANYA JSON tanpa penjelasan:\n{\n  \"type\": \"expense\" atau \"income\",\n  \"amount\": angka dalam rupiah (integer),\n  \"category\": kategori dalam bahasa inggris,\n  \"description\": deskripsi singkat dalam bahasa Indonesia\n}"
+      },
+      "id": "ai-prompt",
+      "name": "AI Prompt",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [500, 500],
+      "credentials": {
+        "openAiApi": {
+          "id": "OPENAI_CREDENTIAL_ID",
+          "name": "OpenAI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse AI response to JSON\nconst aiResponse = $input.first().json.text || $input.first().json.output;\n\ntry {\n  // Extract JSON from response\n  const jsonMatch = aiResponse.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    const parsed = JSON.parse(jsonMatch[0]);\n    \n    // Map English categories to Indonesian category IDs\n    const categoryMap = {\n      'food': 'food',\n      'transport': 'transport',\n      'shopping': 'shopping',\n      'entertainment': 'entertainment',\n      'health': 'health',\n      'bills': 'bills',\n      'education': 'education',\n      'salary': 'salary',\n      'bonus': 'bonus',\n      'investment': 'investment',\n      'freelance': 'freelance',\n      'other': 'other'\n    };\n    \n    return {\n      json: {\n        type: parsed.type,\n        amount: parseInt(parsed.amount),\n        categoryId: categoryMap[parsed.category] || 'other',\n        description: parsed.description,\n        date: new Date().toISOString().split('T')[0],\n        source: 'telegram',\n        chatId: $('Telegram Trigger').first().json.message.chat.id,\n        originalMessage: $('Telegram Trigger').first().json.message.text\n      }\n    };\n  }\n} catch (e) {\n  return {\n    json: {\n      error: 'Failed to parse: ' + e.message,\n      originalMessage: $('Telegram Trigger').first().json.message.text\n    }\n  };\n}\n\nreturn { json: { error: 'No valid JSON found' } };"
+      },
+      "id": "parse-json",
+      "name": "Parse AI Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [750, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "check-error",
+              "leftValue": "={{ $json.error }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notExists"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "if-valid",
+      "name": "Is Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [950, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://localhost:3001/api/transaction",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}"
+      },
+      "id": "http-sync",
+      "name": "Send to Sync Server",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1150, 200]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+        "text": "=✅ Tercatat!\n\n{{ $json.type === 'income' ? '💰 Pemasukan' : '💸 Pengeluaran' }}\n💵 Rp {{ $json.amount.toLocaleString('id-ID') }}\n📁 {{ $json.categoryId }}\n📝 {{ $json.description }}",
+        "additionalFields": {}
+      },
+      "id": "telegram-success",
+      "name": "Reply Success",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1350, 200],
+      "credentials": {
+        "telegramApi": {
+          "id": "TELEGRAM_CREDENTIAL_ID",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+        "text": "❌ Maaf, saya tidak bisa memahami pesan Anda.\n\nContoh format yang benar:\n• \"Makan siang 50rb\"\n• \"Gaji bulan ini 5jt\"\n• \"Grab ke kantor 25ribu\"",
+        "additionalFields": {}
+      },
+      "id": "telegram-error",
+      "name": "Reply Error",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1150, 400],
+      "credentials": {
+        "telegramApi": {
+          "id": "TELEGRAM_CREDENTIAL_ID",
+          "name": "Telegram Bot"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent - Parse Transaction",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent - Parse Transaction": {
+      "main": [
+        [
+          {
+            "node": "Parse AI Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse AI Response": {
+      "main": [
+        [
+          {
+            "node": "Is Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Valid?": {
+      "main": [
+        [
+          {
+            "node": "Send to Sync Server",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send to Sync Server": {
+      "main": [
+        [
+          {
+            "node": "Reply Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "instanceId": "finansialku-telegram-bot"
+  },
+  "tags": []
+}

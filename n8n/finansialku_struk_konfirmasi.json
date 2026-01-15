@@ -1,0 +1,819 @@
+{
+    "name": "FinansialKu - Struk dengan Konfirmasi",
+    "nodes": [
+        {
+            "parameters": {
+                "updates": [
+                    "message"
+                ]
+            },
+            "id": "telegram-trigger",
+            "name": "Telegram Trigger",
+            "type": "n8n-nodes-base.telegramTrigger",
+            "typeVersion": 1.1,
+            "position": [
+                240,
+                300
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "1",
+                    "name": "Telegram account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": false
+                    },
+                    "conditions": [
+                        {
+                            "id": "has-photo",
+                            "leftValue": "={{ $json.message.photo }}",
+                            "rightValue": "",
+                            "operator": {
+                                "type": "array",
+                                "operation": "notEmpty"
+                            }
+                        }
+                    ]
+                }
+            },
+            "id": "check-type",
+            "name": "Input Type?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2,
+            "position": [
+                480,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": false
+                    },
+                    "conditions": [
+                        {
+                            "id": "is-ya",
+                            "leftValue": "={{ $json.message.text?.toLowerCase() }}",
+                            "rightValue": "ya",
+                            "operator": {
+                                "type": "string",
+                                "operation": "equals"
+                            }
+                        }
+                    ]
+                }
+            },
+            "id": "check-ya",
+            "name": "Is YA?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2,
+            "position": [
+                720,
+                500
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": false
+                    },
+                    "conditions": [
+                        {
+                            "id": "is-edit",
+                            "leftValue": "={{ $json.message.text?.toLowerCase() }}",
+                            "rightValue": "edit",
+                            "operator": {
+                                "type": "string",
+                                "operation": "startsWith"
+                            }
+                        }
+                    ]
+                }
+            },
+            "id": "check-edit",
+            "name": "Is EDIT?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2,
+            "position": [
+                960,
+                600
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": false
+                    },
+                    "conditions": [
+                        {
+                            "id": "is-batal",
+                            "leftValue": "={{ $json.message.text?.toLowerCase() }}",
+                            "rightValue": "batal",
+                            "operator": {
+                                "type": "string",
+                                "operation": "equals"
+                            }
+                        }
+                    ]
+                }
+            },
+            "id": "check-batal",
+            "name": "Is BATAL?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2,
+            "position": [
+                1200,
+                700
+            ]
+        },
+        {
+            "parameters": {
+                "resource": "file",
+                "operation": "get",
+                "fileId": "={{ $json.message.photo[$json.message.photo.length - 1].file_id }}"
+            },
+            "id": "get-file",
+            "name": "Get File",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1.2,
+            "position": [
+                720,
+                200
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "1",
+                    "name": "Telegram account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "download",
+                "fileId": "={{ $json.file_id }}"
+            },
+            "id": "download-file",
+            "name": "Download",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1.2,
+            "position": [
+                960,
+                200
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "1",
+                    "name": "Telegram account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "toText",
+                "sourceProperty": "data",
+                "options": {
+                    "encoding": "base64"
+                }
+            },
+            "id": "to-base64",
+            "name": "To Base64",
+            "type": "n8n-nodes-base.extractFromFile",
+            "typeVersion": 1,
+            "position": [
+                1200,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=YOUR_GEMINI_API_KEY",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\"contents\":[{\"parts\":[{\"text\":\"Analisis foto struk/receipt ini.\\n\\nEkstrak SETIAP ITEM dengan kategori.\\n\\nKembalikan HANYA JSON:\\n{\\\"store\\\":\\\"nama toko\\\",\\\"date\\\":\\\"YYYY-MM-DD\\\",\\\"items\\\":[{\\\"name\\\":\\\"nama\\\",\\\"price\\\":angka,\\\"category\\\":\\\"kategori\\\"}]}\\n\\nKATEGORI: food, health, shopping, bills, transport, entertainment, education, other\\n\\nHarga dalam ANGKA saja.\"},{\"inline_data\":{\"mime_type\":\"image/jpeg\",\"data\":\"{{ $json.data }}\"}}]}],\"generationConfig\":{\"temperature\":0.2}}"
+            },
+            "id": "gemini",
+            "name": "Gemini Vision",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1440,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Parse Gemini response dan buat PREVIEW\nconst r = $input.first().json;\nlet t = '';\n\nif (r.candidates && r.candidates[0]) {\n  t = r.candidates[0].content?.parts?.[0]?.text || '';\n}\n\nlet chatId = '';\ntry { chatId = $('Telegram Trigger').first().json.message.chat.id; } catch(e) {}\n\ntry {\n  const m = t.match(/\\{[\\s\\S]*\\}/);\n  if (m) {\n    const p = JSON.parse(m[0]);\n    \n    if (p.error) {\n      return { json: { ok: false, error: p.error, chatId } };\n    }\n    \n    const date = p.date || new Date().toISOString().split('T')[0];\n    const store = p.store || 'Toko';\n    \n    const items = (p.items || []).map(item => ({\n      name: item.name,\n      price: parseInt(item.price) || 0,\n      category: item.category || 'other'\n    })).filter(item => item.price > 0);\n    \n    let itemList = '';\n    let total = 0;\n    items.forEach((item, i) => {\n      itemList += `${i + 1}. ${item.name}: Rp ${item.price.toLocaleString('id-ID')} [${item.category}]\\n`;\n      total += item.price;\n    });\n    \n    let preview = `🧾 *Preview Struk*\\n\\n`;\n    preview += `🏪 *${store}*\\n`;\n    preview += `📅 ${date}\\n\\n`;\n    preview += `📦 *${items.length} item:*\\n`;\n    preview += itemList;\n    preview += `\\n💵 *Total: Rp ${total.toLocaleString('id-ID')}*\\n\\n`;\n    preview += `---\\n`;\n    preview += `✅ Ketik *ya* untuk simpan\\n`;\n    preview += `✏️ Ketik *edit [no] [nilai]* untuk koreksi\\n`;\n    preview += `❌ Ketik *batal* untuk batalkan`;\n    \n    return {\n      json: {\n        store, date, chatId,\n        transactions: items,\n        itemList, total,\n        itemCount: items.length,\n        preview,\n        ok: items.length > 0\n      }\n    };\n  }\n} catch(e) {\n  return { json: { ok: false, error: e.message, chatId } };\n}\n\nreturn { json: { ok: false, error: 'No items', chatId } };"
+            },
+            "id": "parse-receipt",
+            "name": "Parse Receipt",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1680,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "boolean": [
+                        {
+                            "value1": "={{ $json.ok }}",
+                            "value2": true
+                        }
+                    ]
+                }
+            },
+            "id": "check-ok",
+            "name": "Parse OK?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                1920,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "YOUR_NGROK_URL/api/transactions/batch",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"store\": \"{{ $json.store }}\",\n  \"date\": \"{{ $json.date }}\",\n  \"chatId\": {{ $json.chatId }},\n  \"draft\": true,\n  \"transactions\": {{ JSON.stringify($json.transactions) }}\n}"
+            },
+            "id": "save-draft",
+            "name": "Save as Draft",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                2160,
+                100
+            ]
+        },
+        {
+            "parameters": {
+                "chatId": "={{ $('Parse Receipt').first().json.chatId }}",
+                "text": "={{ $('Parse Receipt').first().json.preview }}",
+                "additionalFields": {
+                    "parse_mode": "Markdown"
+                }
+            },
+            "id": "send-preview",
+            "name": "Send Preview",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1.2,
+            "position": [
+                2400,
+                100
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "1",
+                    "name": "Telegram account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+                "text": "❌ Tidak bisa membaca struk.\n\nPastikan:\n• Foto jelas\n• Struk lengkap terlihat"
+            },
+            "id": "reply-error",
+            "name": "Reply Error",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1.2,
+            "position": [
+                2160,
+                300
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "1",
+                    "name": "Telegram account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "method": "GET",
+                "url": "=YOUR_NGROK_URL/api/transactions/draft/{{ $('Telegram Trigger').first().json.message.chat.id }}"
+            },
+            "id": "get-draft",
+            "name": "Get Draft",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                960,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "=YOUR_NGROK_URL/api/transactions/confirm/{{ $json.batchId }}"
+            },
+            "id": "confirm",
+            "name": "Confirm Draft",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1200,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+                "text": "✅ Transaksi berhasil disimpan!"
+            },
+            "id": "reply-saved",
+            "name": "Reply Saved",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1.2,
+            "position": [
+                1440,
+                400
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "1",
+                    "name": "Telegram account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "method": "GET",
+                "url": "=YOUR_NGROK_URL/api/transactions/draft/{{ $('Telegram Trigger').first().json.message.chat.id }}"
+            },
+            "id": "get-draft-edit",
+            "name": "Get Draft Edit",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1200,
+                500
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Parse edit command: \"edit 1 25000\"\nconst text = $('Telegram Trigger').first().json.message.text || '';\nconst chatId = $('Telegram Trigger').first().json.message.chat.id;\nconst draft = $input.first().json;\n\nconst match = text.match(/edit\\s+(\\d+)\\s+(.+)/i);\n\nif (!match || !draft.transactions || draft.transactions.length === 0) {\n  return { json: { ok: false, chatId, error: 'Format: edit [no] [nilai]' } };\n}\n\nconst index = parseInt(match[1]) - 1;\nconst value = match[2].trim().toLowerCase();\nconst trans = draft.transactions;\n\nif (index < 0 || index >= trans.length) {\n  return { json: { ok: false, chatId, error: 'Nomor tidak valid' } };\n}\n\nconst txId = trans[index].id;\nlet updates = {};\n\nif (value === 'hapus') {\n  return { json: { ok: true, chatId, action: 'delete', txId, batchId: draft.batchId } };\n}\n\n// Parse amount (50rb, 50ribu, 50k, dll)\nlet amount = parseInt(value.replace(/\\D/g, ''));\nif (amount > 0) {\n  if (value.includes('rb') || value.includes('ribu') || value.includes('k')) {\n    amount *= 1000;\n  } else if (value.includes('jt') || value.includes('juta')) {\n    amount *= 1000000;\n  }\n  updates.amount = amount;\n}\n\nreturn {\n  json: {\n    ok: Object.keys(updates).length > 0,\n    chatId,\n    action: 'update',\n    txId,\n    updates,\n    batchId: draft.batchId\n  }\n};"
+            },
+            "id": "parse-edit",
+            "name": "Parse Edit",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1440,
+                500
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "boolean": [
+                        {
+                            "value1": "={{ $json.ok }}",
+                            "value2": true
+                        }
+                    ]
+                }
+            },
+            "id": "edit-ok",
+            "name": "Edit OK?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                1680,
+                500
+            ]
+        },
+        {
+            "parameters": {
+                "method": "PATCH",
+                "url": "=YOUR_NGROK_URL/api/transactions/{{ $json.txId }}",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify($json.updates) }}"
+            },
+            "id": "do-edit",
+            "name": "Apply Edit",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1920,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "method": "GET",
+                "url": "=YOUR_NGROK_URL/api/transactions/draft/{{ $('Telegram Trigger').first().json.message.chat.id }}"
+            },
+            "id": "get-updated",
+            "name": "Get Updated",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                2160,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Format preview ulang setelah edit\nconst draft = $input.first().json;\nconst chatId = $('Telegram Trigger').first().json.message.chat.id;\nconst trans = draft.transactions || [];\n\nif (trans.length === 0) {\n  return { json: { chatId, preview: '❌ Tidak ada transaksi.' } };\n}\n\nconst store = trans[0].store || 'Toko';\nconst date = trans[0].date;\n\nlet itemList = '';\nlet total = 0;\ntrans.forEach((t, i) => {\n  itemList += `${i + 1}. ${t.description}: Rp ${t.amount.toLocaleString('id-ID')} [${t.categoryId}]\\n`;\n  total += t.amount;\n});\n\nlet preview = `✏️ *Struk Diperbarui*\\n\\n`;\npreview += `🏪 *${store}*\\n📅 ${date}\\n\\n`;\npreview += `📦 *${trans.length} item:*\\n${itemList}`;\npreview += `\\n💵 *Total: Rp ${total.toLocaleString('id-ID')}*\\n\\n`;\npreview += `---\\n✅ *ya* = simpan | ✏️ *edit [no] [nilai]* | ❌ *batal*`;\n\nreturn { json: { chatId, preview } };"
+            },
+            "id": "format-updated",
+            "name": "Format Updated",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                2400,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "chatId": "={{ $json.chatId }}",
+                "text": "={{ $json.preview }}",
+                "additionalFields": {
+                    "parse_mode": "Markdown"
+                }
+            },
+            "id": "send-updated",
+            "name": "Send Updated",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1.2,
+            "position": [
+                2640,
+                400
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "1",
+                    "name": "Telegram account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "method": "GET",
+                "url": "=YOUR_NGROK_URL/api/transactions/draft/{{ $('Telegram Trigger').first().json.message.chat.id }}"
+            },
+            "id": "get-draft-batal",
+            "name": "Get Draft Batal",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1440,
+                700
+            ]
+        },
+        {
+            "parameters": {
+                "method": "DELETE",
+                "url": "=YOUR_NGROK_URL/api/transactions/batch/{{ $json.batchId }}"
+            },
+            "id": "delete-batch",
+            "name": "Delete Batch",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1680,
+                700
+            ]
+        },
+        {
+            "parameters": {
+                "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+                "text": "❌ Transaksi dibatalkan."
+            },
+            "id": "reply-batal",
+            "name": "Reply Batal",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1.2,
+            "position": [
+                1920,
+                700
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "1",
+                    "name": "Telegram account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "chatId": "={{ $json.chatId }}",
+                "text": "={{ $json.error || 'Format tidak valid' }}"
+            },
+            "id": "reply-edit-error",
+            "name": "Reply Edit Error",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1.2,
+            "position": [
+                1920,
+                600
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "1",
+                    "name": "Telegram account"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "Telegram Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Input Type?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Input Type?": {
+            "main": [
+                [
+                    {
+                        "node": "Get File",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Is YA?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get File": {
+            "main": [
+                [
+                    {
+                        "node": "Download",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Download": {
+            "main": [
+                [
+                    {
+                        "node": "To Base64",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "To Base64": {
+            "main": [
+                [
+                    {
+                        "node": "Gemini Vision",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Gemini Vision": {
+            "main": [
+                [
+                    {
+                        "node": "Parse Receipt",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse Receipt": {
+            "main": [
+                [
+                    {
+                        "node": "Parse OK?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse OK?": {
+            "main": [
+                [
+                    {
+                        "node": "Save as Draft",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Reply Error",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Save as Draft": {
+            "main": [
+                [
+                    {
+                        "node": "Send Preview",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Is YA?": {
+            "main": [
+                [
+                    {
+                        "node": "Get Draft",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Is EDIT?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Draft": {
+            "main": [
+                [
+                    {
+                        "node": "Confirm Draft",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Confirm Draft": {
+            "main": [
+                [
+                    {
+                        "node": "Reply Saved",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Is EDIT?": {
+            "main": [
+                [
+                    {
+                        "node": "Get Draft Edit",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Is BATAL?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Draft Edit": {
+            "main": [
+                [
+                    {
+                        "node": "Parse Edit",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse Edit": {
+            "main": [
+                [
+                    {
+                        "node": "Edit OK?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Edit OK?": {
+            "main": [
+                [
+                    {
+                        "node": "Apply Edit",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Reply Edit Error",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Apply Edit": {
+            "main": [
+                [
+                    {
+                        "node": "Get Updated",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Updated": {
+            "main": [
+                [
+                    {
+                        "node": "Format Updated",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Format Updated": {
+            "main": [
+                [
+                    {
+                        "node": "Send Updated",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Is BATAL?": {
+            "main": [
+                [
+                    {
+                        "node": "Get Draft Batal",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                []
+            ]
+        },
+        "Get Draft Batal": {
+            "main": [
+                [
+                    {
+                        "node": "Delete Batch",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Delete Batch": {
+            "main": [
+                [
+                    {
+                        "node": "Reply Batal",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1"
+    }
+}

@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinansialKu - Atur Keuangan, Wujudkan Mimpi</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Landing Page Specific Styles */
+        .landing-page {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .landing-header {
+            padding: var(--space-4) var(--space-6);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            background: rgba(10, 10, 15, 0.8);
+            backdrop-filter: blur(20px);
+        }
+
+        .landing-logo {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            font-size: var(--font-size-xl);
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .landing-logo-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--accent-gradient);
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .landing-nav a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            margin-left: var(--space-6);
+            transition: color var(--transition-fast);
+        }
+
+        .landing-nav a:hover {
+            color: var(--text-primary);
+        }
+
+        .hero-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: var(--space-12) var(--space-6);
+            padding-top: 120px;
+            background:
+                radial-gradient(ellipse at 50% 0%, rgba(124, 58, 237, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 50%, rgba(6, 182, 212, 0.1) 0%, transparent 40%),
+                radial-gradient(ellipse at 20% 80%, rgba(124, 58, 237, 0.1) 0%, transparent 40%);
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-2) var(--space-4);
+            background: var(--accent-gradient-soft);
+            border: 1px solid var(--accent-primary);
+            border-radius: var(--radius-full);
+            font-size: var(--font-size-sm);
+            color: var(--accent-primary-light);
+            margin-bottom: var(--space-6);
+        }
+
+        .hero-title {
+            font-size: clamp(2.5rem, 6vw, 4rem);
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: var(--space-4);
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-primary-light) 50%, var(--accent-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: var(--font-size-xl);
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto var(--space-8);
+            line-height: 1.6;
+        }
+
+        .hero-cta {
+            display: flex;
+            gap: var(--space-4);
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn-hero {
+            padding: var(--space-4) var(--space-8);
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            border-radius: var(--radius-xl);
+            text-decoration: none;
+            transition: all var(--transition-base);
+        }
+
+        .btn-hero-primary {
+            background: var(--accent-gradient);
+            color: white;
+            box-shadow: var(--shadow-glow);
+        }
+
+        .btn-hero-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px rgba(124, 58, 237, 0.5);
+        }
+
+        .btn-hero-secondary {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-hero-secondary:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--accent-primary);
+        }
+
+        .features-section {
+            padding: var(--space-12) var(--space-6);
+            background: var(--bg-secondary);
+        }
+
+        .features-title {
+            text-align: center;
+            font-size: var(--font-size-2xl);
+            font-weight: 700;
+            margin-bottom: var(--space-8);
+            color: var(--text-primary);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--space-6);
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-xl);
+            padding: var(--space-6);
+            text-align: center;
+            transition: all var(--transition-base);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--accent-primary);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .feature-icon {
+            width: 64px;
+            height: 64px;
+            background: var(--accent-gradient-soft);
+            border-radius: var(--radius-xl);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin: 0 auto var(--space-4);
+        }
+
+        .feature-title {
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--space-2);
+        }
+
+        .feature-desc {
+            color: var(--text-secondary);
+            font-size: var(--font-size-sm);
+            line-height: 1.6;
+        }
+
+        .cta-section {
+            padding: var(--space-12) var(--space-6);
+            text-align: center;
+            background:
+                radial-gradient(ellipse at 50% 100%, rgba(124, 58, 237, 0.2) 0%, transparent 50%);
+        }
+
+        .cta-title {
+            font-size: var(--font-size-2xl);
+            font-weight: 700;
+            margin-bottom: var(--space-4);
+            color: var(--text-primary);
+        }
+
+        .cta-subtitle {
+            color: var(--text-secondary);
+            margin-bottom: var(--space-6);
+        }
+
+        .landing-footer {
+            padding: var(--space-6);
+            text-align: center;
+            color: var(--text-muted);
+            font-size: var(--font-size-sm);
+            border-top: 1px solid var(--border-color);
+        }
+
+        @media (max-width: 640px) {
+            .landing-nav {
+                display: none;
+            }
+
+            .hero-cta {
+                flex-direction: column;
+                width: 100%;
+                padding: 0 var(--space-4);
+            }
+
+            .btn-hero {
+                width: 100%;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+
+<body class="landing-page">
+    <header class="landing-header">
+        <div class="landing-logo">
+            <div class="landing-logo-icon">💰</div>
+            <span>FinansialKu</span>
+        </div>
+        <nav class="landing-nav">
+            <a href="#features">Fitur</a>
+            <a href="login.html">Masuk</a>
+        </nav>
+    </header>
+
+    <section class="hero-section">
+        <div class="hero-badge">
+            ✨ Gratis Selamanya
+        </div>
+        <h1 class="hero-title">Atur Keuangan,<br>Wujudkan Mimpi</h1>
+        <p class="hero-subtitle">
+            Kelola pemasukan, pengeluaran, tabungan, dan acara spesial Anda dalam satu aplikasi yang simpel dan
+            powerful.
+        </p>
+        <div class="hero-cta">
+            <a href="login.html" class="btn-hero btn-hero-primary">Mulai Sekarang →</a>
+            <a href="#features" class="btn-hero btn-hero-secondary">Lihat Fitur</a>
+        </div>
+    </section>
+
+    <section class="features-section" id="features">
+        <h2 class="features-title">Fitur Unggulan</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <h3 class="feature-title">Dashboard Lengkap</h3>
+                <p class="feature-desc">Pantau semua transaksi harian, mingguan, dan bulanan dengan visualisasi yang
+                    menarik.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">💰</div>
+                <h3 class="feature-title">Target Tabungan</h3>
+                <p class="feature-desc">Buat target tabungan dengan progress tracking untuk mencapai impian finansial
+                    Anda.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📅</div>
+                <h3 class="feature-title">Perencanaan Acara</h3>
+                <p class="feature-desc">Rencanakan budget untuk acara penting seperti pernikahan, liburan, atau ulang
+                    tahun.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🧮</div>
+                <h3 class="feature-title">Kalkulator Finansial</h3>
+                <p class="feature-desc">5 kalkulator untuk anggaran, tabungan, pensiun, dana darurat, dan pendidikan.
+                </p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🤖</div>
+                <h3 class="feature-title">AI Assistant</h3>
+                <p class="feature-desc">Dapatkan saran keuangan cerdas dari AI untuk membantu keputusan finansial Anda.
+                </p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📱</div>
+                <h3 class="feature-title">Telegram Sync</h3>
+                <p class="feature-desc">Catat transaksi langsung dari Telegram dengan parsing struk otomatis.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta-section">
+        <h2 class="cta-title">Siap Mengatur Keuangan Anda?</h2>
+        <p class="cta-subtitle">Bergabung sekarang dan mulai perjalanan finansial yang lebih baik.</p>
+        <a href="login.html" class="btn-hero btn-hero-primary">Daftar Gratis →</a>
+    </section>
+
+    <footer class="landing-footer">
+        <p>© 2026 FinansialKu. Dibuat dengan ❤️ untuk Indonesia.</p>
+    </footer>
+</body>
+
+</html>

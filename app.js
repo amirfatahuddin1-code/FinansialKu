@@ -1,0 +1,2150 @@
+// FinansialKu - Main Application JavaScript
+
+// ========== Data Storage ==========
+const STORAGE_KEYS = {
+    TRANSACTIONS: 'finansialku_transactions',
+    CATEGORIES: 'finansialku_categories',
+    BUDGETS: 'finansialku_budgets',
+    SAVINGS: 'finansialku_savings',
+    EVENTS: 'finansialku_events',
+    SYNC_SERVER: 'finansialku_sync_server',
+    AI_SETTINGS: 'finansialku_ai_settings'
+};
+
+// Default Categories
+const DEFAULT_CATEGORIES = [
+    { id: 'food', name: 'Makanan', icon: '🍽️', color: '#ef4444', type: 'expense' },
+    { id: 'transport', name: 'Transportasi', icon: '🚗', color: '#f59e0b', type: 'expense' },
+    { id: 'shopping', name: 'Belanja', icon: '🛒', color: '#8b5cf6', type: 'expense' },
+    { id: 'entertainment', name: 'Hiburan', icon: '🎬', color: '#ec4899', type: 'expense' },
+    { id: 'health', name: 'Kesehatan', icon: '💊', color: '#10b981', type: 'expense' },
+    { id: 'bills', name: 'Tagihan', icon: '📄', color: '#3b82f6', type: 'expense' },
+    { id: 'education', name: 'Pendidikan', icon: '📚', color: '#06b6d4', type: 'expense' },
+    { id: 'savings', name: 'Tabungan', icon: '🏦', color: '#14b8a6', type: 'expense' },
+    { id: 'other', name: 'Lainnya', icon: '📦', color: '#64748b', type: 'expense' },
+    { id: 'salary', name: 'Gaji', icon: '💰', color: '#10b981', type: 'income' },
+    { id: 'bonus', name: 'Bonus', icon: '🎁', color: '#f59e0b', type: 'income' },
+    { id: 'investment', name: 'Investasi', icon: '📈', color: '#8b5cf6', type: 'income' },
+    { id: 'freelance', name: 'Freelance', icon: '💼', color: '#3b82f6', type: 'income' }
+];
+
+const ICON_OPTIONS = ['🍽️', '🚗', '🛒', '🎬', '💊', '📄', '📚', '📦', '💰', '🎁', '📈', '💼', '🏠', '✈️', '🎮', '👔', '💍', '📸', '🎨', '🏛️'];
+const COLOR_OPTIONS = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#06b6d4', '#64748b', '#84cc16', '#f97316'];
+
+// ========== State Management ==========
+let state = {
+    transactions: [],
+    categories: [],
+    budgets: {},
+    savings: [],
+    events: [],
+    currentPeriod: 'daily',
+    selectedCategory: null,
+    currentEventId: null,
+    syncServerUrl: 'http://localhost:3001',
+    syncEnabled: false,
+    syncInterval: null,
+    // AI State
+    aiApiKey: '',
+    aiChatHistory: []
+};
+
+// ========== Utility Functions ==========
+function generateId() {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+}
+
+function formatCurrency(amount) {
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
+}
+
+function formatDate(dateStr) {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function formatDateShort(dateStr) {
+    const date = new Date(dateStr);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (date.toDateString() === today.toDateString()) return 'Hari Ini';
+    if (date.toDateString() === yesterday.toDateString()) return 'Kemarin';
+    return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+}
+
+function parseAmount(str) {
+    return parseInt(str.replace(/[^\d]/g, '')) || 0;
+}
+
+function formatAmountInput(input) {
+    let value = input.value.replace(/[^\d]/g, '');
+    if (value) {
+        value = parseInt(value).toLocaleString('id-ID');
+    }
+    input.value = value;
+}
+
+function getDateRange(period) {
+    const now = new Date();
+    const start = new Date();
+    const end = new Date();
+
+    switch (period) {
+        case 'daily':
+            start.setHours(0, 0, 0, 0);
+            end.setHours(23, 59, 59, 999);
+            break;
+        case 'weekly':
+            const day = now.getDay();
+            start.setDate(now.getDate() - day);
+            start.setHours(0, 0, 0, 0);
+            end.setDate(start.getDate() + 6);
+            end.setHours(23, 59, 59, 999);
+            break;
+        case 'monthly':
+            start.setDate(1);
+            start.setHours(0, 0, 0, 0);
+            end.setMonth(end.getMonth() + 1, 0);
+            end.setHours(23, 59, 59, 999);
+            break;
+    }
+    return { start, end };
+}
+
+function daysUntil(dateStr) {
+    const target = new Date(dateStr);
+    const now = new Date();
+    const diff = target - now;
+    return Math.ceil(diff / (1000 * 60 * 60 * 24));
+}
+
+function monthsUntil(dateStr) {
+    const target = new Date(dateStr);
+    const now = new Date();
+    let months = (target.getFullYear() - now.getFullYear()) * 12;
+    months += target.getMonth() - now.getMonth();
+    return Math.max(1, months);
+}
+
+// ========== Storage Functions (Supabase) ==========
+async function loadData() {
+    const API = window.FinansialKuAPI;
+
+    // Load categories
+    const { data: categories } = await API.categories.getAll();
+    state.categories = categories || [];
+
+    // Load transactions
+    const { data: transactions } = await API.transactions.getAll();
+    state.transactions = (transactions || []).map(t => ({
+        ...t,
+        categoryId: t.category_id,
+        category: t.category
+    }));
+
+    // Load budgets for current month
+    const now = new Date();
+    const { data: budgets } = await API.budgets.getByMonth(now.getFullYear(), now.getMonth() + 1);
+    state.budgets = {};
+    (budgets || []).forEach(b => {
+        state.budgets[b.category_id] = b.amount;
+    });
+
+    // Load savings
+    const { data: savings } = await API.savings.getAll();
+    state.savings = savings || [];
+
+    // Load events with items
+    const { data: events } = await API.events.getAll(true);
+    state.events = (events || []).map(e => ({
+        ...e,
+        items: e.items || []
+    }));
+}
+
+async function saveTransaction(transaction) {
+    const API = window.FinansialKuAPI;
+    const payload = {
+        type: transaction.type,
+        amount: transaction.amount,
+        category_id: transaction.categoryId,
+        description: transaction.description,
+        date: transaction.date,
+        source: transaction.source || null,
+        event_id: transaction.eventId || null
+    };
+
+    if (transaction.id && transaction.id.length > 20) {
+        // Update existing (UUID)
+        const { data, error } = await API.transactions.update(transaction.id, payload);
+        if (error) { showToast(error.message, 'error'); return null; }
+        return data;
+    } else {
+        // Create new
+        const { data, error } = await API.transactions.create(payload);
+        if (error) { showToast(error.message, 'error'); return null; }
+        return data;
+    }
+}
+
+async function deleteTransactionById(id) {
+    const API = window.FinansialKuAPI;
+    const { error } = await API.transactions.delete(id);
+    if (error) { showToast(error.message, 'error'); return false; }
+    return true;
+}
+
+async function saveCategory(category) {
+    const API = window.FinansialKuAPI;
+    const { data, error } = await API.categories.create({
+        name: category.name,
+        icon: category.icon,
+        color: category.color,
+        type: category.type
+    });
+    if (error) { showToast(error.message, 'error'); return null; }
+    return data;
+}
+
+async function deleteCategoryById(id) {
+    const API = window.FinansialKuAPI;
+    const { error } = await API.categories.delete(id);
+    if (error) { showToast(error.message, 'error'); return false; }
+    return true;
+}
+
+async function saveBudgetItem(categoryId, amount) {
+    const API = window.FinansialKuAPI;
+    const now = new Date();
+    const { data, error } = await API.budgets.upsert({
+        category_id: categoryId,
+        amount: amount,
+        month: now.getMonth() + 1,
+        year: now.getFullYear()
+    });
+    if (error) { showToast(error.message, 'error'); return null; }
+    return data;
+}
+
+async function saveSavingsItem(savings) {
+    const API = window.FinansialKuAPI;
+    const payload = {
+        name: savings.name,
+        target: savings.target,
+        current: savings.current || 0,
+        deadline: savings.deadline,
+        color: savings.color
+    };
+
+    if (savings.id) {
+        const { data, error } = await API.savings.update(savings.id, payload);
+        if (error) { showToast(error.message, 'error'); return null; }
+        return data;
+    } else {
+        const { data, error } = await API.savings.create(payload);
+        if (error) { showToast(error.message, 'error'); return null; }
+        return data;
+    }
+}
+
+async function deleteSavingsById(id) {
+    const API = window.FinansialKuAPI;
+    const { error } = await API.savings.delete(id);
+    if (error) { showToast(error.message, 'error'); return false; }
+    return true;
+}
+
+async function addToSavingsAmount(id, amount) {
+    const API = window.FinansialKuAPI;
+    const { data, error } = await API.savings.addAmount(id, amount);
+    if (error) { showToast(error.message, 'error'); return null; }
+    return data;
+}
+
+async function saveEventItem(event) {
+    const API = window.FinansialKuAPI;
+    const payload = {
+        name: event.name,
+        date: event.date,
+        budget: event.budget || 0,
+        archived: event.archived || false
+    };
+
+    if (event.id) {
+        const { data, error } = await API.events.update(event.id, payload);
+        if (error) { showToast(error.message, 'error'); return null; }
+        return data;
+    } else {
+        const { data, error } = await API.events.create(payload);
+        if (error) { showToast(error.message, 'error'); return null; }
+        return data;
+    }
+}
+
+async function deleteEventById(id) {
+    const API = window.FinansialKuAPI;
+    const { error } = await API.events.delete(id);
+    if (error) { showToast(error.message, 'error'); return false; }
+    return true;
+}
+
+async function saveEventItemDetail(eventId, item) {
+    const API = window.FinansialKuAPI;
+    const payload = {
+        name: item.name,
+        category: item.category,
+        budget: item.budget || 0,
+        actual: item.actual || 0,
+        is_paid: item.isPaid || false
+    };
+
+    if (item.id) {
+        const { data, error } = await API.eventItems.update(item.id, payload);
+        if (error) { showToast(error.message, 'error'); return null; }
+        return data;
+    } else {
+        const { data, error } = await API.eventItems.create(eventId, payload);
+        if (error) { showToast(error.message, 'error'); return null; }
+        return data;
+    }
+}
+
+async function deleteEventItemById(id) {
+    const API = window.FinansialKuAPI;
+    const { error } = await API.eventItems.delete(id);
+    if (error) { showToast(error.message, 'error'); return false; }
+    return true;
+}
+
+// Legacy save functions (for compatibility - no-op, data saved immediately)
+function saveTransactions() { }
+function saveCategories() { }
+function saveBudgets() { }
+function saveSavings() { }
+function saveEvents() { }
+
+// ========== Toast Notifications ==========
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+
+    const icons = {
+        success: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+        error: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
+        warning: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
+    };
+
+    toast.innerHTML = `<span class="toast-icon">${icons[type]}</span><span class="toast-message">${message}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+
+// ========== Modal Management ==========
+function openModal(modalId) {
+    document.getElementById(modalId).classList.add('active');
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.remove('active');
+}
+
+function closeAllModals() {
+    document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
+}
+
+// ========== Navigation ==========
+function initNavigation() {
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+        item.addEventListener('click', () => {
+            navItems.forEach(n => n.classList.remove('active'));
+            item.classList.add('active');
+
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.getElementById(item.dataset.tab).classList.add('active');
+
+            updateCurrentTab(item.dataset.tab);
+        });
+    });
+}
+
+function updateCurrentTab(tab) {
+    switch (tab) {
+        case 'dashboard': updateDashboard(); break;
+        case 'planning': updatePlanning(); break;
+        case 'events': updateEvents(); break;
+        case 'reports': updateReports(); break;
+    }
+}
+
+// ========== FAB Menu ==========
+function initFAB() {
+    const fab = document.getElementById('mainFab');
+    const fabMenu = document.getElementById('fabMenu');
+
+    fab.addEventListener('click', () => {
+        fab.classList.toggle('active');
+        fabMenu.classList.toggle('active');
+    });
+
+    document.getElementById('fabIncome').addEventListener('click', () => {
+        openTransactionModal('income');
+        fab.classList.remove('active');
+        fabMenu.classList.remove('active');
+    });
+
+    document.getElementById('fabExpense').addEventListener('click', () => {
+        openTransactionModal('expense');
+        fab.classList.remove('active');
+        fabMenu.classList.remove('active');
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.fab-container')) {
+            fab.classList.remove('active');
+            fabMenu.classList.remove('active');
+        }
+    });
+}
+
+// ========== Transaction Management ==========
+function openTransactionModal(type, transaction = null) {
+    document.getElementById('transactionType').value = type;
+    document.getElementById('transactionModalTitle').textContent = transaction ? 'Edit Transaksi' : (type === 'income' ? 'Tambah Pemasukan' : 'Tambah Pengeluaran');
+    document.getElementById('transactionId').value = transaction ? transaction.id : '';
+    document.getElementById('transactionAmount').value = transaction ? transaction.amount.toLocaleString('id-ID') : '';
+    document.getElementById('transactionDescription').value = transaction ? transaction.description : '';
+    document.getElementById('transactionDate').value = transaction ? transaction.date : new Date().toISOString().split('T')[0];
+
+    renderCategoryGrid(type);
+    if (transaction) {
+        state.selectedCategory = transaction.categoryId;
+        document.querySelectorAll('.category-item').forEach(item => {
+            item.classList.toggle('selected', item.dataset.id === transaction.categoryId);
+        });
+    } else {
+        state.selectedCategory = null;
+    }
+    openModal('transactionModal');
+}
+
+function renderCategoryGrid(type) {
+    const grid = document.getElementById('categoryGrid');
+    const cats = state.categories.filter(c => c.type === type);
+    const defaultIds = ['food', 'transport', 'shopping', 'entertainment', 'health', 'bills', 'education', 'savings', 'other', 'salary', 'bonus', 'investment', 'freelance'];
+
+    grid.innerHTML = cats.map(c => {
+        const isDefault = defaultIds.includes(c.id);
+        const deleteBtn = !isDefault ? `<button class="category-delete-btn" onclick="event.stopPropagation(); deleteCategory('${c.id}', '${type}')" title="Hapus kategori">×</button>` : '';
+        return `<div class="category-item" data-id="${c.id}">
+            <div class="icon" style="background:${c.color}20;color:${c.color}">${c.icon}</div>
+            <span class="name">${c.name}</span>
+            ${deleteBtn}
+        </div>`;
+    }).join('');
+
+    grid.querySelectorAll('.category-item').forEach(item => {
+        item.addEventListener('click', () => {
+            grid.querySelectorAll('.category-item').forEach(i => i.classList.remove('selected'));
+            item.classList.add('selected');
+            state.selectedCategory = item.dataset.id;
+        });
+    });
+}
+
+function deleteCategory(categoryId, type) {
+    // Check if category is used in transactions
+    const usedInTransactions = state.transactions.some(t => t.categoryId === categoryId);
+
+    if (usedInTransactions) {
+        if (!confirm('Kategori ini digunakan di beberapa transaksi. Transaksi tersebut akan dipindah ke kategori "Lainnya". Lanjutkan?')) {
+            return;
+        }
+        // Move transactions to 'other' category
+        state.transactions.forEach(t => {
+            if (t.categoryId === categoryId) {
+                t.categoryId = 'other';
+            }
+        });
+        saveTransactions();
+    }
+
+    // Remove category
+    state.categories = state.categories.filter(c => c.id !== categoryId);
+    saveCategories();
+    renderCategoryGrid(type);
+    showToast('Kategori dihapus', 'success');
+}
+
+function saveTransaction(e) {
+    e.preventDefault();
+    if (!state.selectedCategory) { showToast('Pilih kategori', 'warning'); return; }
+
+    // Check if editing existing transaction
+    const form = document.getElementById('transactionForm');
+    const editId = form.dataset.editId;
+    const id = editId || document.getElementById('transactionId').value || generateId();
+
+    const type = document.getElementById('transactionType').value;
+    const amount = parseAmount(document.getElementById('transactionAmount').value);
+    if (!amount) { showToast('Masukkan nominal', 'warning'); return; }
+
+    const transaction = {
+        id,
+        type,
+        amount,
+        categoryId: state.selectedCategory,
+        description: document.getElementById('transactionDescription').value,
+        date: document.getElementById('transactionDate').value,
+        createdAt: new Date().toISOString()
+    };
+
+    const idx = state.transactions.findIndex(t => t.id === id);
+    if (idx >= 0) { state.transactions[idx] = transaction; } else { state.transactions.unshift(transaction); }
+
+    // Reset edit mode
+    delete form.dataset.editId;
+    document.getElementById('transactionModalTitle').textContent = 'Tambah Transaksi';
+
+    saveTransactions(); closeModal('transactionModal'); updateDashboard(); checkBudgetWarnings();
+    showToast(idx >= 0 ? 'Transaksi diperbarui' : 'Transaksi ditambahkan');
+}
+
+async function deleteTransaction(id) {
+    if (!confirm('Hapus transaksi ini?')) return;
+    const success = await deleteTransactionById(id);
+    if (success) {
+        state.transactions = state.transactions.filter(t => t.id !== id);
+        renderAllTransactions();
+        updateDashboard();
+        showToast('Transaksi dihapus', 'success');
+    }
+}
+
+// ========== Dashboard ==========
+function updateDashboard() { updateSummaryCards(); renderTransactions(); updateWeeklyChart(); }
+
+function updateSummaryCards() {
+    const { start, end } = getDateRange(state.currentPeriod);
+    const filtered = state.transactions.filter(t => { const d = new Date(t.date); return d >= start && d <= end; });
+    const income = filtered.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+    const expense = filtered.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+    animateValue('totalIncome', income); animateValue('totalExpense', expense); animateValue('totalBalance', income - expense);
+}
+
+function animateValue(elId, target) {
+    const el = document.getElementById(elId);
+    const start = parseAmount(el.textContent.replace('Rp', ''));
+    const duration = 500, startTime = performance.now();
+    function update(t) {
+        const p = Math.min((t - startTime) / duration, 1);
+        el.textContent = formatCurrency(Math.round(start + (target - start) * (1 - Math.pow(1 - p, 3))));
+        if (p < 1) requestAnimationFrame(update);
+    }
+    requestAnimationFrame(update);
+}
+
+function renderTransactions() {
+    const { start, end } = getDateRange(state.currentPeriod);
+    const filtered = state.transactions.filter(t => { const d = new Date(t.date); return d >= start && d <= end; }).slice(0, 10);
+    const list = document.getElementById('transactionsList');
+    if (!filtered.length) { list.innerHTML = '<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg><p>Belum ada transaksi</p><span>Tekan + untuk menambah</span></div>'; return; }
+    list.innerHTML = filtered.map(t => { const c = state.categories.find(x => x.id === t.categoryId) || { icon: '📦', name: 'Lainnya', color: '#64748b' }; return `<div class="transaction-item" data-id="${t.id}"><div class="transaction-icon" style="background:${c.color}20">${c.icon}</div><div class="transaction-info"><div class="transaction-category">${c.name}</div><div class="transaction-description">${t.description || '-'}</div></div><div><div class="transaction-amount ${t.type}">${t.type === 'income' ? '+' : '-'}${formatCurrency(t.amount)}</div><div class="transaction-date">${formatDateShort(t.date)}</div></div><div class="transaction-actions"><button onclick="editTx('${t.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="delete" onclick="deleteTransaction('${t.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button></div></div>`; }).join('');
+}
+
+function editTx(id) { const t = state.transactions.find(x => x.id === id); if (t) openTransactionModal(t.type, t); }
+
+let weeklyChart = null;
+function updateWeeklyChart() {
+    const ctx = document.getElementById('weeklyChart').getContext('2d');
+    const labels = [], incData = [], expData = [];
+    for (let i = 6; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); const ds = d.toISOString().split('T')[0]; labels.push(d.toLocaleDateString('id-ID', { weekday: 'short' })); const dt = state.transactions.filter(t => t.date === ds); incData.push(dt.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)); expData.push(dt.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)); }
+    if (weeklyChart) weeklyChart.destroy();
+    weeklyChart = new Chart(ctx, { type: 'line', data: { labels, datasets: [{ label: 'Pemasukan', data: incData, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', fill: true, tension: 0.4 }, { label: 'Pengeluaran', data: expData, borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.1)', fill: true, tension: 0.4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8' } } }, scales: { x: { grid: { color: 'rgba(148,163,184,0.1)' }, ticks: { color: '#94a3b8' } }, y: { grid: { color: 'rgba(148,163,184,0.1)' }, ticks: { color: '#94a3b8', callback: v => formatCurrency(v) } } } } });
+}
+
+// ========== Budget Management ==========
+function checkBudgetWarnings() {
+    const { start, end } = getDateRange('monthly');
+    Object.keys(state.budgets).forEach(catId => {
+        const budget = state.budgets[catId];
+        const spent = state.transactions.filter(t => t.categoryId === catId && t.type === 'expense' && new Date(t.date) >= start && new Date(t.date) <= end).reduce((s, t) => s + t.amount, 0);
+        const percent = budget > 0 ? (spent / budget) * 100 : 0;
+        if (percent >= 80 && percent < 100) { const cat = state.categories.find(c => c.id === catId); showToast(`Anggaran ${cat?.name || 'Kategori'} sudah 80%!`, 'warning'); }
+    });
+}
+
+function openBudgetModal() {
+    const inputs = document.getElementById('budgetInputs');
+    const expCats = state.categories.filter(c => c.type === 'expense');
+    inputs.innerHTML = expCats.map(c => `<div class="budget-input-item"><div class="category-info"><span>${c.icon}</span><span>${c.name}</span></div><div class="amount-input"><span class="currency">Rp</span><input type="text" id="budget_${c.id}" value="${state.budgets[c.id] ? state.budgets[c.id].toLocaleString('id-ID') : ''}" oninput="formatAmountInput(this)"></div></div>`).join('');
+    openModal('budgetModal');
+}
+
+function saveBudget(e) {
+    e.preventDefault();
+    state.categories.filter(c => c.type === 'expense').forEach(c => {
+        const input = document.getElementById(`budget_${c.id}`);
+        const val = parseAmount(input.value);
+        if (val > 0) state.budgets[c.id] = val; else delete state.budgets[c.id];
+    });
+    saveBudgets(); closeModal('budgetModal'); updatePlanning(); showToast('Anggaran disimpan');
+}
+
+let budgetChart = null;
+function updatePlanning() { renderBudgetOverview(); renderSavingsGoals(); }
+
+function renderBudgetOverview() {
+    const { start, end } = getDateRange('monthly');
+    const expCats = state.categories.filter(c => c.type === 'expense');
+    let totalBudget = 0, totalSpent = 0;
+    const catData = expCats.map(c => {
+        const budget = state.budgets[c.id] || 0;
+        const spent = state.transactions.filter(t => t.categoryId === c.id && t.type === 'expense' && new Date(t.date) >= start && new Date(t.date) <= end).reduce((s, t) => s + t.amount, 0);
+        totalBudget += budget; totalSpent += spent;
+        return { ...c, budget, spent, percent: budget > 0 ? Math.min((spent / budget) * 100, 100) : 0 };
+    }).filter(c => c.budget > 0);
+
+    document.getElementById('budgetUsedPercent').textContent = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) + '%' : '0%';
+
+    const ctx = document.getElementById('budgetDonutChart').getContext('2d');
+    if (budgetChart) budgetChart.destroy();
+    if (catData.length) {
+        budgetChart = new Chart(ctx, { type: 'doughnut', data: { labels: catData.map(c => c.name), datasets: [{ data: catData.map(c => c.spent), backgroundColor: catData.map(c => c.color), borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { display: false } } } });
+    }
+
+    const list = document.getElementById('budgetCategoriesList');
+    if (!catData.length) { list.innerHTML = '<div class="empty-state small"><p>Belum ada anggaran</p></div>'; return; }
+    list.innerHTML = catData.map(c => {
+        const status = c.percent >= 100 ? 'danger' : c.percent >= 80 ? 'warning' : 'safe';
+        return `<div class="budget-category-item"><div class="budget-category-header"><div class="budget-category-name"><span>${c.icon}</span><span>${c.name}</span></div><div class="budget-category-amount">${formatCurrency(c.spent)} / ${formatCurrency(c.budget)}</div></div><div class="budget-progress"><div class="budget-progress-bar ${status}" style="width:${c.percent}%"></div></div></div>`;
+    }).join('');
+}
+
+// ========== Savings Management ==========
+function openSavingsModal(savings = null) {
+    document.getElementById('savingsModalTitle').textContent = savings ? 'Edit Target' : 'Tambah Target';
+    document.getElementById('savingsId').value = savings ? savings.id : '';
+    document.getElementById('savingsName').value = savings ? savings.name : '';
+    document.getElementById('savingsTarget').value = savings ? savings.target.toLocaleString('id-ID') : '';
+    document.getElementById('savingsCurrent').value = savings ? savings.current.toLocaleString('id-ID') : '';
+    document.getElementById('savingsDeadline').value = savings ? savings.deadline : '';
+    renderColorPicker('savingsColorPicker', savings?.color || COLOR_OPTIONS[0]);
+    openModal('savingsModal');
+}
+
+function renderColorPicker(containerId, selected) {
+    document.getElementById(containerId).innerHTML = COLOR_OPTIONS.map(c => `<div class="color-option ${c === selected ? 'selected' : ''}" style="background:${c}" data-color="${c}"></div>`).join('');
+    document.querySelectorAll(`#${containerId} .color-option`).forEach(el => el.addEventListener('click', () => { document.querySelectorAll(`#${containerId} .color-option`).forEach(e => e.classList.remove('selected')); el.classList.add('selected'); }));
+}
+
+function saveSavingsGoal(e) {
+    e.preventDefault();
+    const id = document.getElementById('savingsId').value || generateId();
+    const name = document.getElementById('savingsName').value;
+    const target = parseAmount(document.getElementById('savingsTarget').value);
+    const current = parseAmount(document.getElementById('savingsCurrent').value);
+    const deadline = document.getElementById('savingsDeadline').value;
+    const color = document.querySelector('#savingsColorPicker .color-option.selected')?.dataset.color || COLOR_OPTIONS[0];
+    if (!name || !target || !deadline) { showToast('Lengkapi semua field', 'warning'); return; }
+    const savings = { id, name, target, current, deadline, color };
+    const idx = state.savings.findIndex(s => s.id === id);
+    if (idx >= 0) state.savings[idx] = savings; else state.savings.push(savings);
+    saveSavings(); closeModal('savingsModal'); updatePlanning(); showToast('Target disimpan');
+}
+
+function deleteSavingsGoal(id) { state.savings = state.savings.filter(s => s.id !== id); saveSavings(); updatePlanning(); showToast('Target dihapus'); }
+
+function addToSavings(id) { document.getElementById('addToSavingsId').value = id; document.getElementById('addToSavingsAmount').value = ''; openModal('addToSavingsModal'); }
+
+function confirmAddToSavings(e) {
+    e.preventDefault();
+    const id = document.getElementById('addToSavingsId').value;
+    const amount = parseAmount(document.getElementById('addToSavingsAmount').value);
+    const savings = state.savings.find(s => s.id === id);
+    if (savings && amount > 0) {
+        savings.current += amount;
+        saveSavings();
+
+        // Create expense transaction for savings
+        createTransactionFromSavings(savings, amount);
+
+        closeModal('addToSavingsModal');
+        updatePlanning();
+        showToast(`💰 Tabungan ditambahkan: ${formatCurrency(amount)}`);
+    }
+}
+
+function createTransactionFromSavings(savings, amount) {
+    const transaction = {
+        id: generateId(),
+        type: 'expense',
+        amount: amount,
+        categoryId: 'savings',
+        description: `Tabungan: ${savings.name}`,
+        date: new Date().toISOString().split('T')[0],
+        source: 'savings',
+        savingsId: savings.id
+    };
+    state.transactions.unshift(transaction);
+    saveTransactions();
+}
+
+function renderSavingsGoals() {
+    const list = document.getElementById('savingsGoalsList');
+    if (!state.savings.length) { list.innerHTML = '<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg><p>Belum ada target</p><span>Buat target pertama Anda!</span></div>'; return; }
+    list.innerHTML = state.savings.map(s => {
+        const percent = Math.min((s.current / s.target) * 100, 100);
+        const months = monthsUntil(s.deadline);
+        const monthly = Math.ceil((s.target - s.current) / months);
+        return `<div class="savings-card" style="--card-color:${s.color}"><div style="position:absolute;top:0;left:0;right:0;height:4px;background:${s.color}"></div><div class="savings-header"><div><div class="savings-title">${s.name}</div><div class="savings-deadline">${formatDate(s.deadline)} (${daysUntil(s.deadline)} hari lagi)</div></div><div class="savings-actions"><button class="add" onclick="addToSavings('${s.id}')" title="Tambah"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button><button onclick="openSavingsModal(${JSON.stringify(s).replace(/"/g, '&quot;')})" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="delete" onclick="deleteSavingsGoal('${s.id}')" title="Hapus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button></div></div><div class="savings-progress"><div class="savings-progress-bar"><div class="savings-progress-fill" style="width:${percent}%;background:${s.color}"></div></div><div class="savings-progress-text"><span class="savings-current">${formatCurrency(s.current)}</span><span class="savings-target">${formatCurrency(s.target)}</span></div></div><div class="savings-monthly"><span class="savings-monthly-label">Perlu menabung:</span><span class="savings-monthly-amount">${formatCurrency(monthly)}/bulan</span></div></div>`;
+    }).join('');
+}
+
+
+// ========== Event Management ==========
+function openEventModal(event = null) {
+    document.getElementById('eventModalTitle').textContent = event ? 'Edit Acara' : 'Buat Acara Baru';
+    document.getElementById('eventId').value = event ? event.id : '';
+    document.getElementById('eventName').value = event ? event.name : '';
+    document.getElementById('eventDate').value = event ? event.date : '';
+    document.getElementById('eventBudget').value = event ? event.budget.toLocaleString('id-ID') : '';
+    openModal('eventModal');
+}
+
+function saveEvent(e) {
+    e.preventDefault();
+    const id = document.getElementById('eventId').value || generateId();
+    const name = document.getElementById('eventName').value;
+    const date = document.getElementById('eventDate').value;
+    const budget = parseAmount(document.getElementById('eventBudget').value);
+    if (!name || !date || !budget) { showToast('Lengkapi semua field', 'warning'); return; }
+    const idx = state.events.findIndex(ev => ev.id === id);
+    if (idx >= 0) { state.events[idx] = { ...state.events[idx], name, date, budget }; }
+    else { state.events.push({ id, name, date, budget, items: [], archived: false }); }
+    saveEvents(); closeModal('eventModal'); updateEvents(); showToast('Acara disimpan');
+}
+
+function updateEvents() {
+    const active = state.events.filter(e => !e.archived);
+    const archived = state.events.filter(e => e.archived);
+    const list = document.getElementById('eventsList');
+
+    if (!active.length) { list.innerHTML = '<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><p>Belum ada acara</p><span>Rencanakan acara spesial Anda!</span></div>'; }
+    else { list.innerHTML = active.map(renderEventCard).join(''); }
+
+    const archivedSection = document.getElementById('archivedSection');
+    if (archived.length) { archivedSection.style.display = 'block'; document.getElementById('archivedEventsList').innerHTML = archived.map(e => renderEventCard(e, true)).join(''); }
+    else { archivedSection.style.display = 'none'; }
+}
+
+function renderEventCard(event, isArchived = false) {
+    const spent = event.items.reduce((s, i) => s + (i.actual || 0), 0);
+    const remaining = event.budget - spent;
+    const progress = event.budget > 0 ? (spent / event.budget) * 100 : 0;
+    const checkedCount = event.items.filter(i => i.isPaid).length;
+    const days = daysUntil(event.date);
+    const badge = days < 0 ? 'completed' : days === 0 ? 'today' : 'upcoming';
+    const badgeText = days < 0 ? 'Selesai' : days === 0 ? 'Hari Ini' : `${days} hari`;
+
+    return `<div class="event-card ${isArchived ? 'archived' : ''}" onclick="openEventDetail('${event.id}')">
+        <div class="event-header"><div><div class="event-name">${event.name}</div><div class="event-date"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${formatDate(event.date)}</div></div><span class="event-badge ${badge}">${badgeText}</span></div>
+        <div class="event-budget-summary"><div class="event-budget-item"><span class="event-budget-label">Anggaran</span><span class="event-budget-value budget">${formatCurrency(event.budget)}</span></div><div class="event-budget-item"><span class="event-budget-label">Terpakai</span><span class="event-budget-value spent">${formatCurrency(spent)}</span></div><div class="event-budget-item"><span class="event-budget-label">Sisa</span><span class="event-budget-value remaining">${formatCurrency(remaining)}</span></div></div>
+        <div class="event-progress"><div class="event-progress-bar" style="width:${Math.min(progress, 100)}%"></div></div>
+        <div class="event-checklist-count">${checkedCount}/${event.items.length} item selesai</div>
+    </div>`;
+}
+
+function openEventDetail(id) {
+    state.currentEventId = id;
+    const event = state.events.find(e => e.id === id);
+    if (!event) return;
+
+    document.getElementById('eventDetailTitle').textContent = event.name;
+    const spent = event.items.reduce((s, i) => s + (i.actual || 0), 0);
+    const content = document.getElementById('eventDetailContent');
+
+    content.innerHTML = `
+        <div class="event-detail-stats">
+            <div class="event-stat"><div class="event-stat-value" style="color:#3b82f6">${formatCurrency(event.budget)}</div><div class="event-stat-label">Total Anggaran</div></div>
+            <div class="event-stat"><div class="event-stat-value" style="color:#f59e0b">${formatCurrency(spent)}</div><div class="event-stat-label">Terpakai</div></div>
+            <div class="event-stat"><div class="event-stat-value" style="color:#10b981">${formatCurrency(event.budget - spent)}</div><div class="event-stat-label">Sisa</div></div>
+        </div>
+        <div class="event-items-section">
+            <div class="event-items-header"><h4>Daftar Item</h4><button class="btn-primary btn-small" onclick="openEventItemModal('${id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Tambah Item</button></div>
+            <div class="event-items-list">${event.items.length ? event.items.map((item, idx) => renderEventItem(id, item, idx)).join('') : '<div class="empty-state small"><p>Belum ada item</p></div>'}</div>
+        </div>
+        <div class="event-detail-actions">
+            ${!event.archived ? `<button class="btn-secondary" onclick="archiveEvent('${id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/></svg>Arsipkan</button>` : ''}
+            <button class="btn-primary" onclick="exportEventPDF('${id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Export PDF</button>
+        </div>
+    `;
+    openModal('eventDetailModal');
+}
+
+const eventCatEmoji = { venue: '🏛️', dekorasi: '🎨', catering: '🍽️', mahar: '💍', cincin: '💎', dokumentasi: '📸', souvenir: '🎁', busana: '👔', lainnya: '📦' };
+
+function renderEventItem(eventId, item, idx) {
+    return `<div class="event-item">
+        <div class="event-item-checkbox ${item.isPaid ? 'checked' : ''}" onclick="toggleEventItem('${eventId}', ${idx})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="event-item-info"><div class="event-item-name">${item.name}</div><div class="event-item-category">${eventCatEmoji[item.category] || '📦'} ${item.category}</div></div>
+        <div class="event-item-amounts"><div class="event-item-budget">Anggaran: ${formatCurrency(item.budget)}</div><div class="event-item-actual">Realisasi: ${formatCurrency(item.actual || 0)}</div></div>
+        <div class="event-item-actions"><button onclick="openEventItemModal('${eventId}', ${idx})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="delete" onclick="deleteEventItem('${eventId}', ${idx})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button></div>
+    </div>`;
+}
+
+function toggleEventItem(eventId, idx) {
+    const event = state.events.find(e => e.id === eventId);
+    if (event && event.items[idx]) {
+        const item = event.items[idx];
+        const wasPaid = item.isPaid;
+        item.isPaid = !item.isPaid;
+
+        // If marking as paid and has realization amount, create transaction
+        if (!wasPaid && item.isPaid && item.actual > 0) {
+            createTransactionFromEventItem(event, item);
+        }
+
+        saveEvents();
+        openEventDetail(eventId);
+    }
+}
+
+function createTransactionFromEventItem(event, item) {
+    // Check if transaction already exists for this item
+    const existingTx = state.transactions.find(t =>
+        t.source === 'event-item' &&
+        t.eventId === event.id &&
+        t.itemName === item.name
+    );
+
+    if (existingTx) {
+        // Update existing transaction
+        existingTx.amount = item.actual;
+        existingTx.date = new Date().toISOString().split('T')[0];
+    } else {
+        // Create new transaction
+        const transaction = {
+            id: generateId(),
+            type: 'expense',
+            amount: item.actual,
+            categoryId: mapEventCategoryToTransactionCategory(item.category),
+            description: `${item.name} - ${event.name}`,
+            date: new Date().toISOString().split('T')[0],
+            source: 'event-item',
+            eventId: event.id,
+            itemName: item.name
+        };
+        state.transactions.unshift(transaction);
+    }
+
+    saveTransactions();
+    showToast(`📝 Transaksi dicatat: ${item.name} - ${formatCurrency(item.actual)}`, 'success');
+}
+
+function mapEventCategoryToTransactionCategory(eventCategory) {
+    const mapping = {
+        'venue': 'other',
+        'dekorasi': 'shopping',
+        'catering': 'food',
+        'mahar': 'other',
+        'cincin': 'shopping',
+        'dokumentasi': 'entertainment',
+        'souvenir': 'shopping',
+        'busana': 'shopping',
+        'lainnya': 'other'
+    };
+    return mapping[eventCategory] || 'other';
+}
+
+function openEventItemModal(eventId, idx = -1) {
+    document.getElementById('eventItemEventId').value = eventId;
+    document.getElementById('eventItemId').value = idx >= 0 ? idx : '';
+    const event = state.events.find(e => e.id === eventId);
+    const item = idx >= 0 && event ? event.items[idx] : null;
+    document.getElementById('eventItemModalTitle').textContent = item ? 'Edit Item' : 'Tambah Item';
+    document.getElementById('eventItemName').value = item ? item.name : '';
+
+    // Populate custom categories if any
+    populateEventItemCategories(item ? item.category : 'venue');
+
+    document.getElementById('eventItemBudget').value = item ? item.budget.toLocaleString('id-ID') : '';
+    document.getElementById('eventItemActual').value = item && item.actual ? item.actual.toLocaleString('id-ID') : '';
+
+    // Reset new category fields
+    document.getElementById('newEventCategoryGroup').style.display = 'none';
+    document.getElementById('newEventCategoryName').value = '';
+
+    openModal('eventItemModal');
+}
+
+function saveEventItem(e) {
+    e.preventDefault();
+    const eventId = document.getElementById('eventItemEventId').value;
+    const idxStr = document.getElementById('eventItemId').value;
+    const event = state.events.find(ev => ev.id === eventId);
+    if (!event) return;
+
+    let category = document.getElementById('eventItemCategory').value;
+
+    // Handle new category creation
+    if (category === '__new__') {
+        const newName = document.getElementById('newEventCategoryName').value.trim();
+        const newIcon = document.getElementById('newEventCategoryIcon').value;
+        if (!newName) {
+            showToast('Masukkan nama kategori baru', 'warning');
+            return;
+        }
+        // Create category ID from name
+        category = newName.toLowerCase().replace(/\s+/g, '_');
+        // Save custom category
+        saveCustomEventCategory(category, newName, newIcon);
+    }
+
+    const item = {
+        name: document.getElementById('eventItemName').value,
+        category: category,
+        budget: parseAmount(document.getElementById('eventItemBudget').value),
+        actual: parseAmount(document.getElementById('eventItemActual').value),
+        isPaid: false
+    };
+    if (!item.name || !item.budget) { showToast('Lengkapi nama dan anggaran', 'warning'); return; }
+
+    if (idxStr !== '') { const idx = parseInt(idxStr); item.isPaid = event.items[idx]?.isPaid || false; event.items[idx] = item; }
+    else { event.items.push(item); }
+    saveEvents(); closeModal('eventItemModal'); openEventDetail(eventId); showToast('Item disimpan');
+}
+
+function deleteEventItem(eventId, idx) {
+    const event = state.events.find(e => e.id === eventId);
+    if (event) { event.items.splice(idx, 1); saveEvents(); openEventDetail(eventId); showToast('Item dihapus'); }
+}
+
+// Custom Event Categories
+const CUSTOM_EVENT_CATEGORIES_KEY = 'finansialku_event_categories';
+
+const DEFAULT_EVENT_CATEGORIES = [
+    { id: 'venue', name: 'Venue', icon: '🏛️' },
+    { id: 'dekorasi', name: 'Dekorasi', icon: '🎨' },
+    { id: 'catering', name: 'Catering', icon: '🍽️' },
+    { id: 'mahar', name: 'Mahar', icon: '💍' },
+    { id: 'cincin', name: 'Cincin', icon: '💎' },
+    { id: 'dokumentasi', name: 'Dokumentasi', icon: '📸' },
+    { id: 'souvenir', name: 'Souvenir', icon: '🎁' },
+    { id: 'busana', name: 'Busana', icon: '👔' },
+    { id: 'lainnya', name: 'Lain-lain', icon: '📦' }
+];
+
+function getEventCategories() {
+    const saved = localStorage.getItem(CUSTOM_EVENT_CATEGORIES_KEY);
+    const custom = saved ? JSON.parse(saved) : [];
+    return [...DEFAULT_EVENT_CATEGORIES, ...custom];
+}
+
+function saveCustomEventCategory(id, name, icon) {
+    const saved = localStorage.getItem(CUSTOM_EVENT_CATEGORIES_KEY);
+    const custom = saved ? JSON.parse(saved) : [];
+    // Check if exists
+    if (!custom.find(c => c.id === id)) {
+        custom.push({ id, name, icon });
+        localStorage.setItem(CUSTOM_EVENT_CATEGORIES_KEY, JSON.stringify(custom));
+    }
+}
+
+function populateEventItemCategories(selectedValue) {
+    const select = document.getElementById('eventItemCategory');
+    const categories = getEventCategories();
+
+    // Clear existing options
+    select.innerHTML = '';
+
+    // Add all categories
+    categories.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat.id;
+        option.textContent = `${cat.icon} ${cat.name}`;
+        if (cat.id === selectedValue) option.selected = true;
+        select.appendChild(option);
+    });
+
+    // Add "create new" option
+    const newOption = document.createElement('option');
+    newOption.value = '__new__';
+    newOption.textContent = '➕ Buat Kategori Baru...';
+    select.appendChild(newOption);
+}
+
+function getCategoryDisplay(categoryId) {
+    const categories = getEventCategories();
+    const cat = categories.find(c => c.id === categoryId);
+    return cat ? `${cat.icon} ${cat.name}` : categoryId;
+}
+
+function archiveEvent(id) {
+    const event = state.events.find(e => e.id === id);
+    if (event) { event.archived = true; saveEvents(); closeModal('eventDetailModal'); updateEvents(); showToast('Acara diarsipkan'); }
+}
+
+function exportEventPDF(id) {
+    const event = state.events.find(e => e.id === id);
+    if (!event || typeof jspdf === 'undefined') { showToast('PDF export tidak tersedia', 'error'); return; }
+
+    const { jsPDF } = jspdf;
+    const doc = new jsPDF();
+    const spent = event.items.reduce((s, i) => s + (i.actual || 0), 0);
+
+    doc.setFontSize(20); doc.text(event.name, 20, 20);
+    doc.setFontSize(12); doc.text(`Tanggal: ${formatDate(event.date)}`, 20, 30);
+    doc.text(`Anggaran: ${formatCurrency(event.budget)}`, 20, 40);
+    doc.text(`Terpakai: ${formatCurrency(spent)}`, 20, 50);
+    doc.text(`Selisih: ${formatCurrency(event.budget - spent)}`, 20, 60);
+
+    doc.setFontSize(14); doc.text('Detail Item:', 20, 80);
+    let y = 90;
+    event.items.forEach((item, i) => {
+        doc.setFontSize(10);
+        doc.text(`${i + 1}. ${item.name} (${item.category})`, 20, y);
+        doc.text(`   Anggaran: ${formatCurrency(item.budget)} | Realisasi: ${formatCurrency(item.actual || 0)}`, 20, y + 5);
+        y += 15;
+    });
+    doc.save(`${event.name.replace(/\s+/g, '_')}_Laporan.pdf`);
+    showToast('PDF berhasil diunduh');
+}
+
+// ========== Reports ==========
+let monthlyChart = null, pieChart = null;
+
+function updateReports() { renderMonthlyChart(); renderCategoryPie(); renderTimeline(); }
+
+function renderMonthlyChart() {
+    const ctx = document.getElementById('monthlyComparisonChart').getContext('2d');
+    const labels = [], incData = [], expData = [];
+    for (let i = 11; i >= 0; i--) {
+        const d = new Date(); d.setMonth(d.getMonth() - i);
+        const month = d.getMonth(), year = d.getFullYear();
+        labels.push(d.toLocaleDateString('id-ID', { month: 'short' }));
+        const monthTx = state.transactions.filter(t => { const td = new Date(t.date); return td.getMonth() === month && td.getFullYear() === year; });
+        incData.push(monthTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0));
+        expData.push(monthTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0));
+    }
+    if (monthlyChart) monthlyChart.destroy();
+    monthlyChart = new Chart(ctx, { type: 'bar', data: { labels, datasets: [{ label: 'Pemasukan', data: incData, backgroundColor: '#10b981' }, { label: 'Pengeluaran', data: expData, backgroundColor: '#ef4444' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8' } } }, scales: { x: { grid: { color: 'rgba(148,163,184,0.1)' }, ticks: { color: '#94a3b8' } }, y: { grid: { color: 'rgba(148,163,184,0.1)' }, ticks: { color: '#94a3b8', callback: v => formatCurrency(v) } } } } });
+}
+
+function renderCategoryPie() {
+    const { start, end } = getDateRange('monthly');
+    const expCats = state.categories.filter(c => c.type === 'expense');
+    const data = expCats.map(c => ({ ...c, total: state.transactions.filter(t => t.categoryId === c.id && t.type === 'expense' && new Date(t.date) >= start && new Date(t.date) <= end).reduce((s, t) => s + t.amount, 0) })).filter(c => c.total > 0);
+
+    const ctx = document.getElementById('categoryPieChart').getContext('2d');
+    if (pieChart) pieChart.destroy();
+    if (data.length) { pieChart = new Chart(ctx, { type: 'pie', data: { labels: data.map(c => c.name), datasets: [{ data: data.map(c => c.total), backgroundColor: data.map(c => c.color) }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } }); }
+
+    const legend = document.getElementById('categoryLegend');
+    const total = data.reduce((s, c) => s + c.total, 0);
+    legend.innerHTML = data.map(c => `<div class="legend-item"><div class="legend-color" style="background:${c.color}"></div><span class="legend-name">${c.icon} ${c.name}</span><span class="legend-value">${total > 0 ? Math.round((c.total / total) * 100) : 0}%</span></div>`).join('');
+}
+
+function renderTimeline() {
+    const items = [...state.savings.map(s => ({ type: 'savings', name: s.name, date: s.deadline, progress: Math.min((s.current / s.target) * 100, 100), color: s.color })), ...state.events.filter(e => !e.archived).map(e => ({ type: 'event', name: e.name, date: e.date, progress: e.budget > 0 ? Math.min((e.items.reduce((s, i) => s + (i.actual || 0), 0) / e.budget) * 100, 100) : 0, color: '#06b6d4' }))].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    const container = document.getElementById('timelineContainer');
+    if (!items.length) { container.innerHTML = '<div class="empty-state small"><p>Belum ada target atau acara</p></div>'; return; }
+    container.innerHTML = `<div class="timeline">${items.map(i => `<div class="timeline-item"><div class="timeline-type ${i.type}">${i.type === 'savings' ? 'Target' : 'Acara'}</div><div class="timeline-name">${i.name}</div><div class="timeline-date">${formatDate(i.date)}</div><div class="timeline-progress"><div class="timeline-progress-bar" style="width:${i.progress}%;background:${i.color}"></div></div></div>`).join('')}</div>`;
+}
+
+// ========== Category Management ==========
+function openCategoryModal() {
+    document.getElementById('categoryName').value = '';
+    renderIconPicker('categoryIconPicker', ICON_OPTIONS[0]);
+    renderColorPicker('categoryColorPicker', COLOR_OPTIONS[0]);
+    openModal('categoryModal');
+}
+
+function renderIconPicker(containerId, selected) {
+    document.getElementById(containerId).innerHTML = ICON_OPTIONS.map(i => `<div class="icon-option ${i === selected ? 'selected' : ''}" data-icon="${i}">${i}</div>`).join('');
+    document.querySelectorAll(`#${containerId} .icon-option`).forEach(el => el.addEventListener('click', () => { document.querySelectorAll(`#${containerId} .icon-option`).forEach(e => e.classList.remove('selected')); el.classList.add('selected'); }));
+}
+
+function saveCategory(e) {
+    e.preventDefault();
+    const name = document.getElementById('categoryName').value;
+    const icon = document.querySelector('#categoryIconPicker .icon-option.selected')?.dataset.icon || '📦';
+    const color = document.querySelector('#categoryColorPicker .color-option.selected')?.dataset.color || '#64748b';
+    if (!name) { showToast('Masukkan nama kategori', 'warning'); return; }
+    const type = document.getElementById('transactionType').value;
+    state.categories.push({ id: generateId(), name, icon, color, type });
+    saveCategories(); closeModal('categoryModal'); renderCategoryGrid(type); showToast('Kategori ditambahkan');
+}
+
+// ========== All Transactions ==========
+function openAllTransactions() {
+    populateFilters();
+    renderAllTransactions();
+    openModal('allTransactionsModal');
+}
+
+function populateFilters() {
+    const months = [...new Set(state.transactions.map(t => { const d = new Date(t.date); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; }))].sort().reverse();
+    document.getElementById('filterMonth').innerHTML = '<option value="all">Semua Bulan</option>' + months.map(m => { const [y, mo] = m.split('-'); const d = new Date(y, mo - 1); return `<option value="${m}">${d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</option>`; }).join('');
+    const cats = [...new Set(state.transactions.map(t => t.categoryId))];
+    document.getElementById('filterCategory').innerHTML = '<option value="all">Semua Kategori</option>' + cats.map(c => { const cat = state.categories.find(x => x.id === c); return cat ? `<option value="${c}">${cat.icon} ${cat.name}</option>` : ''; }).join('');
+}
+
+function renderAllTransactions() {
+    const monthFilter = document.getElementById('filterMonth').value;
+    const catFilter = document.getElementById('filterCategory').value;
+    const typeFilter = document.getElementById('filterType').value;
+
+    let filtered = state.transactions;
+    if (monthFilter !== 'all') { const [y, m] = monthFilter.split('-'); filtered = filtered.filter(t => { const d = new Date(t.date); return d.getFullYear() === parseInt(y) && d.getMonth() === parseInt(m) - 1; }); }
+    if (catFilter !== 'all') filtered = filtered.filter(t => t.categoryId === catFilter);
+    if (typeFilter !== 'all') filtered = filtered.filter(t => t.type === typeFilter);
+
+    const list = document.getElementById('allTransactionsList');
+    if (!filtered.length) { list.innerHTML = '<div class="empty-state"><p>Tidak ada transaksi</p></div>'; return; }
+    list.innerHTML = filtered.map(t => {
+        const c = state.categories.find(x => x.id === t.categoryId) || { icon: '📦', name: 'Lainnya', color: '#64748b' };
+        return `<div class="transaction-item">
+            <div class="transaction-icon" style="background:${c.color}20">${c.icon}</div>
+            <div class="transaction-info">
+                <div class="transaction-category">${c.name}</div>
+                <div class="transaction-description">${t.description || '-'}</div>
+            </div>
+            <div class="transaction-amount-col">
+                <div class="transaction-amount ${t.type}">${t.type === 'income' ? '+' : '-'}${formatCurrency(t.amount)}</div>
+                <div class="transaction-date">${formatDate(t.date)}</div>
+            </div>
+            <div class="transaction-actions">
+                <button class="btn-icon" onclick="editTransaction('${t.id}')" title="Edit">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                        <path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                </button>
+                <button class="btn-icon delete" onclick="deleteTransaction('${t.id}')" title="Hapus">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                    </svg>
+                </button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function editTransaction(id) {
+    const t = state.transactions.find(x => x.id === id);
+    if (!t) return;
+
+    // Set transaction type
+    document.getElementById('transactionType').value = t.type;
+    renderCategoryGrid(t.type);
+
+    // Set form values
+    document.getElementById('transactionAmount').value = t.amount.toLocaleString('id-ID');
+    document.getElementById('transactionDescription').value = t.description || '';
+    document.getElementById('transactionDate').value = t.date;
+
+    // Select category
+    state.selectedCategory = t.categoryId;
+    document.querySelectorAll('#categoryGrid .category-item').forEach(item => {
+        item.classList.toggle('selected', item.dataset.id === t.categoryId);
+    });
+
+    // Store editing ID
+    document.getElementById('transactionForm').dataset.editId = id;
+    document.getElementById('transactionModalTitle').textContent = 'Edit Transaksi';
+
+    closeModal('allTransactionsModal');
+    openModal('transactionModal');
+}
+
+function deleteTransaction(id) {
+    if (!confirm('Hapus transaksi ini?')) return;
+    state.transactions = state.transactions.filter(t => t.id !== id);
+    saveTransactions();
+    renderAllTransactions();
+    updateDashboard();
+    showToast('Transaksi dihapus', 'success');
+}
+
+// ========== Initialization ==========
+async function init() {
+    // Check authentication first
+    const isAuthenticated = await checkAuth();
+    if (!isAuthenticated) return;
+
+    await loadData();
+    loadTheme();
+    await loadUserInfo();
+    initNavigation();
+    initFAB();
+    initEventListeners();
+    updateDashboard();
+    loadSyncSettings();
+    initCalculators();
+}
+
+async function checkAuth() {
+    const API = window.FinansialKuAPI;
+    const { session } = await API.auth.getSession();
+    if (!session) {
+        window.location.href = 'landing.html';
+        return false;
+    }
+    return true;
+}
+
+async function loadUserInfo() {
+    const API = window.FinansialKuAPI;
+    const { data: profile } = await API.profiles.get();
+    if (profile) {
+        const nameEl = document.getElementById('settingsUserName');
+        const emailEl = document.getElementById('settingsUserEmail');
+        if (nameEl) nameEl.textContent = profile.name || 'User';
+        if (emailEl) emailEl.textContent = profile.email || '';
+    }
+}
+
+async function logout() {
+    if (confirm('Keluar dari akun Anda?')) {
+        const API = window.FinansialKuAPI;
+        await API.auth.signOut();
+        window.location.href = 'landing.html';
+    }
+}
+
+function initEventListeners() {
+    // Period buttons
+    document.querySelectorAll('.period-btn').forEach(btn => btn.addEventListener('click', () => { document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); state.currentPeriod = btn.dataset.period; updateDashboard(); }));
+
+    // Modal close buttons
+    document.querySelectorAll('.modal-overlay, .btn-close').forEach(el => el.addEventListener('click', closeAllModals));
+
+    // Forms
+    document.getElementById('transactionForm').addEventListener('submit', saveTransaction);
+    document.getElementById('budgetForm').addEventListener('submit', saveBudget);
+    document.getElementById('savingsForm').addEventListener('submit', saveSavingsGoal);
+    document.getElementById('eventForm').addEventListener('submit', saveEvent);
+    document.getElementById('eventItemForm').addEventListener('submit', saveEventItem);
+    document.getElementById('addToSavingsForm').addEventListener('submit', confirmAddToSavings);
+    document.getElementById('categoryForm').addEventListener('submit', saveCategory);
+
+    // Cancel buttons
+    document.getElementById('cancelTransaction').addEventListener('click', () => closeModal('transactionModal'));
+    document.getElementById('cancelBudget').addEventListener('click', () => closeModal('budgetModal'));
+    document.getElementById('cancelSavings').addEventListener('click', () => closeModal('savingsModal'));
+    document.getElementById('cancelEvent').addEventListener('click', () => closeModal('eventModal'));
+    document.getElementById('cancelEventItem').addEventListener('click', () => closeModal('eventItemModal'));
+    document.getElementById('cancelAddToSavings').addEventListener('click', () => closeModal('addToSavingsModal'));
+    document.getElementById('cancelCategory').addEventListener('click', () => closeModal('categoryModal'));
+
+    // Buttons
+    document.getElementById('setBudgetBtn').addEventListener('click', openBudgetModal);
+    document.getElementById('addSavingsBtn').addEventListener('click', () => openSavingsModal());
+    document.getElementById('addEventBtn').addEventListener('click', () => openEventModal());
+    document.getElementById('addCategoryBtn').addEventListener('click', openCategoryModal);
+    document.getElementById('viewAllTransactions').addEventListener('click', openAllTransactions);
+
+    // Event item category dropdown - show/hide new category input
+    document.getElementById('eventItemCategory')?.addEventListener('change', function () {
+        const newCatGroup = document.getElementById('newEventCategoryGroup');
+        if (this.value === '__new__') {
+            newCatGroup.style.display = 'block';
+            document.getElementById('newEventCategoryName').focus();
+        } else {
+            newCatGroup.style.display = 'none';
+        }
+    });
+
+    // Filters
+    ['filterMonth', 'filterCategory', 'filterType'].forEach(id => document.getElementById(id).addEventListener('change', renderAllTransactions));
+
+    // Amount formatting
+    ['transactionAmount', 'savingsTarget', 'savingsCurrent', 'eventBudget', 'eventItemBudget', 'eventItemActual', 'addToSavingsAmount'].forEach(id => document.getElementById(id).addEventListener('input', function () { formatAmountInput(this); }));
+
+    // Archived toggle
+    document.getElementById('toggleArchived')?.addEventListener('click', () => document.getElementById('archivedEventsList').classList.toggle('active'));
+
+    // Telegram sync button
+    document.getElementById('syncTelegramBtn')?.addEventListener('click', manualSyncFromTelegram);
+    document.getElementById('saveSyncSettings')?.addEventListener('click', saveSyncSettings);
+    document.getElementById('toggleSync')?.addEventListener('change', toggleSyncEnabled);
+    document.getElementById('openTelegramSettings')?.addEventListener('click', () => openModal('telegramSettingsModal'));
+    document.getElementById('closeTelegramSettings')?.addEventListener('click', () => closeModal('telegramSettingsModal'));
+    document.getElementById('closeTelegramSettingsBtn')?.addEventListener('click', () => closeModal('telegramSettingsModal'));
+
+    // AI Assistant initialization
+    loadAISettings();
+    initAIEventListeners();
+
+    // Theme toggle
+    document.getElementById('themeToggle')?.addEventListener('click', toggleTheme);
+
+    // Settings dropdown
+    document.getElementById('settingsBtn')?.addEventListener('click', toggleSettingsMenu);
+    document.getElementById('logoutBtn')?.addEventListener('click', logout);
+    document.getElementById('resetDataBtn')?.addEventListener('click', resetAllData);
+
+    // Close settings menu when clicking outside
+    document.addEventListener('click', (e) => {
+        const dropdown = document.querySelector('.settings-dropdown');
+        if (dropdown && !dropdown.contains(e.target)) {
+            document.getElementById('settingsMenu')?.classList.remove('active');
+        }
+    });
+}
+
+function toggleSettingsMenu() {
+    const menu = document.getElementById('settingsMenu');
+    menu.classList.toggle('active');
+}
+
+async function resetAllData() {
+    if (confirm('⚠️ Apakah Anda yakin ingin menghapus SEMUA data?\n\nIni akan menghapus:\n• Semua transaksi\n• Semua tabungan\n• Semua acara\n• Semua anggaran\n\nData tidak dapat dikembalikan!')) {
+        showToast('Menghapus data...', 'warning');
+
+        const API = window.FinansialKuAPI;
+
+        // Delete all user data from Supabase
+        try {
+            // Delete transactions
+            for (const t of state.transactions) {
+                await API.transactions.delete(t.id);
+            }
+            // Delete savings
+            for (const s of state.savings) {
+                await API.savings.delete(s.id);
+            }
+            // Delete events
+            for (const e of state.events) {
+                await API.events.delete(e.id);
+            }
+            // Delete custom categories (keep defaults)
+            for (const c of state.categories.filter(cat => !cat.is_default)) {
+                await API.categories.delete(c.id);
+            }
+
+            showToast('Semua data berhasil dihapus', 'success');
+
+            // Reload page
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } catch (error) {
+            showToast('Gagal menghapus data: ' + error.message, 'error');
+        }
+    }
+
+    // Close menu
+    document.getElementById('settingsMenu')?.classList.remove('active');
+}
+
+function toggleTheme() {
+    const body = document.body;
+    if (body.classList.contains('light-theme')) {
+        body.classList.remove('light-theme');
+        localStorage.setItem('theme', 'dark');
+    } else {
+        body.classList.add('light-theme');
+        localStorage.setItem('theme', 'light');
+    }
+}
+
+function loadTheme() {
+    const saved = localStorage.getItem('theme');
+    if (saved === 'light') {
+        document.body.classList.add('light-theme');
+    }
+}
+
+// ========== Telegram Sync ==========
+function loadSyncSettings() {
+    const saved = localStorage.getItem(STORAGE_KEYS.SYNC_SERVER);
+    if (saved) {
+        const settings = JSON.parse(saved);
+        state.syncServerUrl = settings.url || 'http://localhost:3001';
+        state.syncEnabled = settings.enabled || false;
+    }
+    updateSyncUI();
+    if (state.syncEnabled) startAutoSync();
+}
+
+function saveSyncSettings() {
+    const urlInput = document.getElementById('syncServerUrl');
+    if (urlInput) {
+        state.syncServerUrl = urlInput.value || 'http://localhost:3001';
+        localStorage.setItem(STORAGE_KEYS.SYNC_SERVER, JSON.stringify({
+            url: state.syncServerUrl,
+            enabled: state.syncEnabled
+        }));
+        showToast('Pengaturan sync disimpan');
+        checkSyncServerHealth();
+    }
+}
+
+function toggleSyncEnabled() {
+    const toggle = document.getElementById('toggleSync');
+    state.syncEnabled = toggle?.checked || false;
+    localStorage.setItem(STORAGE_KEYS.SYNC_SERVER, JSON.stringify({
+        url: state.syncServerUrl,
+        enabled: state.syncEnabled
+    }));
+    if (state.syncEnabled) {
+        startAutoSync();
+        showToast('Auto-sync diaktifkan');
+    } else {
+        stopAutoSync();
+        showToast('Auto-sync dinonaktifkan');
+    }
+    updateSyncUI();
+}
+
+function startAutoSync() {
+    if (state.syncInterval) clearInterval(state.syncInterval);
+    state.syncInterval = setInterval(syncFromTelegram, 30000); // Every 30 seconds
+    syncFromTelegram(); // Initial sync
+}
+
+function stopAutoSync() {
+    if (state.syncInterval) {
+        clearInterval(state.syncInterval);
+        state.syncInterval = null;
+    }
+}
+
+async function checkSyncServerHealth() {
+    try {
+        const response = await fetch(`${state.syncServerUrl}/api/health`, { method: 'GET', timeout: 5000 });
+        if (response.ok) {
+            updateSyncStatus('connected');
+            return true;
+        }
+    } catch (e) {
+        updateSyncStatus('disconnected');
+    }
+    return false;
+}
+
+function updateSyncStatus(status) {
+    const indicator = document.getElementById('syncStatus');
+    if (indicator) {
+        indicator.className = `sync-status ${status}`;
+        indicator.textContent = status === 'connected' ? 'Terhubung' : 'Tidak terhubung';
+    }
+}
+
+function updateSyncUI() {
+    const urlInput = document.getElementById('syncServerUrl');
+    const toggle = document.getElementById('toggleSync');
+    if (urlInput) urlInput.value = state.syncServerUrl;
+    if (toggle) toggle.checked = state.syncEnabled;
+}
+
+async function syncFromTelegram() {
+    if (!state.syncEnabled) return;
+
+    try {
+        const response = await fetch(`${state.syncServerUrl}/api/transactions`);
+        if (!response.ok) return;
+
+        const data = await response.json();
+        const newTransactions = data.transactions || [];
+
+        if (newTransactions.length === 0) return;
+
+        const ids = [];
+        newTransactions.forEach(t => {
+            // Check if transaction already exists (by id or originalMessage)
+            const exists = state.transactions.find(existing =>
+                existing.id === t.id ||
+                (existing.source?.startsWith('telegram') && existing.originalMessage && t.originalMessage && existing.originalMessage === t.originalMessage)
+            );
+            if (!exists) {
+                const transaction = {
+                    id: t.id || generateId(),
+                    type: t.type,
+                    amount: t.amount,
+                    categoryId: t.categoryId,
+                    description: (t.description || 'Transaksi Telegram') + ' 📱',
+                    date: t.date,
+                    source: t.source || 'telegram',
+                    originalMessage: t.originalMessage || '',
+                    createdAt: t.createdAt || new Date().toISOString()
+                };
+                state.transactions.unshift(transaction);
+                ids.push(t.id);
+            } else {
+                ids.push(t.id); // Still mark as synced
+            }
+        });
+
+        if (ids.length > 0) {
+            saveTransactions();
+            updateDashboard();
+
+            // Mark as synced on server
+            await fetch(`${state.syncServerUrl}/api/transactions/mark-synced`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids })
+            });
+
+            const newCount = newTransactions.filter(t =>
+                !state.transactions.find(existing => existing.id === t.id && existing.source !== 'telegram')
+            ).length;
+
+            if (newCount > 0) {
+                showToast(`📱 ${newCount} transaksi baru dari Telegram!`, 'success');
+            }
+        }
+    } catch (e) {
+        console.error('Sync error:', e);
+        updateSyncStatus('disconnected');
+    }
+}
+
+async function manualSyncFromTelegram() {
+    const btn = document.getElementById('syncTelegramBtn');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<svg class="spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>Menyinkronkan...';
+    }
+
+    const wasEnabled = state.syncEnabled;
+    state.syncEnabled = true;
+    await syncFromTelegram();
+    state.syncEnabled = wasEnabled;
+
+    if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-6.219-8.56"/><path d="M21 3v6h-6"/></svg>Sync Sekarang';
+    }
+
+    await checkSyncServerHealth();
+}
+
+// ========== AI Assistant ==========
+function loadAISettings() {
+    const saved = localStorage.getItem(STORAGE_KEYS.AI_SETTINGS);
+    if (saved) {
+        const settings = JSON.parse(saved);
+        state.aiApiKey = settings.apiKey || '';
+        document.getElementById('geminiApiKey').value = state.aiApiKey;
+        updateAIStatus();
+    }
+}
+
+function saveAISettings() {
+    const apiKey = document.getElementById('geminiApiKey').value.trim();
+    state.aiApiKey = apiKey;
+    localStorage.setItem(STORAGE_KEYS.AI_SETTINGS, JSON.stringify({ apiKey }));
+    updateAIStatus();
+    closeModal('aiSettingsModal');
+    showToast('Pengaturan AI tersimpan!', 'success');
+}
+
+function updateAIStatus() {
+    const statusEl = document.getElementById('aiStatus');
+    const apiStatus = document.getElementById('aiApiStatus');
+
+    if (state.aiApiKey) {
+        statusEl.className = 'ai-status connected';
+        statusEl.querySelector('.status-text').textContent = 'Terhubung - Siap digunakan';
+        if (apiStatus) {
+            apiStatus.className = 'ai-api-status connected';
+            apiStatus.textContent = 'Terkonfigurasi';
+        }
+    } else {
+        statusEl.className = 'ai-status';
+        statusEl.querySelector('.status-text').textContent = 'Belum dikonfigurasi - Klik ⚙️ untuk setup API Key';
+        if (apiStatus) {
+            apiStatus.className = 'ai-api-status';
+            apiStatus.textContent = 'Belum dikonfigurasi';
+        }
+    }
+}
+
+async function testAIKey() {
+    const apiKey = document.getElementById('geminiApiKey').value.trim();
+    const statusEl = document.getElementById('aiApiStatus');
+
+    if (!apiKey) {
+        showToast('Masukkan API Key terlebih dahulu', 'error');
+        return;
+    }
+
+    statusEl.className = 'ai-api-status';
+    statusEl.textContent = 'Testing...';
+
+    try {
+        const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: 'Halo' }] }]
+                })
+            }
+        );
+
+        if (response.ok) {
+            statusEl.className = 'ai-api-status connected';
+            statusEl.textContent = 'Valid ✓';
+            showToast('API Key valid!', 'success');
+        } else {
+            statusEl.className = 'ai-api-status error';
+            statusEl.textContent = 'Invalid';
+            showToast('API Key tidak valid', 'error');
+        }
+    } catch (e) {
+        statusEl.className = 'ai-api-status error';
+        statusEl.textContent = 'Error';
+        showToast('Error: ' + e.message, 'error');
+    }
+}
+
+function getFinancialContext() {
+    const transactions = state.transactions;
+    const now = new Date();
+    const thisMonth = now.toISOString().slice(0, 7);
+
+    const monthlyTx = transactions.filter(t => t.date.startsWith(thisMonth));
+
+    const income = monthlyTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+    const expense = monthlyTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+
+    // Category breakdown
+    const categoryTotals = {};
+    monthlyTx.filter(t => t.type === 'expense').forEach(t => {
+        categoryTotals[t.categoryId] = (categoryTotals[t.categoryId] || 0) + t.amount;
+    });
+
+    const sorted = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1]);
+    const topCategories = sorted.slice(0, 5).map(([cat, amount]) => {
+        const catInfo = state.categories.find(c => c.id === cat) || { name: cat };
+        return `${catInfo.name}: Rp ${amount.toLocaleString('id-ID')}`;
+    });
+
+    // Recent transactions
+    const recent = transactions.slice(0, 10).map(t =>
+        `${t.date}: ${t.type === 'income' ? '+' : '-'}Rp ${t.amount.toLocaleString('id-ID')} (${t.description || t.categoryId})`
+    );
+
+    return {
+        totalIncome: income,
+        totalExpense: expense,
+        balance: income - expense,
+        topCategories,
+        recentTransactions: recent,
+        savingsRatio: income > 0 ? Math.round(((income - expense) / income) * 100) : 0,
+        budgets: state.budgets,
+        savingsGoals: state.savings
+    };
+}
+
+function buildSystemPrompt(action) {
+    const ctx = getFinancialContext();
+
+    let base = `Kamu adalah asisten keuangan pribadi yang ramah dan helpful. Jawab dalam bahasa Indonesia yang natural.
+
+Data keuangan bulan ini:
+- Total Pemasukan: Rp ${ctx.totalIncome.toLocaleString('id-ID')}
+- Total Pengeluaran: Rp ${ctx.totalExpense.toLocaleString('id-ID')}
+- Saldo: Rp ${ctx.balance.toLocaleString('id-ID')}
+- Rasio Tabungan: ${ctx.savingsRatio}%
+
+Top 5 Kategori Pengeluaran:
+${ctx.topCategories.join('\n')}
+
+Transaksi Terakhir:
+${ctx.recentTransactions.slice(0, 5).join('\n')}
+`;
+
+    if (action === 'analyze') {
+        base += `\nBerikan analisis lengkap tentang pola pengeluaran user. Identifikasi:
+1. Kategori yang paling banyak menghabiskan uang
+2. Apakah rasio tabungan sehat (minimal 20%)
+3. Trend yang perlu diwaspadai
+4. Skor kesehatan keuangan (1-10)`;
+    } else if (action === 'budget') {
+        base += `\nBerikan saran budget yang realistis berdasarkan data keuangan user. Sertakan:
+1. Alokasi ideal per kategori
+2. Cara mengurangi pengeluaran terbesar
+3. Target tabungan yang achievable`;
+    } else if (action === 'tips') {
+        base += `\nBerikan 5 tips hemat yang specific dan actionable berdasarkan pola pengeluaran user. Tips harus praktis dan bisa langsung diterapkan.`;
+    }
+
+    return base;
+}
+
+function addMessage(role, content) {
+    const container = document.getElementById('aiChatMessages');
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `ai-message ${role}`;
+
+    const avatarSvg = role === 'ai'
+        ? '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>'
+        : '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>';
+
+    msgDiv.innerHTML = `
+        <div class="ai-avatar">${avatarSvg}</div>
+        <div class="ai-message-content">${formatAIResponse(content)}</div>
+    `;
+
+    container.appendChild(msgDiv);
+    container.scrollTop = container.scrollHeight;
+}
+
+function addTypingIndicator() {
+    const container = document.getElementById('aiChatMessages');
+    const typingDiv = document.createElement('div');
+    typingDiv.className = 'ai-message ai';
+    typingDiv.id = 'ai-typing';
+    typingDiv.innerHTML = `
+        <div class="ai-avatar"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg></div>
+        <div class="ai-message-content"><div class="ai-typing"><span></span><span></span><span></span></div></div>
+    `;
+    container.appendChild(typingDiv);
+    container.scrollTop = container.scrollHeight;
+}
+
+function removeTypingIndicator() {
+    const typing = document.getElementById('ai-typing');
+    if (typing) typing.remove();
+}
+
+function formatAIResponse(text) {
+    // Convert markdown-like formatting to HTML
+    return text
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+        .replace(/^- (.+)$/gm, '<li>$1</li>')
+        .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
+        .replace(/<\/ul>\s*<ul>/g, '')
+        .replace(/\n\n/g, '</p><p>')
+        .replace(/^(.+)$/gm, (match) => match.startsWith('<') ? match : `<p>${match}</p>`)
+        .replace(/<p><\/p>/g, '')
+        .replace(/<p>(<h3>)/g, '$1')
+        .replace(/(<\/h3>)<\/p>/g, '$1');
+}
+
+async function sendToGemini(userMessage, systemPrompt = '') {
+    if (!state.aiApiKey) {
+        showToast('Setup API Key terlebih dahulu di pengaturan', 'error');
+        return null;
+    }
+
+    const messages = [];
+    if (systemPrompt) {
+        messages.push({ role: 'user', parts: [{ text: systemPrompt }] });
+        messages.push({ role: 'model', parts: [{ text: 'Baik, saya mengerti. Saya siap membantu analisis keuangan Anda.' }] });
+    }
+    messages.push({ role: 'user', parts: [{ text: userMessage }] });
+
+    try {
+        const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${state.aiApiKey}`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: messages,
+                    generationConfig: {
+                        temperature: 0.7,
+                        maxOutputTokens: 2048
+                    }
+                })
+            }
+        );
+
+        const data = await response.json();
+
+        if (data.candidates && data.candidates[0]) {
+            return data.candidates[0].content.parts[0].text;
+        } else {
+            throw new Error(data.error?.message || 'Unknown error');
+        }
+    } catch (e) {
+        console.error('Gemini API error:', e);
+        showToast('Error: ' + e.message, 'error');
+        return null;
+    }
+}
+
+async function handleAIAction(action) {
+    const prompts = {
+        'analyze': 'Analisis pola pengeluaran saya',
+        'budget': 'Berikan saran budget untuk saya',
+        'tips': 'Berikan tips hemat berdasarkan data saya'
+    };
+
+    const userMessage = prompts[action] || action;
+    addMessage('user', userMessage);
+    addTypingIndicator();
+
+    const systemPrompt = buildSystemPrompt(action);
+    const response = await sendToGemini(userMessage, systemPrompt);
+
+    removeTypingIndicator();
+
+    if (response) {
+        addMessage('ai', response);
+    } else {
+        addMessage('ai', 'Maaf, terjadi kesalahan. Pastikan API Key sudah dikonfigurasi dengan benar.');
+    }
+}
+
+async function handleAIChat() {
+    const input = document.getElementById('aiChatInput');
+    const message = input.value.trim();
+
+    if (!message) return;
+
+    input.value = '';
+    addMessage('user', message);
+    addTypingIndicator();
+
+    const systemPrompt = buildSystemPrompt('chat');
+    const response = await sendToGemini(message, systemPrompt);
+
+    removeTypingIndicator();
+
+    if (response) {
+        addMessage('ai', response);
+    } else {
+        addMessage('ai', 'Maaf, terjadi kesalahan. Silakan coba lagi.');
+    }
+}
+
+function initAIEventListeners() {
+    // Settings modal
+    document.getElementById('aiSettingsBtn')?.addEventListener('click', () => openModal('aiSettingsModal'));
+    document.getElementById('closeAISettings')?.addEventListener('click', () => closeModal('aiSettingsModal'));
+    document.getElementById('closeAISettingsBtn')?.addEventListener('click', () => closeModal('aiSettingsModal'));
+    document.getElementById('saveAISettings')?.addEventListener('click', saveAISettings);
+    document.getElementById('testAIKey')?.addEventListener('click', testAIKey);
+
+    // Quick actions
+    document.querySelectorAll('.ai-action-btn').forEach(btn => {
+        btn.addEventListener('click', () => handleAIAction(btn.dataset.action));
+    });
+
+    // Chat input
+    document.getElementById('aiSendBtn')?.addEventListener('click', handleAIChat);
+    document.getElementById('aiChatInput')?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleAIChat();
+    });
+}
+
+// ========== Financial Calculators ==========
+
+function initCalculators() {
+    // Calculator tab switching
+    document.querySelectorAll('.calc-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.calc-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.calc-content').forEach(c => c.classList.remove('active'));
+            tab.classList.add('active');
+            document.getElementById(`calc-${tab.dataset.calc}`).classList.add('active');
+        });
+    });
+
+    // Budget rule toggle for custom inputs
+    document.querySelectorAll('input[name="budgetRule"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+            const customInputs = document.getElementById('customRuleInputs');
+            customInputs.style.display = radio.value === 'custom' ? 'block' : 'none';
+        });
+    });
+
+    // Emergency fund months slider
+    const monthsSlider = document.getElementById('calcEmergencyMonths');
+    if (monthsSlider) {
+        monthsSlider.addEventListener('input', () => {
+            document.getElementById('emergencyMonthsDisplay').textContent = monthsSlider.value;
+        });
+    }
+
+    // Investment checkbox toggle
+    const investmentCheckbox = document.getElementById('calcHasInvestment');
+    if (investmentCheckbox) {
+        investmentCheckbox.addEventListener('change', () => {
+            document.getElementById('investmentFields').style.display = investmentCheckbox.checked ? 'block' : 'none';
+        });
+    }
+
+    // Format inputs
+    ['calcBudgetIncome', 'calcSavingsTarget', 'calcSavingsCurrent', 'calcSavingsMonthly',
+        'calcRetirementExpense', 'calcEmergencyExpense', 'calcEmergencyCurrent', 'calcEducationCost'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('input', function () { formatAmountInput(this); });
+        });
+}
+
+// Budget Calculator
+function calculateBudget() {
+    const income = parseAmount(document.getElementById('calcBudgetIncome').value);
+    if (!income) { showToast('Masukkan pendapatan', 'warning'); return; }
+
+    const rule = document.querySelector('input[name="budgetRule"]:checked').value;
+    let allocations = [];
+
+    if (rule === '50-30-20') {
+        allocations = [
+            { name: 'Kebutuhan', percent: 50, color: '#ef4444' },
+            { name: 'Keinginan', percent: 30, color: '#f59e0b' },
+            { name: 'Tabungan', percent: 20, color: '#10b981' }
+        ];
+    } else if (rule === '70-20-10') {
+        allocations = [
+            { name: 'Kebutuhan', percent: 70, color: '#ef4444' },
+            { name: 'Tabungan', percent: 20, color: '#10b981' },
+            { name: 'Investasi', percent: 10, color: '#8b5cf6' }
+        ];
+    } else if (rule === '80-20') {
+        allocations = [
+            { name: 'Pengeluaran', percent: 80, color: '#f59e0b' },
+            { name: 'Tabungan', percent: 20, color: '#10b981' }
+        ];
+    } else {
+        const needs = parseInt(document.getElementById('customNeeds').value) || 0;
+        const wants = parseInt(document.getElementById('customWants').value) || 0;
+        const saves = parseInt(document.getElementById('customSavings').value) || 0;
+
+        if (needs + wants + saves !== 100) {
+            showToast('Total persentase harus 100%', 'warning');
+            return;
+        }
+        allocations = [
+            { name: 'Kebutuhan', percent: needs, color: '#ef4444' },
+            { name: 'Keinginan', percent: wants, color: '#f59e0b' },
+            { name: 'Tabungan', percent: saves, color: '#10b981' }
+        ];
+    }
+
+    const resultItems = document.getElementById('budgetResultItems');
+    resultItems.innerHTML = allocations.map(a => `
+        <div class="result-item">
+            <div class="result-label" style="color: ${a.color}">
+                <span class="result-icon" style="background: ${a.color}20; color: ${a.color}">${a.percent}%</span>
+                ${a.name}
+            </div>
+            <div class="result-value">${formatCurrency(income * a.percent / 100)}</div>
+        </div>
+    `).join('');
+
+    document.getElementById('budgetResult').style.display = 'block';
+    showToast('Anggaran berhasil dihitung!', 'success');
+}
+
+// Savings Calculator
+function calculateSavings() {
+    const target = parseAmount(document.getElementById('calcSavingsTarget').value);
+    const current = parseAmount(document.getElementById('calcSavingsCurrent').value) || 0;
+    const monthly = parseAmount(document.getElementById('calcSavingsMonthly').value);
+
+    if (!target || !monthly) { showToast('Lengkapi semua field', 'warning'); return; }
+
+    const remaining = target - current;
+    if (remaining <= 0) {
+        document.getElementById('savingsResult').innerHTML = `
+            <div class="result-highlight success">
+                🎉 Selamat! Target sudah tercapai!
+            </div>
+        `;
+        document.getElementById('savingsResult').style.display = 'block';
+        return;
+    }
+
+    const months = Math.ceil(remaining / monthly);
+    const years = Math.floor(months / 12);
+    const remainingMonths = months % 12;
+    const timeText = years > 0 ? `${years} tahun ${remainingMonths} bulan` : `${months} bulan`;
+    const targetDate = new Date();
+    targetDate.setMonth(targetDate.getMonth() + months);
+
+    document.getElementById('savingsResult').innerHTML = `
+        <div class="result-highlight">
+            ⏱️ Waktu yang dibutuhkan: <strong>${timeText}</strong>
+        </div>
+        <div class="result-item">
+            <span>Sisa yang harus ditabung</span>
+            <span>${formatCurrency(remaining)}</span>
+        </div>
+        <div class="result-item">
+            <span>Estimasi tercapai</span>
+            <span>${targetDate.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</span>
+        </div>
+    `;
+    document.getElementById('savingsResult').style.display = 'block';
+    showToast('Perhitungan selesai!', 'success');
+}
+
+// Retirement Calculator
+function calculateRetirement() {
+    const currentAge = parseInt(document.getElementById('calcRetirementAge').value);
+    const retireAge = parseInt(document.getElementById('calcRetirementTarget').value);
+    const lifeExpect = parseInt(document.getElementById('calcLifeExpectancy').value);
+    const monthlyExpense = parseAmount(document.getElementById('calcRetirementExpense').value);
+    const inflationRate = (parseFloat(document.getElementById('calcRetirementInflation').value) || 5) / 100;
+    const hasInvestment = document.getElementById('calcHasInvestment').checked;
+    const investmentReturn = hasInvestment ? (parseFloat(document.getElementById('calcInvestmentReturn').value) || 8) / 100 : 0;
+
+    if (!currentAge || !retireAge || !lifeExpect || !monthlyExpense) {
+        showToast('Lengkapi semua field', 'warning'); return;
+    }
+
+    const yearsToRetire = retireAge - currentAge;
+    const retirementYears = lifeExpect - retireAge;
+
+    // Calculate future monthly expense with inflation
+    const futureMonthlyExpense = monthlyExpense * Math.pow(1 + inflationRate, yearsToRetire);
+
+    // Calculate total needed during retirement (with yearly inflation)
+    let totalNeeded = 0;
+    for (let i = 0; i < retirementYears; i++) {
+        const yearlyExpense = futureMonthlyExpense * 12 * Math.pow(1 + inflationRate, i);
+        totalNeeded += yearlyExpense;
+    }
+
+    // Calculate monthly savings needed
+    let monthlyToSave;
+    if (hasInvestment && investmentReturn > 0) {
+        // With investment return (compound interest formula)
+        // FV = PMT × ((1 + r)^n - 1) / r
+        // PMT = FV × r / ((1 + r)^n - 1)
+        const monthlyReturn = investmentReturn / 12;
+        const months = yearsToRetire * 12;
+        monthlyToSave = totalNeeded * monthlyReturn / (Math.pow(1 + monthlyReturn, months) - 1);
+    } else {
+        monthlyToSave = totalNeeded / (yearsToRetire * 12);
+    }
+
+    const savings = hasInvestment ? 'dengan investasi' : 'tanpa investasi';
+
+    document.getElementById('retirementResult').innerHTML = `
+        <div class="result-highlight">
+            💰 Total Dana Pensiun: <strong>${formatCurrency(totalNeeded)}</strong>
+        </div>
+        <div class="result-item">
+            <span>Waktu persiapan</span>
+            <span>${yearsToRetire} tahun</span>
+        </div>
+        <div class="result-item">
+            <span>Masa pensiun</span>
+            <span>${retirementYears} tahun</span>
+        </div>
+        <div class="result-item">
+            <span>Pengeluaran bulanan saat pensiun</span>
+            <span>${formatCurrency(futureMonthlyExpense)}</span>
+        </div>
+        <div class="result-item highlight">
+            <span>Tabungan per bulan (${savings})</span>
+            <span>${formatCurrency(monthlyToSave)}</span>
+        </div>
+        <p class="result-note">* Perhitungan dengan inflasi ${(inflationRate * 100).toFixed(0)}%/tahun${hasInvestment ? ` dan return investasi ${(investmentReturn * 100).toFixed(0)}%/tahun` : ''}</p>
+    `;
+    document.getElementById('retirementResult').style.display = 'block';
+    showToast('Perhitungan selesai!', 'success');
+}
+
+// Emergency Fund Calculator
+function calculateEmergency() {
+    const monthlyExpense = parseAmount(document.getElementById('calcEmergencyExpense').value);
+    const months = parseInt(document.getElementById('calcEmergencyMonths').value);
+    const current = parseAmount(document.getElementById('calcEmergencyCurrent').value) || 0;
+
+    if (!monthlyExpense) { showToast('Masukkan pengeluaran bulanan', 'warning'); return; }
+
+    const target = monthlyExpense * months;
+    const remaining = Math.max(0, target - current);
+    const progress = Math.min(100, (current / target) * 100);
+
+    let status = '🔴 Belum Aman';
+    if (progress >= 100) status = '🟢 Aman!';
+    else if (progress >= 50) status = '🟡 Cukup';
+
+    document.getElementById('emergencyResult').innerHTML = `
+        <div class="result-highlight">
+            🚨 Target Dana Darurat: <strong>${formatCurrency(target)}</strong>
+        </div>
+        <div class="progress-bar">
+            <div class="progress-fill" style="width: ${progress}%"></div>
+        </div>
+        <div class="result-item">
+            <span>Dana saat ini</span>
+            <span>${formatCurrency(current)} (${progress.toFixed(0)}%)</span>
+        </div>
+        <div class="result-item">
+            <span>Masih kurang</span>
+            <span>${formatCurrency(remaining)}</span>
+        </div>
+        <div class="result-item highlight">
+            <span>Status</span>
+            <span>${status}</span>
+        </div>
+    `;
+    document.getElementById('emergencyResult').style.display = 'block';
+    showToast('Perhitungan selesai!', 'success');
+}
+
+// Education Fund Calculator
+function calculateEducation() {
+    const childAge = parseInt(document.getElementById('calcChildAge').value);
+    const collegeAge = parseInt(document.getElementById('calcCollegeAge').value);
+    const currentCost = parseAmount(document.getElementById('calcEducationCost').value);
+    const duration = parseInt(document.getElementById('calcEducationYears').value);
+    const inflation = (parseInt(document.getElementById('calcEducationInflation').value) || 10) / 100;
+
+    if (!childAge && childAge !== 0 || !collegeAge || !currentCost || !duration) {
+        showToast('Lengkapi semua field', 'warning'); return;
+    }
+
+    const yearsToCollege = collegeAge - childAge;
+
+    // Calculate future cost with inflation for each year
+    let totalFutureCost = 0;
+    for (let i = 0; i < duration; i++) {
+        const yearCost = currentCost * Math.pow(1 + inflation, yearsToCollege + i);
+        totalFutureCost += yearCost;
+    }
+
+    const monthlyToSave = totalFutureCost / (yearsToCollege * 12);
+    const firstYearCost = currentCost * Math.pow(1 + inflation, yearsToCollege);
+
+    document.getElementById('educationResult').innerHTML = `
+        <div class="result-highlight">
+            🎓 Total Biaya Pendidikan: <strong>${formatCurrency(totalFutureCost)}</strong>
+        </div>
+        <div class="result-item">
+            <span>Waktu persiapan</span>
+            <span>${yearsToCollege} tahun</span>
+        </div>
+        <div class="result-item">
+            <span>Biaya tahun pertama kuliah</span>
+            <span>${formatCurrency(firstYearCost)}</span>
+        </div>
+        <div class="result-item highlight">
+            <span>Tabungan per bulan</span>
+            <span>${formatCurrency(monthlyToSave)}</span>
+        </div>
+        <p class="result-note">* Perhitungan dengan asumsi inflasi ${(inflation * 100).toFixed(0)}% per tahun</p>
+    `;
+    document.getElementById('educationResult').style.display = 'block';
+    showToast('Perhitungan selesai!', 'success');
+}
+
+document.addEventListener('DOMContentLoaded', init);
+
+
+
+
+

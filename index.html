@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinansialKu - Atur Keuangan, Wujudkan Mimpi</title>
+    <meta name="description"
+        content="Aplikasi keuangan pribadi yang intuitif untuk mencatat, merencanakan, dan mencapai tujuan keuangan Anda.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                        <path d="M2 17l10 5 10-5" />
+                        <path d="M2 12l10 5 10-5" />
+                    </svg>
+                </div>
+                <div class="logo-text">
+                    <h1>FinansialKu</h1>
+                    <span class="tagline">Atur Keuangan, Wujudkan Mimpi</span>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="btn-icon telegram-sync" id="syncTelegramBtn" title="Sync dari Telegram">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 12a9 9 0 11-6.219-8.56" />
+                        <path d="M21 3v6h-6" />
+                    </svg>
+                </button>
+                <button class="btn-icon" id="openTelegramSettings" title="Pengaturan Telegram">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z" />
+                    </svg>
+                </button>
+                <button class="btn-icon" id="themeToggle" title="Toggle Theme">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="5" />
+                        <path
+                            d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+                    </svg>
+                </button>
+                <div class="settings-dropdown">
+                    <button class="btn-icon settings-btn" id="settingsBtn" title="Pengaturan">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3" />
+                            <path
+                                d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
+                        </svg>
+                    </button>
+                    <div class="settings-menu" id="settingsMenu">
+                        <div class="settings-header">
+                            <span class="settings-user-name" id="settingsUserName">User</span>
+                            <span class="settings-user-email" id="settingsUserEmail">user@email.com</span>
+                        </div>
+                        <div class="settings-divider"></div>
+                        <button class="settings-item" id="resetDataBtn" onclick="resetAllData()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="1 4 1 10 7 10" />
+                                <path d="M3.51 15a9 9 0 102.13-9.36L1 10" />
+                            </svg>
+                            Reset Semua Data
+                        </button>
+                        <button class="settings-item logout" id="logoutBtn" onclick="logout()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+                                <polyline points="16 17 21 12 16 7" />
+                                <line x1="21" y1="12" x2="9" y2="12" />
+                            </svg>
+                            Keluar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="main-nav">
+            <button class="nav-item active" data-tab="dashboard">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="9" />
+                    <rect x="14" y="3" width="7" height="5" />
+                    <rect x="14" y="12" width="7" height="9" />
+                    <rect x="3" y="16" width="7" height="5" />
+                </svg>
+                <span>Dasbor</span>
+            </button>
+            <button class="nav-item" data-tab="planning">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                    <polyline points="22 4 12 14.01 9 11.01" />
+                </svg>
+                <span>Rencana</span>
+            </button>
+            <button class="nav-item" data-tab="events">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                </svg>
+                <span>Acara</span>
+            </button>
+            <button class="nav-item" data-tab="reports">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="20" x2="18" y2="10" />
+                    <line x1="12" y1="20" x2="12" y2="4" />
+                    <line x1="6" y1="20" x2="6" y2="14" />
+                </svg>
+                <span>Laporan</span>
+            </button>
+            <button class="nav-item" data-tab="aiAssistant">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3" />
+                    <path
+                        d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" />
+                </svg>
+                <span>AI</span>
+            </button>
+            <button class="nav-item" data-tab="calculator">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="4" y="2" width="16" height="20" rx="2" />
+                    <line x1="8" y1="6" x2="16" y2="6" />
+                    <line x1="8" y1="10" x2="10" y2="10" />
+                    <line x1="14" y1="10" x2="16" y2="10" />
+                    <line x1="8" y1="14" x2="10" y2="14" />
+                    <line x1="14" y1="14" x2="16" y2="14" />
+                    <line x1="8" y1="18" x2="10" y2="18" />
+                    <line x1="14" y1="18" x2="16" y2="18" />
+                </svg>
+                <span>Kalkulator</span>
+            </button>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard Tab -->
+            <section class="tab-content active" id="dashboard">
+                <div class="section-header">
+                    <h2>Dasbor Keuangan</h2>
+                    <div class="period-selector">
+                        <button class="period-btn active" data-period="daily">Hari Ini</button>
+                        <button class="period-btn" data-period="weekly">Minggu Ini</button>
+                        <button class="period-btn" data-period="monthly">Bulan Ini</button>
+                    </div>
+                </div>
+
+                <!-- Summary Cards -->
+                <div class="summary-cards">
+                    <div class="summary-card income">
+                        <div class="card-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="19" x2="12" y2="5" />
+                                <polyline points="5 12 12 5 19 12" />
+                            </svg>
+                        </div>
+                        <div class="card-content">
+                            <span class="card-label">Pemasukan</span>
+                            <span class="card-value" id="totalIncome">Rp 0</span>
+                        </div>
+                    </div>
+                    <div class="summary-card expense">
+                        <div class="card-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19" />
+                                <polyline points="19 12 12 19 5 12" />
+                            </svg>
+                        </div>
+                        <div class="card-content">
+                            <span class="card-label">Pengeluaran</span>
+                            <span class="card-value" id="totalExpense">Rp 0</span>
+                        </div>
+                    </div>
+                    <div class="summary-card balance">
+                        <div class="card-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10" />
+                                <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" />
+                                <path d="M12 18V6" />
+                            </svg>
+                        </div>
+                        <div class="card-content">
+                            <span class="card-label">Saldo</span>
+                            <span class="card-value" id="totalBalance">Rp 0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chart Section -->
+                <div class="chart-container glass-card">
+                    <h3>Tren 7 Hari Terakhir</h3>
+                    <canvas id="weeklyChart"></canvas>
+                </div>
+
+                <!-- Recent Transactions -->
+                <div class="transactions-section glass-card">
+                    <div class="section-title">
+                        <h3>Transaksi Terakhir</h3>
+                        <button class="btn-text" id="viewAllTransactions">Lihat Semua</button>
+                    </div>
+                    <div class="transactions-list" id="transactionsList">
+                        <div class="empty-state">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path
+                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                            <p>Belum ada transaksi</p>
+                            <span>Tekan tombol + untuk menambah transaksi</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Planning Tab -->
+            <section class="tab-content" id="planning">
+                <div class="section-header">
+                    <h2>Rencana & Target</h2>
+                </div>
+
+                <!-- Budget Section -->
+                <div class="budget-section">
+                    <div class="section-title">
+                        <h3>Anggaran Bulanan</h3>
+                        <button class="btn-primary btn-small" id="setBudgetBtn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                            </svg>
+                            Atur Anggaran
+                        </button>
+                    </div>
+                    <div class="budget-overview glass-card">
+                        <div class="budget-chart-container">
+                            <canvas id="budgetDonutChart"></canvas>
+                            <div class="budget-center-text">
+                                <span class="budget-used" id="budgetUsedPercent">0%</span>
+                                <span class="budget-label">Terpakai</span>
+                            </div>
+                        </div>
+                        <div class="budget-categories" id="budgetCategoriesList">
+                            <div class="empty-state small">
+                                <p>Belum ada anggaran</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Savings Goals Section -->
+                <div class="savings-section">
+                    <div class="section-title">
+                        <h3>Target Tabungan</h3>
+                        <button class="btn-primary btn-small" id="addSavingsBtn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19" />
+                                <line x1="5" y1="12" x2="19" y2="12" />
+                            </svg>
+                            Tambah Target
+                        </button>
+                    </div>
+                    <div class="savings-grid" id="savingsGoalsList">
+                        <div class="empty-state">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                            </svg>
+                            <p>Belum ada target tabungan</p>
+                            <span>Buat target pertama Anda!</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Events Tab -->
+            <section class="tab-content" id="events">
+                <div class="section-header">
+                    <h2>Perencanaan Acara</h2>
+                    <button class="btn-primary" id="addEventBtn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19" />
+                            <line x1="5" y1="12" x2="19" y2="12" />
+                        </svg>
+                        Buat Acara Baru
+                    </button>
+                </div>
+
+                <!-- Active Events -->
+                <div class="events-grid" id="eventsList">
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                            <line x1="16" y1="2" x2="16" y2="6" />
+                            <line x1="8" y1="2" x2="8" y2="6" />
+                            <line x1="3" y1="10" x2="21" y2="10" />
+                            <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01" />
+                        </svg>
+                        <p>Belum ada acara</p>
+                        <span>Rencanakan acara spesial Anda!</span>
+                    </div>
+                </div>
+
+                <!-- Archived Events -->
+                <div class="archived-section" id="archivedSection" style="display: none;">
+                    <div class="section-title">
+                        <h3>Acara Selesai</h3>
+                        <button class="btn-text" id="toggleArchived">
+                            <span>Tampilkan</span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6 9 12 15 18 9" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="archived-grid" id="archivedEventsList"></div>
+                </div>
+            </section>
+
+            <!-- Reports Tab -->
+            <section class="tab-content" id="reports">
+                <div class="section-header">
+                    <h2>Analisis & Laporan</h2>
+                </div>
+
+                <!-- Monthly Comparison Chart -->
+                <div class="chart-container glass-card">
+                    <h3>Perbandingan Bulanan</h3>
+                    <canvas id="monthlyComparisonChart"></canvas>
+                </div>
+
+                <!-- Category Breakdown -->
+                <div class="chart-container glass-card">
+                    <h3>Pengeluaran per Kategori</h3>
+                    <div class="pie-chart-wrapper">
+                        <canvas id="categoryPieChart"></canvas>
+                        <div class="category-legend" id="categoryLegend"></div>
+                    </div>
+                </div>
+
+                <!-- Timeline -->
+                <div class="timeline-section glass-card">
+                    <h3>Timeline Target & Acara</h3>
+                    <div class="timeline-container" id="timelineContainer">
+                        <div class="empty-state small">
+                            <p>Belum ada target atau acara</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- AI Assistant Tab -->
+            <section class="tab-content" id="aiAssistant">
+                <div class="section-header">
+                    <h2>Asisten AI Keuangan</h2>
+                    <button class="btn-icon" id="aiSettingsBtn" title="Pengaturan AI">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3" />
+                            <path
+                                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- AI Chat Container -->
+                <div class="ai-chat-container glass-card">
+                    <div class="ai-chat-messages" id="aiChatMessages">
+                        <div class="ai-message ai">
+                            <div class="ai-avatar">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path
+                                        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
+                                </svg>
+                            </div>
+                            <div class="ai-message-content">
+                                <p>Halo! Saya asisten keuangan AI Anda. 👋</p>
+                                <p>Saya bisa membantu Anda:</p>
+                                <ul>
+                                    <li>📊 Menganalisis pola pengeluaran</li>
+                                    <li>💡 Memberikan saran budget</li>
+                                    <li>💰 Tips menghemat uang</li>
+                                </ul>
+                                <p>Pilih aksi cepat di bawah atau ketik pertanyaan Anda!</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="ai-quick-actions">
+                        <button class="ai-action-btn" data-action="analyze">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="20" x2="18" y2="10" />
+                                <line x1="12" y1="20" x2="12" y2="4" />
+                                <line x1="6" y1="20" x2="6" y2="14" />
+                            </svg>
+                            Analisis
+                        </button>
+                        <button class="ai-action-btn" data-action="budget">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10" />
+                                <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" />
+                                <path d="M12 6v2m0 8v2" />
+                            </svg>
+                            Saran Budget
+                        </button>
+                        <button class="ai-action-btn" data-action="tips">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 18V5l12-2v13" />
+                                <circle cx="6" cy="18" r="3" />
+                                <circle cx="18" cy="16" r="3" />
+                            </svg>
+                            Tips Hemat
+                        </button>
+                    </div>
+
+                    <!-- Chat Input -->
+                    <div class="ai-chat-input">
+                        <input type="text" id="aiChatInput" placeholder="Tanya tentang keuangan Anda..." />
+                        <button class="btn-primary" id="aiSendBtn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="22" y1="2" x2="11" y2="13" />
+                                <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- AI Status -->
+                <div class="ai-status" id="aiStatus">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Belum dikonfigurasi - Klik ⚙️ untuk setup API Key</span>
+                </div>
+            </section>
+
+            <!-- Calculator Tab -->
+            <section class="tab-content" id="calculator">
+                <div class="section-header">
+                    <h2>🧮 Kalkulator Finansial</h2>
+                </div>
+
+                <!-- Calculator Tabs -->
+                <div class="calc-tabs">
+                    <button class="calc-tab active" data-calc="budget">📊 Anggaran</button>
+                    <button class="calc-tab" data-calc="savings">💰 Tabungan</button>
+                    <button class="calc-tab" data-calc="retirement">🏖️ Pensiun</button>
+                    <button class="calc-tab" data-calc="emergency">🚨 Dana Darurat</button>
+                    <button class="calc-tab" data-calc="education">🎓 Pendidikan</button>
+                </div>
+
+                <!-- Budget Calculator -->
+                <div class="calc-content active" id="calc-budget">
+                    <div class="calc-card glass-card">
+                        <h3>📊 Kalkulator Anggaran</h3>
+                        <p class="calc-desc">Hitung alokasi anggaran ideal berdasarkan pendapatan Anda</p>
+
+                        <div class="form-group">
+                            <label>Pendapatan Bulanan</label>
+                            <div class="amount-input">
+                                <span class="currency">Rp</span>
+                                <input type="text" id="calcBudgetIncome" placeholder="10.000.000">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Pilih Metode Anggaran</label>
+                            <div class="budget-rules">
+                                <label class="rule-option">
+                                    <input type="radio" name="budgetRule" value="50-30-20" checked>
+                                    <div class="rule-card">
+                                        <strong>50/30/20</strong>
+                                        <span>Kebutuhan 50% • Keinginan 30% • Tabungan 20%</span>
+                                    </div>
+                                </label>
+                                <label class="rule-option">
+                                    <input type="radio" name="budgetRule" value="70-20-10">
+                                    <div class="rule-card">
+                                        <strong>70/20/10</strong>
+                                        <span>Kebutuhan 70% • Tabungan 20% • Investasi 10%</span>
+                                    </div>
+                                </label>
+                                <label class="rule-option">
+                                    <input type="radio" name="budgetRule" value="80-20">
+                                    <div class="rule-card">
+                                        <strong>80/20</strong>
+                                        <span>Pengeluaran 80% • Tabungan 20%</span>
+                                    </div>
+                                </label>
+                                <label class="rule-option">
+                                    <input type="radio" name="budgetRule" value="custom">
+                                    <div class="rule-card">
+                                        <strong>Custom</strong>
+                                        <span>Tentukan sendiri persentase Anda</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-group custom-rule-inputs" id="customRuleInputs" style="display: none;">
+                            <label>Persentase Custom (%)</label>
+                            <div class="custom-percent-grid">
+                                <div><label>Kebutuhan</label><input type="number" id="customNeeds" value="50" min="0"
+                                        max="100">%</div>
+                                <div><label>Keinginan</label><input type="number" id="customWants" value="30" min="0"
+                                        max="100">%</div>
+                                <div><label>Tabungan</label><input type="number" id="customSavings" value="20" min="0"
+                                        max="100">%</div>
+                            </div>
+                        </div>
+
+                        <button class="btn-primary" onclick="calculateBudget()">Hitung Anggaran</button>
+
+                        <div class="calc-result" id="budgetResult" style="display: none;">
+                            <h4>📋 Alokasi Anggaran Anda</h4>
+                            <div class="result-items" id="budgetResultItems"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Savings Calculator -->
+                <div class="calc-content" id="calc-savings">
+                    <div class="calc-card glass-card">
+                        <h3>💰 Kalkulator Tabungan</h3>
+                        <p class="calc-desc">Hitung berapa lama waktu yang dibutuhkan untuk mencapai target</p>
+
+                        <div class="form-group">
+                            <label>Target Tabungan</label>
+                            <div class="amount-input">
+                                <span class="currency">Rp</span>
+                                <input type="text" id="calcSavingsTarget" placeholder="50.000.000">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Saldo Saat Ini</label>
+                            <div class="amount-input">
+                                <span class="currency">Rp</span>
+                                <input type="text" id="calcSavingsCurrent" placeholder="5.000.000">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Tabungan per Bulan</label>
+                            <div class="amount-input">
+                                <span class="currency">Rp</span>
+                                <input type="text" id="calcSavingsMonthly" placeholder="2.000.000">
+                            </div>
+                        </div>
+
+                        <button class="btn-primary" onclick="calculateSavings()">Hitung Waktu</button>
+
+                        <div class="calc-result" id="savingsResult" style="display: none;"></div>
+                    </div>
+                </div>
+
+                <!-- Retirement Calculator -->
+                <div class="calc-content" id="calc-retirement">
+                    <div class="calc-card glass-card">
+                        <h3>🏖️ Kalkulator Dana Pensiun</h3>
+                        <p class="calc-desc">Hitung kebutuhan dana untuk masa pensiun</p>
+
+                        <div class="form-group">
+                            <label>Usia Saat Ini</label>
+                            <input type="number" id="calcRetirementAge" placeholder="30" min="18" max="60">
+                        </div>
+                        <div class="form-group">
+                            <label>Target Usia Pensiun</label>
+                            <input type="number" id="calcRetirementTarget" placeholder="55" min="40" max="70">
+                        </div>
+                        <div class="form-group">
+                            <label>Harapan Hidup</label>
+                            <input type="number" id="calcLifeExpectancy" placeholder="75" min="60" max="100">
+                        </div>
+                        <div class="form-group">
+                            <label>Pengeluaran Bulanan saat Ini</label>
+                            <div class="amount-input">
+                                <span class="currency">Rp</span>
+                                <input type="text" id="calcRetirementExpense" placeholder="10.000.000">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Estimasi Inflasi (%/tahun)</label>
+                            <input type="number" id="calcRetirementInflation" placeholder="5" min="0" max="20"
+                                value="5">
+                        </div>
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="calcHasInvestment">
+                                <span>Saya memiliki tabungan dalam bentuk investasi</span>
+                            </label>
+                        </div>
+                        <div class="form-group investment-fields" id="investmentFields" style="display: none;">
+                            <label>Return Investasi (%/tahun)</label>
+                            <input type="number" id="calcInvestmentReturn" placeholder="8" min="0" max="30" value="8">
+                            <small class="input-hint">Rata-rata return reksadana/saham: 8-12%/tahun</small>
+                        </div>
+
+                        <button class="btn-primary" onclick="calculateRetirement()">Hitung Dana Pensiun</button>
+
+                        <div class="calc-result" id="retirementResult" style="display: none;"></div>
+                    </div>
+                </div>
+
+                <!-- Emergency Fund Calculator -->
+                <div class="calc-content" id="calc-emergency">
+                    <div class="calc-card glass-card">
+                        <h3>🚨 Kalkulator Dana Darurat</h3>
+                        <p class="calc-desc">Hitung kebutuhan dana darurat ideal</p>
+
+                        <div class="form-group">
+                            <label>Pengeluaran Bulanan</label>
+                            <div class="amount-input">
+                                <span class="currency">Rp</span>
+                                <input type="text" id="calcEmergencyExpense" placeholder="8.000.000">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Jumlah Bulan (3-12)</label>
+                            <input type="range" id="calcEmergencyMonths" min="3" max="12" value="6">
+                            <div class="range-value"><span id="emergencyMonthsDisplay">6</span> bulan</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Dana Darurat Saat Ini</label>
+                            <div class="amount-input">
+                                <span class="currency">Rp</span>
+                                <input type="text" id="calcEmergencyCurrent" placeholder="0">
+                            </div>
+                        </div>
+
+                        <button class="btn-primary" onclick="calculateEmergency()">Hitung Dana Darurat</button>
+
+                        <div class="calc-result" id="emergencyResult" style="display: none;"></div>
+                    </div>
+                </div>
+
+                <!-- Education Fund Calculator -->
+                <div class="calc-content" id="calc-education">
+                    <div class="calc-card glass-card">
+                        <h3>🎓 Kalkulator Dana Pendidikan</h3>
+                        <p class="calc-desc">Hitung kebutuhan dana pendidikan anak</p>
+
+                        <div class="form-group">
+                            <label>Usia Anak Saat Ini</label>
+                            <input type="number" id="calcChildAge" placeholder="5" min="0" max="17">
+                        </div>
+                        <div class="form-group">
+                            <label>Target Usia Masuk Kuliah</label>
+                            <input type="number" id="calcCollegeAge" placeholder="18" min="17" max="22">
+                        </div>
+                        <div class="form-group">
+                            <label>Biaya Pendidikan Saat Ini (per tahun)</label>
+                            <div class="amount-input">
+                                <span class="currency">Rp</span>
+                                <input type="text" id="calcEducationCost" placeholder="50.000.000">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Durasi Kuliah (tahun)</label>
+                            <input type="number" id="calcEducationYears" placeholder="4" min="1" max="8">
+                        </div>
+                        <div class="form-group">
+                            <label>Estimasi Inflasi Pendidikan (%/tahun)</label>
+                            <input type="number" id="calcEducationInflation" placeholder="10" min="0" max="20">
+                        </div>
+
+                        <button class="btn-primary" onclick="calculateEducation()">Hitung Dana Pendidikan</button>
+
+                        <div class="calc-result" id="educationResult" style="display: none;"></div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Floating Action Button -->
+        <div class="fab-container">
+            <button class="fab" id="mainFab">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+            </button>
+            <div class="fab-menu" id="fabMenu">
+                <button class="fab-option income" id="fabIncome">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="19" x2="12" y2="5" />
+                        <polyline points="5 12 12 5 19 12" />
+                    </svg>
+                    <span>Pemasukan</span>
+                </button>
+                <button class="fab-option expense" id="fabExpense">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19" />
+                        <polyline points="19 12 12 19 5 12" />
+                    </svg>
+                    <span>Pengeluaran</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transaction Modal -->
+    <div class="modal" id="transactionModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="transactionModalTitle">Tambah Transaksi</h3>
+                <button class="btn-close" id="closeTransactionModal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+            </div>
+            <form id="transactionForm">
+                <input type="hidden" id="transactionType" value="expense">
+                <input type="hidden" id="transactionId" value="">
+
+                <div class="form-group">
+                    <label>Nominal</label>
+                    <div class="amount-input">
+                        <span class="currency">Rp</span>
+                        <input type="text" id="transactionAmount" placeholder="0" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Kategori</label>
+                    <div class="category-grid" id="categoryGrid"></div>
+                    <button type="button" class="btn-text" id="addCategoryBtn">+ Kategori Baru</button>
+                </div>
+
+                <div class="form-group">
+                    <label>Deskripsi (Opsional)</label>
+                    <input type="text" id="transactionDescription" placeholder="Contoh: Makan siang di warung">
+                </div>
+
+                <div class="form-group">
+                    <label>Tanggal</label>
+                    <input type="date" id="transactionDate" required>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="cancelTransaction">Batal</button>
+                    <button type="submit" class="btn-primary">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Budget Modal -->
+    <div class="modal" id="budgetModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>Atur Anggaran Bulanan</h3>
+                <button class="btn-close" id="closeBudgetModal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+            </div>
+            <form id="budgetForm">
+                <div class="budget-inputs" id="budgetInputs"></div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="cancelBudget">Batal</button>
+                    <button type="submit" class="btn-primary">Simpan Anggaran</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Savings Goal Modal -->
+    <div class="modal" id="savingsModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="savingsModalTitle">Tambah Target Tabungan</h3>
+                <button class="btn-close" id="closeSavingsModal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+            </div>
+            <form id="savingsForm">
+                <input type="hidden" id="savingsId" value="">
+
+                <div class="form-group">
+                    <label>Nama Target</label>
+                    <input type="text" id="savingsName" placeholder="Contoh: DP Rumah" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Target Nominal</label>
+                    <div class="amount-input">
+                        <span class="currency">Rp</span>
+                        <input type="text" id="savingsTarget" placeholder="0" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Tabungan Saat Ini</label>
+                    <div class="amount-input">
+                        <span class="currency">Rp</span>
+                        <input type="text" id="savingsCurrent" placeholder="0">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Target Tanggal</label>
+                    <input type="date" id="savingsDeadline" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Warna</label>
+                    <div class="color-picker" id="savingsColorPicker"></div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="cancelSavings">Batal</button>
+                    <button type="submit" class="btn-primary">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Event Modal -->
+    <div class="modal" id="eventModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="eventModalTitle">Buat Acara Baru</h3>
+                <button class="btn-close" id="closeEventModal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+            </div>
+            <form id="eventForm">
+                <input type="hidden" id="eventId" value="">
+
+                <div class="form-group">
+                    <label>Nama Acara</label>
+                    <input type="text" id="eventName" placeholder="Contoh: Pernikahan Adi & Budi" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Tanggal Acara</label>
+                    <input type="date" id="eventDate" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Anggaran Total</label>
+                    <div class="amount-input">
+                        <span class="currency">Rp</span>
+                        <input type="text" id="eventBudget" placeholder="0" required>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="cancelEvent">Batal</button>
+                    <button type="submit" class="btn-primary">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Event Detail Modal -->
+    <div class="modal" id="eventDetailModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3 id="eventDetailTitle">Detail Acara</h3>
+                <button class="btn-close" id="closeEventDetailModal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+            </div>
+            <div class="event-detail-content" id="eventDetailContent"></div>
+        </div>
+    </div>
+
+    <!-- Add Savings Modal -->
+    <div class="modal" id="addToSavingsModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h3>Tambah Tabungan</h3>
+                <button class="btn-close" id="closeAddToSavingsModal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+            </div>
+            <form id="addToSavingsForm">
+                <input type="hidden" id="addToSavingsId" value="">
+
+                <div class="form-group">
+                    <label>Nominal</label>
+                    <div class="amount-input">
+                        <span class="currency">Rp</span>
+                        <input type="text" id="addToSavingsAmount" placeholder="0" required>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="cancelAddToSavings">Batal</button>
+                    <button type="submit" class="btn-primary">Tambah</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Category Modal -->
+    <div class="modal" id="categoryModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h3>Kategori Baru</h3>
+                <button class="btn-close" id="closeCategoryModal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+            </div>
+            <form id="categoryForm">
+                <div class="form-group">
+                    <label>Nama Kategori</label>
+                    <input type="text" id="categoryName" placeholder="Contoh: Investasi" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Ikon</label>
+                    <div class="icon-picker" id="categoryIconPicker"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Warna</label>
+                    <div class="color-picker" id="categoryColorPicker"></div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="cancelCategory">Batal</button>
+                    <button type="submit" class="btn-primary">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Event Item Modal -->
+    <div class="modal" id="eventItemModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h3 id="eventItemModalTitle">Tambah Item</h3>
+                <button class="btn-close" id="closeEventItemModal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+            </div>
+            <form id="eventItemForm">
+                <input type="hidden" id="eventItemEventId" value="">
+                <input type="hidden" id="eventItemId" value="">
+
+                <div class="form-group">
+                    <label>Nama Item</label>
+                    <input type="text" id="eventItemName" placeholder="Contoh: Gedung Resepsi" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Kategori</label>
+                    <select id="eventItemCategory" required>
+                        <option value="venue">🏛️ Venue</option>
+                        <option value="dekorasi">🎨 Dekorasi</option>
+                        <option value="catering">🍽️ Catering</option>
+                        <option value="mahar">💍 Mahar</option>
+                        <option value="cincin">💎 Cincin</option>
+                        <option value="dokumentasi">📸 Dokumentasi</option>
+                        <option value="souvenir">🎁 Souvenir</option>
+                        <option value="busana">👔 Busana</option>
+                        <option value="lainnya">📦 Lain-lain</option>
+                        <option value="__new__">➕ Buat Kategori Baru...</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="newEventCategoryGroup" style="display: none;">
+                    <label>Nama Kategori Baru</label>
+                    <div style="display: flex; gap: var(--space-2);">
+                        <input type="text" id="newEventCategoryName" placeholder="Contoh: Hiburan">
+                        <select id="newEventCategoryIcon" style="width: 60px;">
+                            <option value="🎉">🎉</option>
+                            <option value="🎵">🎵</option>
+                            <option value="🎭">🎭</option>
+                            <option value="🚗">🚗</option>
+                            <option value="✈️">✈️</option>
+                            <option value="🏠">🏠</option>
+                            <option value="💄">💄</option>
+                            <option value="🎤">🎤</option>
+                            <option value="🍰">🍰</option>
+                            <option value="💐">💐</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Anggaran</label>
+                    <div class="amount-input">
+                        <span class="currency">Rp</span>
+                        <input type="text" id="eventItemBudget" placeholder="0" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Realisasi (Sudah Dibayar)</label>
+                    <div class="amount-input">
+                        <span class="currency">Rp</span>
+                        <input type="text" id="eventItemActual" placeholder="0">
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="cancelEventItem">Batal</button>
+                    <button type="submit" class="btn-primary">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- All Transactions Modal -->
+    <div class="modal" id="allTransactionsModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>Semua Transaksi</h3>
+                <button class="btn-close" id="closeAllTransactionsModal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+            </div>
+            <div class="all-transactions-content">
+                <div class="filter-bar">
+                    <select id="filterMonth">
+                        <option value="all">Semua Bulan</option>
+                    </select>
+                    <select id="filterCategory">
+                        <option value="all">Semua Kategori</option>
+                    </select>
+                    <select id="filterType">
+                        <option value="all">Semua Tipe</option>
+                        <option value="income">Pemasukan</option>
+                        <option value="expense">Pengeluaran</option>
+                    </select>
+                </div>
+                <div class="transactions-list-full" id="allTransactionsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Telegram Settings Modal -->
+    <div class="modal" id="telegramSettingsModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h3>📱 Pengaturan Telegram</h3>
+                <button class="btn-close" id="closeTelegramSettings">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+            </div>
+            <div class="telegram-settings-content" style="padding: var(--space-6);">
+                <div class="telegram-info"
+                    style="background: var(--bg-card); padding: var(--space-4); border-radius: var(--radius-lg); margin-bottom: var(--space-4);">
+                    <h4 style="margin-bottom: var(--space-2);">Cara Setup:</h4>
+                    <ol
+                        style="padding-left: var(--space-4); color: var(--text-secondary); font-size: var(--font-size-sm);">
+                        <li>Buat bot via <a href="https://t.me/botfather" target="_blank"
+                                style="color: var(--accent-primary-light);">@BotFather</a></li>
+                        <li>Import workflow dari <code>n8n/</code></li>
+                        <li>Jalankan: <code>cd server && npm start</code></li>
+                        <li>Kirim pesan ke bot!</li>
+                    </ol>
+                </div>
+
+                <div class="form-group">
+                    <label>Sync Server URL</label>
+                    <input type="text" id="syncServerUrl" placeholder="http://localhost:3001">
+                </div>
+
+                <div class="form-group">
+                    <label>Status</label>
+                    <div style="display: flex; align-items: center; gap: var(--space-3);">
+                        <span class="sync-status disconnected" id="syncStatus">Tidak terhubung</span>
+                        <button class="btn-text" onclick="checkSyncServerHealth()">Cek</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: var(--space-3); cursor: pointer;">
+                        <input type="checkbox" id="toggleSync" style="width: 18px; height: 18px;">
+                        <span>Auto-sync setiap 30 detik</span>
+                    </label>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="closeTelegramSettingsBtn">Tutup</button>
+                    <button type="button" class="btn-primary" id="saveSyncSettings">Simpan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Settings Modal -->
+    <div class="modal" id="aiSettingsModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h3>🤖 Pengaturan AI</h3>
+                <button class="btn-close" id="closeAISettings">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+            </div>
+            <div class="ai-settings-content" style="padding: var(--space-6);">
+                <div class="ai-info"
+                    style="background: var(--bg-card); padding: var(--space-4); border-radius: var(--radius-lg); margin-bottom: var(--space-4);">
+                    <h4 style="margin-bottom: var(--space-2);">Cara Mendapatkan API Key:</h4>
+                    <ol
+                        style="padding-left: var(--space-4); color: var(--text-secondary); font-size: var(--font-size-sm);">
+                        <li>Buka <a href="https://aistudio.google.com/apikey" target="_blank"
+                                style="color: var(--accent-primary-light);">Google AI Studio</a></li>
+                        <li>Login dengan akun Google</li>
+                        <li>Klik "Create API Key"</li>
+                        <li>Copy dan paste di bawah</li>
+                    </ol>
+                </div>
+
+                <div class="form-group">
+                    <label>Google Gemini API Key</label>
+                    <input type="password" id="geminiApiKey" placeholder="AIzaSy...">
+                    <small style="color: var(--text-tertiary); font-size: 12px;">API key disimpan lokal di browser
+                        Anda</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Status</label>
+                    <div style="display: flex; align-items: center; gap: var(--space-3);">
+                        <span class="ai-api-status" id="aiApiStatus">Belum dikonfigurasi</span>
+                        <button class="btn-text" id="testAIKey">Test</button>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="closeAISettingsBtn">Tutup</button>
+                    <button type="button" class="btn-primary" id="saveAISettings">Simpan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="supabase.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>

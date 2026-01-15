@@ -1,0 +1,448 @@
+{
+    "name": "FinansialKu Telegram Bot - Gemini",
+    "nodes": [
+        {
+            "parameters": {
+                "updates": [
+                    "message"
+                ]
+            },
+            "id": "telegram-trigger",
+            "name": "Telegram Trigger",
+            "type": "n8n-nodes-base.telegramTrigger",
+            "typeVersion": 1.1,
+            "position": [
+                240,
+                300
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "1",
+                    "name": "Telegram account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict"
+                    },
+                    "conditions": [
+                        {
+                            "id": "has-photo",
+                            "leftValue": "={{ $json.message.photo }}",
+                            "rightValue": "",
+                            "operator": {
+                                "type": "array",
+                                "operation": "notEmpty"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                }
+            },
+            "id": "check-photo",
+            "name": "Has Photo?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2,
+            "position": [
+                480,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "resource": "file",
+                "operation": "get",
+                "fileId": "={{ $json.message.photo[$json.message.photo.length - 1].file_id }}"
+            },
+            "id": "get-file",
+            "name": "Get File Info",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1.2,
+            "position": [
+                720,
+                200
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "1",
+                    "name": "Telegram account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "modelId": "gemini-1.5-flash",
+                "text": "=Analisis foto struk/receipt belanja ini.\n\nEkstrak informasi dan kembalikan HANYA dalam format JSON (tanpa markdown, tanpa penjelasan):\n{\n  \"items\": [{\"name\": \"nama item\", \"price\": angka}],\n  \"total\": angka_total_keseluruhan,\n  \"store\": \"nama toko\",\n  \"category\": \"shopping\"\n}\n\nJika tidak bisa dibaca, kembalikan: {\"error\": \"tidak bisa dibaca\"}",
+                "options": {
+                    "imageInputField": "={{ 'https://api.telegram.org/file/bot' + $credentials.telegramApi.accessToken + '/' + $json.file_path }}"
+                }
+            },
+            "id": "gemini-vision",
+            "name": "Gemini Vision",
+            "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+            "typeVersion": 1,
+            "position": [
+                960,
+                200
+            ],
+            "credentials": {
+                "googlePalmApi": {
+                    "id": "1",
+                    "name": "Google Gemini account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "modelId": "gemini-1.5-flash",
+                "text": "=Ekstrak transaksi keuangan dari pesan: \"{{ $json.message.text }}\"\n\nAturan:\n- 50rb, 50ribu, 50k = 50000\n- 5jt, 5juta = 5000000\n- Default type = expense (pengeluaran)\n- Jika ada kata gaji, bonus, dapat, terima = income (pemasukan)\n\nKategori expense: food, transport, shopping, entertainment, health, bills, education, other\nKategori income: salary, bonus, investment, freelance, other\n\nKembalikan HANYA JSON (tanpa markdown):\n{\"type\":\"expense\",\"amount\":50000,\"category\":\"food\",\"description\":\"makan siang\"}"
+            },
+            "id": "gemini-text",
+            "name": "Gemini Text",
+            "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+            "typeVersion": 1,
+            "position": [
+                720,
+                400
+            ],
+            "credentials": {
+                "googlePalmApi": {
+                    "id": "1",
+                    "name": "Google Gemini account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "// Parse receipt dari Gemini\nconst items = $input.all();\nif (!items || items.length === 0) {\n  return { json: { ok: false, error: 'No input' } };\n}\n\nconst r = items[0].json;\nlet t = r.text || r.content || r.response || JSON.stringify(r);\n\ntry {\n  const m = t.match(/\\{[\\s\\S]*\\}/);\n  if (m) {\n    const p = JSON.parse(m[0]);\n    \n    if (p.error) {\n      return { json: { ok: false, error: p.error } };\n    }\n    \n    let total = p.total || 0;\n    let itemList = '';\n    if (p.items && p.items.length > 0) {\n      p.items.forEach(item => {\n        const price = parseInt(item.price) || 0;\n        itemList += `• ${item.name}: Rp ${price.toLocaleString('id-ID')}\\n`;\n        if (!p.total) total += price;\n      });\n    }\n    \n    let chatId = '';\n    try { chatId = $('Telegram Trigger').first().json.message.chat.id; } catch(e) {}\n    \n    return {\n      json: {\n        type: 'expense',\n        amount: parseInt(total) || 0,\n        categoryId: p.category || 'shopping',\n        description: 'Struk ' + (p.store || 'belanja'),\n        date: new Date().toISOString().split('T')[0],\n        source: 'telegram-receipt',\n        chatId: chatId,\n        store: p.store || '',\n        itemList: itemList,\n        ok: total > 0\n      }\n    };\n  }\n} catch(e) {\n  return { json: { ok: false, error: e.message } };\n}\nreturn { json: { ok: false, error: 'No JSON' } };"
+            },
+            "id": "parse-receipt",
+            "name": "Parse Receipt",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1200,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Parse text dari Gemini\nconst items = $input.all();\nif (!items || items.length === 0) {\n  return { json: { ok: false } };\n}\n\nconst r = items[0].json;\nlet t = r.text || r.content || r.response || JSON.stringify(r);\n\ntry {\n  const m = t.match(/\\{[\\s\\S]*?\\}/);\n  if (m) {\n    const p = JSON.parse(m[0]);\n    let chatId = '';\n    try { chatId = $('Telegram Trigger').first().json.message.chat.id; } catch(e) {}\n    \n    const amount = parseInt(p.amount) || 0;\n    return {\n      json: {\n        type: p.type || 'expense',\n        amount: amount,\n        categoryId: p.category || 'other',\n        description: p.description || '',\n        date: new Date().toISOString().split('T')[0],\n        source: 'telegram',\n        chatId: chatId,\n        ok: amount > 0\n      }\n    };\n  }\n} catch(e) {}\nreturn { json: { ok: false } };"
+            },
+            "id": "parse-text",
+            "name": "Parse Text",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                960,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "boolean": [
+                        {
+                            "value1": "={{ $json.ok }}",
+                            "value2": true
+                        }
+                    ]
+                }
+            },
+            "id": "if-receipt-ok",
+            "name": "Receipt OK?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                1440,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "boolean": [
+                        {
+                            "value1": "={{ $json.ok }}",
+                            "value2": true
+                        }
+                    ]
+                }
+            },
+            "id": "if-text-ok",
+            "name": "Text OK?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                1200,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "YOUR_NGROK_URL/api/transaction",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"type\": \"{{ $json.type }}\",\n  \"amount\": {{ $json.amount }},\n  \"categoryId\": \"{{ $json.categoryId }}\",\n  \"description\": \"{{ $json.description }}\",\n  \"date\": \"{{ $json.date }}\",\n  \"source\": \"{{ $json.source }}\"\n}"
+            },
+            "id": "http-receipt",
+            "name": "Send Receipt",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1680,
+                100
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "YOUR_NGROK_URL/api/transaction",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"type\": \"{{ $json.type }}\",\n  \"amount\": {{ $json.amount }},\n  \"categoryId\": \"{{ $json.categoryId }}\",\n  \"description\": \"{{ $json.description }}\",\n  \"date\": \"{{ $json.date }}\",\n  \"source\": \"telegram\"\n}"
+            },
+            "id": "http-text",
+            "name": "Send Text",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1440,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+                "text": "=🧾 Struk tercatat!\n\n🏪 {{ $('Parse Receipt').first().json.store || 'Toko' }}\n{{ $('Parse Receipt').first().json.itemList }}💵 Total: Rp {{ $('Parse Receipt').first().json.amount.toLocaleString('id-ID') }}"
+            },
+            "id": "reply-receipt-ok",
+            "name": "Reply Receipt OK",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1.2,
+            "position": [
+                1920,
+                100
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "1",
+                    "name": "Telegram account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+                "text": "=✅ Tercatat!\n\n{{ $('Parse Text').first().json.type === 'income' ? '💰 Pemasukan' : '💸 Pengeluaran' }}\n💵 Rp {{ $('Parse Text').first().json.amount.toLocaleString('id-ID') }}\n📁 {{ $('Parse Text').first().json.categoryId }}\n📝 {{ $('Parse Text').first().json.description }}"
+            },
+            "id": "reply-text-ok",
+            "name": "Reply Text OK",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1.2,
+            "position": [
+                1680,
+                300
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "1",
+                    "name": "Telegram account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+                "text": "❌ Struk tidak bisa dibaca.\n\nPastikan:\n• Foto jelas & tidak buram\n• Struk terlihat lengkap\n• Pencahayaan cukup"
+            },
+            "id": "reply-receipt-err",
+            "name": "Reply Receipt Error",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1.2,
+            "position": [
+                1680,
+                200
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "1",
+                    "name": "Telegram account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+                "text": "❌ Format tidak dikenali.\n\nContoh:\n• Makan siang 50rb\n• Gaji 5jt\n\nAtau kirim foto struk 📸"
+            },
+            "id": "reply-text-err",
+            "name": "Reply Text Error",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1.2,
+            "position": [
+                1440,
+                500
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "1",
+                    "name": "Telegram account"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "Telegram Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Has Photo?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Has Photo?": {
+            "main": [
+                [
+                    {
+                        "node": "Get File Info",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Gemini Text",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get File Info": {
+            "main": [
+                [
+                    {
+                        "node": "Gemini Vision",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Gemini Vision": {
+            "main": [
+                [
+                    {
+                        "node": "Parse Receipt",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse Receipt": {
+            "main": [
+                [
+                    {
+                        "node": "Receipt OK?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Receipt OK?": {
+            "main": [
+                [
+                    {
+                        "node": "Send Receipt",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Reply Receipt Error",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Send Receipt": {
+            "main": [
+                [
+                    {
+                        "node": "Reply Receipt OK",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Gemini Text": {
+            "main": [
+                [
+                    {
+                        "node": "Parse Text",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse Text": {
+            "main": [
+                [
+                    {
+                        "node": "Text OK?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Text OK?": {
+            "main": [
+                [
+                    {
+                        "node": "Send Text",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Reply Text Error",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Send Text": {
+            "main": [
+                [
+                    {
+                        "node": "Reply Text OK",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1"
+    }
+}

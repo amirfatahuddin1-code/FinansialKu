@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Masuk - FinansialKu</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Login Page Specific Styles */
+        .login-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-6);
+            background:
+                radial-gradient(ellipse at 30% 20%, rgba(124, 58, 237, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 80%, rgba(6, 182, 212, 0.1) 0%, transparent 40%);
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .login-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-2xl);
+            padding: var(--space-8);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: var(--space-8);
+        }
+
+        .login-logo {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-2);
+            margin-bottom: var(--space-4);
+        }
+
+        .login-logo-icon {
+            width: 56px;
+            height: 56px;
+            background: var(--accent-gradient);
+            border-radius: var(--radius-xl);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+        }
+
+        .login-title {
+            font-size: var(--font-size-2xl);
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: var(--space-2);
+        }
+
+        .login-subtitle {
+            color: var(--text-secondary);
+            font-size: var(--font-size-sm);
+        }
+
+        .login-tabs {
+            display: flex;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            padding: var(--space-1);
+            margin-bottom: var(--space-6);
+        }
+
+        .login-tab {
+            flex: 1;
+            padding: var(--space-3);
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: var(--font-size-sm);
+            font-weight: 500;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .login-tab.active {
+            background: var(--accent-gradient);
+            color: white;
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-4);
+        }
+
+        .login-form .form-group label {
+            display: block;
+            margin-bottom: var(--space-2);
+            font-size: var(--font-size-sm);
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .login-form .form-group input {
+            width: 100%;
+            padding: var(--space-3) var(--space-4);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            color: var(--text-primary);
+            font-size: var(--font-size-base);
+            transition: all var(--transition-fast);
+        }
+
+        .login-form .form-group input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
+        }
+
+        .login-form .form-group input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: var(--space-4);
+            background: var(--accent-gradient);
+            border: none;
+            border-radius: var(--radius-lg);
+            color: white;
+            font-size: var(--font-size-base);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-base);
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .btn-login:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .login-divider {
+            display: flex;
+            align-items: center;
+            gap: var(--space-4);
+            margin: var(--space-6) 0;
+            color: var(--text-muted);
+            font-size: var(--font-size-sm);
+        }
+
+        .login-divider::before,
+        .login-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border-color);
+        }
+
+        .btn-google {
+            width: 100%;
+            padding: var(--space-3) var(--space-4);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            color: var(--text-primary);
+            font-size: var(--font-size-sm);
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-3);
+            transition: all var(--transition-fast);
+        }
+
+        .btn-google:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--accent-primary);
+        }
+
+        .btn-google svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .login-footer {
+            text-align: center;
+            margin-top: var(--space-6);
+        }
+
+        .login-footer a {
+            color: var(--accent-primary-light);
+            text-decoration: none;
+        }
+
+        .login-footer a:hover {
+            text-decoration: underline;
+        }
+
+        .login-error {
+            background: var(--danger-light);
+            color: var(--danger);
+            padding: var(--space-3) var(--space-4);
+            border-radius: var(--radius-md);
+            font-size: var(--font-size-sm);
+            display: none;
+        }
+
+        .login-error.show {
+            display: block;
+        }
+
+        .login-success {
+            background: var(--success-light);
+            color: var(--success);
+            padding: var(--space-3) var(--space-4);
+            border-radius: var(--radius-md);
+            font-size: var(--font-size-sm);
+            display: none;
+        }
+
+        .login-success.show {
+            display: block;
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: var(--space-6);
+        }
+
+        .back-link a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: var(--font-size-sm);
+        }
+
+        .back-link a:hover {
+            color: var(--text-primary);
+        }
+
+        .loading-spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .btn-login.loading .loading-spinner {
+            display: inline-block;
+        }
+
+        .btn-login.loading span {
+            display: none;
+        }
+    </style>
+</head>
+
+<body class="login-page">
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="login-logo">
+                    <div class="login-logo-icon">💰</div>
+                </div>
+                <h1 class="login-title">FinansialKu</h1>
+                <p class="login-subtitle" id="loginSubtitle">Masuk ke akun Anda</p>
+            </div>
+
+            <div class="login-tabs">
+                <button class="login-tab active" data-mode="login">Masuk</button>
+                <button class="login-tab" data-mode="register">Daftar</button>
+            </div>
+
+            <div class="login-error" id="loginError"></div>
+            <div class="login-success" id="loginSuccess"></div>
+
+            <form class="login-form" id="loginForm">
+                <div class="form-group" id="nameGroup" style="display: none;">
+                    <label for="nameInput">Nama Lengkap</label>
+                    <input type="text" id="nameInput" placeholder="Masukkan nama Anda">
+                </div>
+                <div class="form-group">
+                    <label for="emailInput">Email</label>
+                    <input type="email" id="emailInput" placeholder="nama@email.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="passwordInput">Password</label>
+                    <input type="password" id="passwordInput" placeholder="Minimal 6 karakter" required>
+                </div>
+                <div class="form-group" id="confirmGroup" style="display: none;">
+                    <label for="confirmInput">Konfirmasi Password</label>
+                    <input type="password" id="confirmInput" placeholder="Ulangi password">
+                </div>
+                <button type="submit" class="btn-login" id="submitBtn">
+                    <span>Masuk</span>
+                    <div class="loading-spinner"></div>
+                </button>
+            </form>
+
+            <div class="login-divider">atau</div>
+
+            <button class="btn-google" id="googleBtn">
+                <svg viewBox="0 0 24 24">
+                    <path fill="#4285F4"
+                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853"
+                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05"
+                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                    <path fill="#EA4335"
+                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                </svg>
+                Lanjutkan dengan Google
+            </button>
+
+            <div class="back-link">
+                <a href="landing.html">← Kembali ke Beranda</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase.js"></script>
+    <script>
+        const { auth } = window.FinansialKuAPI;
+        let mode = 'login';
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Check if already logged in
+            const { session } = await auth.getSession();
+            if (session) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // Tab switching
+            document.querySelectorAll('.login-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.login-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    mode = tab.dataset.mode;
+                    updateFormMode();
+                });
+            });
+
+            // Form submit
+            document.getElementById('loginForm').addEventListener('submit', handleSubmit);
+
+            // Google login
+            document.getElementById('googleBtn').addEventListener('click', handleGoogleLogin);
+        });
+
+        function updateFormMode() {
+            const nameGroup = document.getElementById('nameGroup');
+            const confirmGroup = document.getElementById('confirmGroup');
+            const subtitle = document.getElementById('loginSubtitle');
+            const submitBtn = document.getElementById('submitBtn');
+
+            if (mode === 'register') {
+                nameGroup.style.display = 'block';
+                confirmGroup.style.display = 'block';
+                subtitle.textContent = 'Buat akun baru';
+                submitBtn.querySelector('span').textContent = 'Daftar';
+            } else {
+                nameGroup.style.display = 'none';
+                confirmGroup.style.display = 'none';
+                subtitle.textContent = 'Masuk ke akun Anda';
+                submitBtn.querySelector('span').textContent = 'Masuk';
+            }
+
+            hideMessages();
+        }
+
+        async function handleSubmit(e) {
+            e.preventDefault();
+            hideMessages();
+
+            const email = document.getElementById('emailInput').value.trim();
+            const password = document.getElementById('passwordInput').value;
+            const submitBtn = document.getElementById('submitBtn');
+
+            submitBtn.classList.add('loading');
+            submitBtn.disabled = true;
+
+            try {
+                if (mode === 'register') {
+                    await handleRegister(email, password);
+                } else {
+                    await handleLogin(email, password);
+                }
+            } finally {
+                submitBtn.classList.remove('loading');
+                submitBtn.disabled = false;
+            }
+        }
+
+        async function handleRegister(email, password) {
+            const name = document.getElementById('nameInput').value.trim();
+            const confirm = document.getElementById('confirmInput').value;
+
+            if (!name) {
+                showError('Masukkan nama Anda');
+                return;
+            }
+
+            if (password.length < 6) {
+                showError('Password minimal 6 karakter');
+                return;
+            }
+
+            if (password !== confirm) {
+                showError('Password tidak cocok');
+                return;
+            }
+
+            const { data, error } = await auth.signUp(email, password, name);
+
+            if (error) {
+                showError(error.message);
+                return;
+            }
+
+            if (data.user && !data.session) {
+                showSuccess('Akun berhasil dibuat! Cek email untuk verifikasi.');
+            } else {
+                showSuccess('Akun berhasil dibuat! Mengalihkan...');
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1000);
+            }
+        }
+
+        async function handleLogin(email, password) {
+            const { data, error } = await auth.signIn(email, password);
+
+            if (error) {
+                if (error.message.includes('Invalid login')) {
+                    showError('Email atau password salah');
+                } else {
+                    showError(error.message);
+                }
+                return;
+            }
+
+            showSuccess('Login berhasil! Mengalihkan...');
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 1000);
+        }
+
+        async function handleGoogleLogin() {
+            const { error } = await auth.signInWithGoogle();
+            if (error) {
+                showError(error.message);
+            }
+        }
+
+        function showError(message) {
+            const el = document.getElementById('loginError');
+            el.textContent = message;
+            el.classList.add('show');
+        }
+
+        function showSuccess(message) {
+            const el = document.getElementById('loginSuccess');
+            el.textContent = message;
+            el.classList.add('show');
+        }
+
+        function hideMessages() {
+            document.getElementById('loginError').classList.remove('show');
+            document.getElementById('loginSuccess').classList.remove('show');
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,483 @@
+{
+    "name": "FinansialKu Telegram Bot with Receipt Scanner",
+    "nodes": [
+        {
+            "parameters": {
+                "updates": [
+                    "message"
+                ]
+            },
+            "id": "telegram-trigger",
+            "name": "Telegram Trigger",
+            "type": "n8n-nodes-base.telegramTrigger",
+            "typeVersion": 1.1,
+            "position": [
+                240,
+                300
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "1",
+                    "name": "Telegram account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "string": [
+                        {
+                            "value1": "={{ $json.message.photo }}",
+                            "operation": "isNotEmpty"
+                        }
+                    ]
+                }
+            },
+            "id": "check-photo",
+            "name": "Has Photo?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                480,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "resource": "file",
+                "operation": "get",
+                "fileId": "={{ $json.message.photo[$json.message.photo.length - 1].file_id }}"
+            },
+            "id": "get-file",
+            "name": "Get File Info",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1.2,
+            "position": [
+                720,
+                200
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "1",
+                    "name": "Telegram account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "url": "=https://api.telegram.org/file/bot{{ $credentials.telegramApi.accessToken }}/{{ $json.file_path }}",
+                "options": {
+                    "response": {
+                        "response": {
+                            "responseFormat": "file"
+                        }
+                    }
+                }
+            },
+            "id": "download-image",
+            "name": "Download Image",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                960,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "model": "gpt-4o",
+                "messages": {
+                    "values": [
+                        {
+                            "content": "=Analisis struk/receipt belanja ini dan ekstrak informasi transaksi.\n\nKembalikan HANYA JSON (tanpa markdown):\n{\n  \"items\": [\n    {\"name\": \"nama item\", \"price\": angka, \"qty\": jumlah}\n  ],\n  \"total\": angka_total,\n  \"store\": \"nama toko\",\n  \"date\": \"YYYY-MM-DD\",\n  \"category\": \"shopping/food/health/bills/other\"\n}\n\nJika tidak bisa dibaca, kembalikan: {\"error\": \"tidak bisa dibaca\"}"
+                        }
+                    ]
+                },
+                "options": {
+                    "imageUrls": "={{ $binary.data ? 'data:image/jpeg;base64,' + $binary.data.toString('base64') : '' }}"
+                }
+            },
+            "id": "openai-vision",
+            "name": "OpenAI Vision",
+            "type": "@n8n/n8n-nodes-langchain.openAi",
+            "typeVersion": 1.8,
+            "position": [
+                1200,
+                200
+            ],
+            "credentials": {
+                "openAiApi": {
+                    "id": "1",
+                    "name": "OpenAi account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "model": "gpt-4o-mini",
+                "messages": {
+                    "values": [
+                        {
+                            "content": "=Ekstrak transaksi dari: \"{{ $json.message.text }}\"\n\nAturan: 50rb=50000, 5jt=5000000. Default=expense. Gaji/bonus=income.\n\nJSON saja: {\"type\":\"expense\",\"amount\":50000,\"category\":\"food\",\"description\":\"...\"}"
+                        }
+                    ]
+                },
+                "options": {
+                    "temperature": 0.2
+                }
+            },
+            "id": "openai-text",
+            "name": "OpenAI Text",
+            "type": "@n8n/n8n-nodes-langchain.openAi",
+            "typeVersion": 1.8,
+            "position": [
+                720,
+                400
+            ],
+            "credentials": {
+                "openAiApi": {
+                    "id": "1",
+                    "name": "OpenAi account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "// Parse receipt/struk dari OpenAI Vision\nconst items = $input.all();\nif (!items || items.length === 0) {\n  return { json: { ok: false, error: 'No input' } };\n}\n\nconst r = items[0].json;\nlet t = r.choices?.[0]?.message?.content || r.text || r.content || JSON.stringify(r);\n\ntry {\n  const m = t.match(/\\{[\\s\\S]*\\}/);\n  if (m) {\n    const p = JSON.parse(m[0]);\n    \n    if (p.error) {\n      return { json: { ok: false, error: p.error } };\n    }\n    \n    // Hitung total dari items jika tidak ada\n    let total = p.total || 0;\n    let itemList = '';\n    if (p.items && p.items.length > 0) {\n      p.items.forEach(item => {\n        itemList += `• ${item.name}: Rp ${item.price.toLocaleString('id-ID')}\\n`;\n        if (!p.total) total += (item.price * (item.qty || 1));\n      });\n    }\n    \n    let chatId = '';\n    try { chatId = $('Telegram Trigger').first().json.message.chat.id; } catch(e) {}\n    \n    return {\n      json: {\n        type: 'expense',\n        amount: total,\n        categoryId: p.category || 'shopping',\n        description: `Struk ${p.store || 'belanja'}`,\n        date: p.date || new Date().toISOString().split('T')[0],\n        source: 'telegram-receipt',\n        chatId: chatId,\n        store: p.store,\n        items: p.items,\n        itemList: itemList,\n        ok: true\n      }\n    };\n  }\n} catch(e) {\n  return { json: { ok: false, error: e.message } };\n}\nreturn { json: { ok: false, error: 'No JSON found' } };"
+            },
+            "id": "parse-receipt",
+            "name": "Parse Receipt",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1440,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Parse text message\nconst items = $input.all();\nif (!items || items.length === 0) {\n  return { json: { ok: false } };\n}\n\nconst r = items[0].json;\nlet t = r.choices?.[0]?.message?.content || r.text || r.content || '';\n\ntry {\n  const m = t.match(/\\{[\\s\\S]*?\\}/);\n  if (m) {\n    const p = JSON.parse(m[0]);\n    let chatId = '';\n    try { chatId = $('Telegram Trigger').first().json.message.chat.id; } catch(e) {}\n    \n    return {\n      json: {\n        type: p.type || 'expense',\n        amount: parseInt(p.amount) || 0,\n        categoryId: p.category || 'other',\n        description: p.description || '',\n        date: new Date().toISOString().split('T')[0],\n        source: 'telegram',\n        chatId: chatId,\n        ok: true\n      }\n    };\n  }\n} catch(e) {}\nreturn { json: { ok: false } };"
+            },
+            "id": "parse-text",
+            "name": "Parse Text",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                960,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "boolean": [
+                        {
+                            "value1": "={{ $json.ok }}",
+                            "value2": true
+                        }
+                    ]
+                }
+            },
+            "id": "if-ok-receipt",
+            "name": "Receipt OK?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                1680,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "boolean": [
+                        {
+                            "value1": "={{ $json.ok }}",
+                            "value2": true
+                        }
+                    ]
+                }
+            },
+            "id": "if-ok-text",
+            "name": "Text OK?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                1200,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "YOUR_NGROK_URL/api/transaction",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"type\": \"{{ $json.type }}\",\n  \"amount\": {{ $json.amount }},\n  \"categoryId\": \"{{ $json.categoryId }}\",\n  \"description\": \"{{ $json.description }}\",\n  \"date\": \"{{ $json.date }}\",\n  \"source\": \"{{ $json.source }}\"\n}"
+            },
+            "id": "http-receipt",
+            "name": "Send Receipt",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1920,
+                100
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "YOUR_NGROK_URL/api/transaction",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"type\": \"{{ $json.type }}\",\n  \"amount\": {{ $json.amount }},\n  \"categoryId\": \"{{ $json.categoryId }}\",\n  \"description\": \"{{ $json.description }}\",\n  \"date\": \"{{ $json.date }}\",\n  \"source\": \"telegram\"\n}"
+            },
+            "id": "http-text",
+            "name": "Send Text",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1440,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+                "text": "=🧾 Struk tercatat!\n\n🏪 {{ $('Parse Receipt').first().json.store || 'Toko' }}\n{{ $('Parse Receipt').first().json.itemList }}\n💵 Total: Rp {{ $('Parse Receipt').first().json.amount.toLocaleString('id-ID') }}\n📁 {{ $('Parse Receipt').first().json.categoryId }}"
+            },
+            "id": "reply-receipt-ok",
+            "name": "Reply Receipt OK",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1.2,
+            "position": [
+                2160,
+                100
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "1",
+                    "name": "Telegram account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+                "text": "=✅ Tercatat!\n\n{{ $('Parse Text').first().json.type === 'income' ? '💰 Pemasukan' : '💸 Pengeluaran' }}\n💵 Rp {{ $('Parse Text').first().json.amount.toLocaleString('id-ID') }}\n📁 {{ $('Parse Text').first().json.categoryId }}\n📝 {{ $('Parse Text').first().json.description }}"
+            },
+            "id": "reply-text-ok",
+            "name": "Reply Text OK",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1.2,
+            "position": [
+                1680,
+                300
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "1",
+                    "name": "Telegram account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+                "text": "❌ Struk tidak bisa dibaca.\n\nPastikan:\n• Foto jelas & tidak buram\n• Struk terlihat lengkap\n• Pencahayaan cukup"
+            },
+            "id": "reply-receipt-err",
+            "name": "Reply Receipt Error",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1.2,
+            "position": [
+                1920,
+                300
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "1",
+                    "name": "Telegram account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+                "text": "❌ Format tidak dikenali.\n\nContoh:\n• Makan siang 50rb\n• Gaji 5jt\n\nAtau kirim foto struk belanja 📸"
+            },
+            "id": "reply-text-err",
+            "name": "Reply Text Error",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1.2,
+            "position": [
+                1440,
+                500
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "1",
+                    "name": "Telegram account"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "Telegram Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Has Photo?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Has Photo?": {
+            "main": [
+                [
+                    {
+                        "node": "Get File Info",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "OpenAI Text",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get File Info": {
+            "main": [
+                [
+                    {
+                        "node": "Download Image",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Download Image": {
+            "main": [
+                [
+                    {
+                        "node": "OpenAI Vision",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "OpenAI Vision": {
+            "main": [
+                [
+                    {
+                        "node": "Parse Receipt",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse Receipt": {
+            "main": [
+                [
+                    {
+                        "node": "Receipt OK?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Receipt OK?": {
+            "main": [
+                [
+                    {
+                        "node": "Send Receipt",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Reply Receipt Error",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Send Receipt": {
+            "main": [
+                [
+                    {
+                        "node": "Reply Receipt OK",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "OpenAI Text": {
+            "main": [
+                [
+                    {
+                        "node": "Parse Text",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse Text": {
+            "main": [
+                [
+                    {
+                        "node": "Text OK?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Text OK?": {
+            "main": [
+                [
+                    {
+                        "node": "Send Text",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Reply Text Error",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Send Text": {
+            "main": [
+                [
+                    {
+                        "node": "Reply Text OK",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1"
+    }
+}

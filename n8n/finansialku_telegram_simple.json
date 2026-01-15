@@ -1,0 +1,230 @@
+{
+    "name": "FinansialKu Telegram Bot - Simple",
+    "nodes": [
+        {
+            "parameters": {
+                "updates": [
+                    "message"
+                ]
+            },
+            "id": "telegram-trigger",
+            "name": "Telegram Trigger",
+            "type": "n8n-nodes-base.telegramTrigger",
+            "typeVersion": 1.1,
+            "position": [
+                250,
+                300
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "TELEGRAM_CREDENTIAL_ID",
+                    "name": "Telegram Bot"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "resource": "chat",
+                "operation": "complete",
+                "model": "gpt-4o-mini",
+                "messages": {
+                    "values": [
+                        {
+                            "role": "system",
+                            "content": "Kamu adalah asisten keuangan. Ekstrak informasi transaksi dari pesan Indonesia dan kembalikan HANYA JSON.\n\nAturan:\n- 50rb/50ribu/50k = 50000\n- 5jt/5juta = 5000000\n- Default type = expense\n- Kata gaji/bonus/dapat/terima = income\n\nKategori expense: food, transport, shopping, entertainment, health, bills, education, other\nKategori income: salary, bonus, investment, freelance, other\n\nFormat output:\n{\"type\":\"expense\",\"amount\":50000,\"category\":\"food\",\"description\":\"Makan siang\"}"
+                        },
+                        {
+                            "role": "user",
+                            "content": "={{ $json.message.text }}"
+                        }
+                    ]
+                },
+                "options": {
+                    "temperature": 0.3
+                }
+            },
+            "id": "openai-chat",
+            "name": "OpenAI - Parse",
+            "type": "n8n-nodes-base.openAi",
+            "typeVersion": 1.4,
+            "position": [
+                500,
+                300
+            ],
+            "credentials": {
+                "openAiApi": {
+                    "id": "OPENAI_CREDENTIAL_ID",
+                    "name": "OpenAI"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "const aiResponse = $input.first().json.choices[0].message.content;\n\ntry {\n  const jsonMatch = aiResponse.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    const parsed = JSON.parse(jsonMatch[0]);\n    return {\n      json: {\n        type: parsed.type,\n        amount: parseInt(parsed.amount),\n        categoryId: parsed.category || 'other',\n        description: parsed.description,\n        date: new Date().toISOString().split('T')[0],\n        source: 'telegram',\n        chatId: $('Telegram Trigger').first().json.message.chat.id,\n        originalMessage: $('Telegram Trigger').first().json.message.text\n      }\n    };\n  }\n} catch (e) {\n  return { json: { error: e.message } };\n}\nreturn { json: { error: 'No JSON found' } };"
+            },
+            "id": "parse-json",
+            "name": "Parse Response",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                750,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict"
+                    },
+                    "conditions": [
+                        {
+                            "id": "check",
+                            "leftValue": "={{ $json.error }}",
+                            "rightValue": "",
+                            "operator": {
+                                "type": "string",
+                                "operation": "notExists"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                }
+            },
+            "id": "if-valid",
+            "name": "Valid?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2,
+            "position": [
+                950,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://localhost:3001/api/transaction",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify($json) }}"
+            },
+            "id": "http-sync",
+            "name": "Kirim ke Server",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1150,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+                "text": "=✅ Tercatat!\n\n{{ $json.type === 'income' ? '💰 Pemasukan' : '💸 Pengeluaran' }}\n💵 Rp {{ $json.amount.toLocaleString('id-ID') }}\n📁 {{ $json.categoryId }}\n📝 {{ $json.description }}"
+            },
+            "id": "telegram-ok",
+            "name": "Reply OK",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1.2,
+            "position": [
+                1350,
+                200
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "TELEGRAM_CREDENTIAL_ID",
+                    "name": "Telegram Bot"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+                "text": "❌ Maaf, format tidak dikenali.\n\nContoh:\n• Makan siang 50rb\n• Gaji 5jt\n• Grab 25ribu"
+            },
+            "id": "telegram-err",
+            "name": "Reply Error",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1.2,
+            "position": [
+                1150,
+                400
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "TELEGRAM_CREDENTIAL_ID",
+                    "name": "Telegram Bot"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "Telegram Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "OpenAI - Parse",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "OpenAI - Parse": {
+            "main": [
+                [
+                    {
+                        "node": "Parse Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse Response": {
+            "main": [
+                [
+                    {
+                        "node": "Valid?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Valid?": {
+            "main": [
+                [
+                    {
+                        "node": "Kirim ke Server",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Reply Error",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Kirim ke Server": {
+            "main": [
+                [
+                    {
+                        "node": "Reply OK",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1"
+    }
+}

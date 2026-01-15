@@ -1,0 +1,468 @@
+{
+    "name": "FinansialKu - Edit Transaksi",
+    "nodes": [
+        {
+            "parameters": {
+                "updates": [
+                    "message"
+                ]
+            },
+            "id": "telegram-trigger",
+            "name": "Telegram Trigger",
+            "type": "n8n-nodes-base.telegramTrigger",
+            "typeVersion": 1.1,
+            "position": [
+                240,
+                300
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "1",
+                    "name": "Telegram account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": false,
+                        "leftValue": "",
+                        "typeValidation": "strict"
+                    },
+                    "conditions": [
+                        {
+                            "id": "is-edit",
+                            "leftValue": "={{ $json.message.text.toLowerCase() }}",
+                            "rightValue": "edit",
+                            "operator": {
+                                "type": "string",
+                                "operation": "startsWith"
+                            }
+                        }
+                    ],
+                    "combinator": "or"
+                }
+            },
+            "id": "check-edit",
+            "name": "Is Edit Command?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2,
+            "position": [
+                480,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": false,
+                        "leftValue": "",
+                        "typeValidation": "strict"
+                    },
+                    "conditions": [
+                        {
+                            "id": "is-number",
+                            "leftValue": "={{ $json.message.text }}",
+                            "rightValue": "^\\d+\\s+",
+                            "operator": {
+                                "type": "string",
+                                "operation": "regex"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                }
+            },
+            "id": "check-action",
+            "name": "Is Edit Action?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2,
+            "position": [
+                720,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "method": "GET",
+                "url": "=YOUR_NGROK_URL/api/transactions/last?count=5&chatId={{ $('Telegram Trigger').first().json.message.chat.id }}"
+            },
+            "id": "get-last",
+            "name": "Get Last Transactions",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                720,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Format daftar transaksi untuk ditampilkan\nconst transactions = $input.first().json.transactions || [];\nconst chatId = $('Telegram Trigger').first().json.message.chat.id;\n\nif (transactions.length === 0) {\n  return {\n    json: {\n      chatId: chatId,\n      message: '❌ Tidak ada transaksi yang bisa diedit.',\n      hasData: false\n    }\n  };\n}\n\nlet list = '📝 *Transaksi Terakhir:*\\n\\n';\ntransactions.forEach((t, i) => {\n  list += `*${i + 1}.* ${t.description}\\n`;\n  list += `   💵 Rp ${t.amount.toLocaleString('id-ID')} | 📅 ${t.date}\\n`;\n  list += `   📁 ${t.categoryId}\\n\\n`;\n});\n\nlist += '---\\n';\nlist += '*Cara edit:*\\n';\nlist += '• `1 50000` = ubah amount #1\\n';\nlist += '• `1 tanggal 2026-01-15`\\n';\nlist += '• `1 kategori food`\\n';\nlist += '• `1 hapus` = hapus transaksi';\n\nreturn {\n  json: {\n    chatId: chatId,\n    message: list,\n    hasData: true,\n    transactions: transactions\n  }\n};"
+            },
+            "id": "format-list",
+            "name": "Format List",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                960,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "chatId": "={{ $json.chatId }}",
+                "text": "={{ $json.message }}",
+                "additionalFields": {
+                    "parse_mode": "Markdown"
+                }
+            },
+            "id": "send-list",
+            "name": "Send List",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1.2,
+            "position": [
+                1200,
+                200
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "1",
+                    "name": "Telegram account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "// Parse perintah edit: \"1 50000\" atau \"1 tanggal 2026-01-15\"\nconst text = $('Telegram Trigger').first().json.message.text || '';\nconst chatId = $('Telegram Trigger').first().json.message.chat.id;\n\nconst match = text.match(/^(\\d+)\\s+(.+)$/);\n\nif (!match) {\n  return { json: { valid: false, chatId, error: 'Format tidak valid' } };\n}\n\nconst index = parseInt(match[1]) - 1;\nconst action = match[2].trim().toLowerCase();\n\nlet updates = {};\nlet actionType = 'update';\n\nif (action === 'hapus' || action === 'delete') {\n  actionType = 'delete';\n} else if (action.startsWith('tanggal ')) {\n  updates.date = action.replace('tanggal ', '');\n} else if (action.startsWith('kategori ')) {\n  updates.categoryId = action.replace('kategori ', '');\n} else if (action.startsWith('category ')) {\n  updates.categoryId = action.replace('category ', '');\n} else if (action.startsWith('deskripsi ')) {\n  updates.description = action.replace('deskripsi ', '');\n} else if (action.startsWith('desc ')) {\n  updates.description = action.replace('desc ', '');\n} else {\n  // Anggap ini amount\n  const amount = parseInt(action.replace(/\\D/g, ''));\n  if (amount > 0) {\n    // Handle 50rb, 50ribu, 50k\n    let finalAmount = amount;\n    if (action.includes('rb') || action.includes('ribu') || action.includes('k')) {\n      finalAmount = amount * 1000;\n    }\n    if (action.includes('jt') || action.includes('juta')) {\n      finalAmount = amount * 1000000;\n    }\n    updates.amount = finalAmount;\n  }\n}\n\nconst valid = actionType === 'delete' || Object.keys(updates).length > 0;\n\nreturn {\n  json: {\n    valid,\n    chatId,\n    index,\n    actionType,\n    updates\n  }\n};"
+            },
+            "id": "parse-action",
+            "name": "Parse Edit Action",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                960,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "boolean": [
+                        {
+                            "value1": "={{ $json.valid }}",
+                            "value2": true
+                        }
+                    ]
+                }
+            },
+            "id": "check-valid",
+            "name": "Valid?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                1200,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "method": "GET",
+                "url": "=YOUR_NGROK_URL/api/transactions/last?count=5&chatId={{ $json.chatId }}"
+            },
+            "id": "get-for-edit",
+            "name": "Get Transactions",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1440,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Ambil transaction ID berdasarkan index\nconst transactions = $input.first().json.transactions || [];\nconst prev = $('Parse Edit Action').first().json;\nconst index = prev.index;\n\nif (index < 0 || index >= transactions.length) {\n  return { json: { valid: false, error: 'Nomor tidak valid', chatId: prev.chatId } };\n}\n\nconst transaction = transactions[index];\n\nreturn {\n  json: {\n    ...prev,\n    transactionId: transaction.id,\n    oldTransaction: transaction\n  }\n};"
+            },
+            "id": "get-id",
+            "name": "Get Transaction ID",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1680,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "string": [
+                        {
+                            "value1": "={{ $json.actionType }}",
+                            "value2": "delete"
+                        }
+                    ]
+                }
+            },
+            "id": "check-delete",
+            "name": "Is Delete?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                1920,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "DELETE",
+                "url": "=YOUR_NGROK_URL/api/transactions/{{ $json.transactionId }}"
+            },
+            "id": "delete-tx",
+            "name": "Delete Transaction",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                2160,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "method": "PATCH",
+                "url": "=YOUR_NGROK_URL/api/transactions/{{ $json.transactionId }}",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify($json.updates) }}"
+            },
+            "id": "update-tx",
+            "name": "Update Transaction",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                2160,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+                "text": "🗑️ Transaksi berhasil dihapus!"
+            },
+            "id": "reply-delete",
+            "name": "Reply Delete OK",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1.2,
+            "position": [
+                2400,
+                200
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "1",
+                    "name": "Telegram account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+                "text": "=✏️ Transaksi diubah!\n\n📝 {{ $('Get Transaction ID').first().json.oldTransaction.description }}\n💵 Rp {{ $json.transaction.amount.toLocaleString('id-ID') }}\n📅 {{ $json.transaction.date }}\n📁 {{ $json.transaction.categoryId }}"
+            },
+            "id": "reply-update",
+            "name": "Reply Update OK",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1.2,
+            "position": [
+                2400,
+                400
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "1",
+                    "name": "Telegram account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+                "text": "❌ Format tidak valid.\n\nContoh:\n• 1 50000\n• 1 tanggal 2026-01-15\n• 1 hapus"
+            },
+            "id": "reply-error",
+            "name": "Reply Error",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1.2,
+            "position": [
+                1440,
+                500
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "1",
+                    "name": "Telegram account"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "Telegram Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Is Edit Command?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Is Edit Command?": {
+            "main": [
+                [
+                    {
+                        "node": "Get Last Transactions",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Is Edit Action?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Last Transactions": {
+            "main": [
+                [
+                    {
+                        "node": "Format List",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Format List": {
+            "main": [
+                [
+                    {
+                        "node": "Send List",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Is Edit Action?": {
+            "main": [
+                [
+                    {
+                        "node": "Parse Edit Action",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                []
+            ]
+        },
+        "Parse Edit Action": {
+            "main": [
+                [
+                    {
+                        "node": "Valid?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Valid?": {
+            "main": [
+                [
+                    {
+                        "node": "Get Transactions",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Reply Error",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Transactions": {
+            "main": [
+                [
+                    {
+                        "node": "Get Transaction ID",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Transaction ID": {
+            "main": [
+                [
+                    {
+                        "node": "Is Delete?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Is Delete?": {
+            "main": [
+                [
+                    {
+                        "node": "Delete Transaction",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Update Transaction",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Delete Transaction": {
+            "main": [
+                [
+                    {
+                        "node": "Reply Delete OK",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Update Transaction": {
+            "main": [
+                [
+                    {
+                        "node": "Reply Update OK",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1"
+    }
+}
