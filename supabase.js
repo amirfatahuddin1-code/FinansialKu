@@ -4,27 +4,27 @@
 const SUPABASE_URL = 'https://neeawjydtdcubwrklnua.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_xc0jvwbvtWCubCGUtnJkwg_EdHTVO3S';
 
-// Initialize Supabase client
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Initialize Supabase client (using different name to avoid conflict with global)
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ========== AUTH FUNCTIONS ==========
 
 const auth = {
     // Get current user
     async getUser() {
-        const { data: { user }, error } = await supabase.auth.getUser();
+        const { data: { user }, error } = await supabaseClient.auth.getUser();
         return { user, error };
     },
 
     // Get current session
     async getSession() {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const { data: { session }, error } = await supabaseClient.auth.getSession();
         return { session, error };
     },
 
     // Sign up with email/password
     async signUp(email, password, name) {
-        const { data, error } = await supabase.auth.signUp({
+        const { data, error } = await supabaseClient.auth.signUp({
             email,
             password,
             options: {
@@ -36,7 +36,7 @@ const auth = {
 
     // Sign in with email/password
     async signIn(email, password) {
-        const { data, error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabaseClient.auth.signInWithPassword({
             email,
             password
         });
@@ -45,7 +45,7 @@ const auth = {
 
     // Sign in with Google
     async signInWithGoogle() {
-        const { data, error } = await supabase.auth.signInWithOAuth({
+        const { data, error } = await supabaseClient.auth.signInWithOAuth({
             provider: 'google',
             options: {
                 redirectTo: window.location.origin + '/index.html'
@@ -56,13 +56,13 @@ const auth = {
 
     // Sign out
     async signOut() {
-        const { error } = await supabase.auth.signOut();
+        const { error } = await supabaseClient.auth.signOut();
         return { error };
     },
 
     // Listen to auth state changes
     onAuthStateChange(callback) {
-        return supabase.auth.onAuthStateChange(callback);
+        return supabaseClient.auth.onAuthStateChange(callback);
     }
 };
 
@@ -132,7 +132,7 @@ const categoriesAPI = {
 
 const transactionsAPI = {
     async getAll(filters = {}) {
-        let query = supabase
+        let query = supabaseClient
             .from('transactions')
             .select(`
                 *,
@@ -282,7 +282,7 @@ const savingsAPI = {
 
 const eventsAPI = {
     async getAll(includeArchived = false) {
-        let query = supabase
+        let query = supabaseClient
             .from('events')
             .select(`
                 *,
@@ -371,7 +371,7 @@ const eventItemsAPI = {
 // ========== EXPORT ==========
 
 window.FinansialKuAPI = {
-    supabase,
+    supabase: supabaseClient,
     auth,
     profiles: profilesAPI,
     categories: categoriesAPI,
