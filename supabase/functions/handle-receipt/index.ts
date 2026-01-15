@@ -27,8 +27,8 @@ serve(async (req) => {
         // Format: { store, date, chatId, transactions: [{ name, price, category }] }
         const { store, date, chatId, transactions } = body
 
-        if (!chatId || !transactions || !Array.isArray(transactions)) {
-            throw new Error('Invalid data format. Need chatId and transactions array.')
+        if (!chatId) {
+            throw new Error('Invalid data format. Need chatId.')
         }
 
         // 1. Cari User ID berdasarkan Telegram Chat ID
@@ -63,20 +63,30 @@ serve(async (req) => {
         // Helper function cari category ID
         const findCategoryId = (catName: string) => {
             if (!categories) return null
+            if (!catName) {
+                const fallback = categories.find(c => c.type === 'expense')
+                return fallback?.id || null
+            }
+
             // Coba match exact name (case insensitive)
             const exact = categories.find(c => c.name.toLowerCase() === catName.toLowerCase())
             if (exact) return exact.id
 
-            // Coba match default categories (mapping simple)
+            // Coba match default categories
             const map: any = {
-                'food': ['makan', 'food', 'minum'],
-                'transport': ['transport', 'bensin'],
-                'shopping': ['belanja', 'mart', 'market'],
+                'food': ['makan', 'food', 'minum', 'jajan'],
+                'transport': ['transport', 'bensin', 'ojek', 'parkir', 'tol'],
+                'shopping': ['belanja', 'mart', 'market', 'mall'],
+                'entertainment': ['nonton', 'game', 'hiburan'],
+                'health': ['obat', 'dokter', 'sehat'],
+                'bills': ['tagihan', 'listrik', 'air', 'internet', 'pulsa'],
             }
 
+            // Cek mapping
             for (const [key, keywords] of Object.entries(map)) {
-                if (keywords.includes(catName.toLowerCase())) {
-                    const found = categories.find(c => c.name.toLowerCase().includes(key))
+                if (keywords.some((k: string) => catName.toLowerCase().includes(k)) ||
+                    (catName.toLowerCase() === key)) {
+                    const found = categories.find(c => c.id === key || c.name.toLowerCase().includes(key))
                     if (found) return found.id
                 }
             }
@@ -86,18 +96,37 @@ serve(async (req) => {
             return fallback?.id || null
         }
 
-        for (const item of transactions) {
-            // Mapping category dari n8n (text) ke category_id (uuid)
-            const categoryName = item.category || 'Lainnya'
+        // KASUS A: INPUT ADALAH STRUK (Receipt) -> ARRAY 'transactions'
+        if (body.transactions && Array.isArray(body.transactions)) {
+            const { store, date } = body
+
+            for (const item of body.transactions) {
+                const categoryName = item.category || 'Lainnya'
+                const categoryId = findCategoryId(categoryName)
+
+                transactionsToInsert.push({
+                    user_id: userId,
+                    type: 'expense',
+                    amount: Number(item.price),
+                    category_id: categoryId,
+                    description: store ? `${store} - ${item.name}` : item.name,
+                    date: date || new Date().toISOString().split('T')[0],
+                    created_at: new Date().toISOString()
+                })
+            }
+        }
+        // KASUS B: INPUT ADALAH SINGLE TRANSACTION (Manual Chat)
+        else if (body.amount) {
+            const categoryName = body.category || body.categoryId || 'Lainnya'
             const categoryId = findCategoryId(categoryName)
 
             transactionsToInsert.push({
                 user_id: userId,
-                type: 'expense',
-                amount: Number(item.price), // Pastikan number
+                type: body.type || 'expense',
+                amount: Number(body.amount),
                 category_id: categoryId,
-                description: `${store} - ${item.name}`,
-                date: date || new Date().toISOString().split('T')[0],
+                description: body.description || body.originalMessage || 'Transaksi Telegram',
+                date: body.date || new Date().toISOString().split('T')[0],
                 created_at: new Date().toISOString()
             })
         }
