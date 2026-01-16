@@ -2382,7 +2382,14 @@ function initDebtEvents() {
             btn.classList.add('active');
 
             // Update hidden input
-            document.getElementById('debtType').value = btn.dataset.type;
+            const type = btn.dataset.type;
+            document.getElementById('debtType').value = type;
+
+            // Update Label
+            const nameLabel = document.getElementById('debtNameLabel');
+            if (nameLabel) {
+                nameLabel.textContent = type === 'payable' ? 'Nama Pemberi Pinjaman' : 'Nama Peminjam';
+            }
         });
     });
 
@@ -2425,6 +2432,12 @@ function initDebtEvents() {
                     b.classList.toggle('active', b.dataset.type === type);
                 });
 
+                // Update Label
+                const nameLabel = document.getElementById('debtNameLabel');
+                if (nameLabel) {
+                    nameLabel.textContent = type === 'payable' ? 'Nama Pemberi Pinjaman' : 'Nama Peminjam';
+                }
+
                 openModal('debtModal');
             }
         });
@@ -2440,6 +2453,16 @@ function initDebtEvents() {
     if (closePayDebtModalBtn) closePayDebtModalBtn.addEventListener('click', () => closeModal('payDebtModal'));
     const cancelPayDebtBtn = document.getElementById('cancelPayDebt');
     if (cancelPayDebtBtn) cancelPayDebtBtn.addEventListener('click', () => closeModal('payDebtModal'));
+
+    // Format Amount Inputs
+    const debtAmountInput = document.getElementById('debtAmount');
+    if (debtAmountInput) {
+        debtAmountInput.addEventListener('input', (e) => formatAmountInput(e.target));
+    }
+    const payDebtAmountInput = document.getElementById('payDebtAmount');
+    if (payDebtAmountInput) {
+        payDebtAmountInput.addEventListener('input', (e) => formatAmountInput(e.target));
+    }
 
     // Forms
     const debtForm = document.getElementById('debtForm');
@@ -2655,7 +2678,7 @@ async function handlePayDebtSubmit(e) {
             const transactionData = {
                 type: transType,
                 amount: amount,
-                category_id: 'others', // Fallback to 'Lain-lain' or check if exists
+                category_id: 'other', // Fallback to 'Lain-lain' or check if exists
                 description: `Pembayaran ${debt.type === 'payable' ? 'Hutang' : 'Piutang'}: ${debt.name}`,
                 date: new Date().toISOString().split('T')[0]
             };
@@ -2679,8 +2702,6 @@ async function handlePayDebtSubmit(e) {
         showToast('Error: ' + err.message, 'error');
     }
 }
-
-
 
 
 
