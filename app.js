@@ -1755,10 +1755,21 @@ Tabungan: ${context.savingsGoals.map(s => `${s.name}: ${formatCurrency(s.current
 }
 
 async function handleAIAction(action) {
+    // Intercept quick actions that are app features
+    if (action === 'add_transaction') {
+        openTransactionModal();
+        return;
+    }
+    if (action === 'history') {
+        openAllTransactions();
+        return;
+    }
+
     const prompts = {
         'analyze': 'Analisis pola pengeluaran saya',
         'budget': 'Berikan saran budget untuk saya',
-        'tips': 'Berikan tips hemat berdasarkan data saya'
+        'tips': 'Berikan tips hemat berdasarkan data saya',
+        'plan': 'Bantu saya membuat simulasi rencana keuangan'
     };
 
     const userMessage = prompts[action] || action;

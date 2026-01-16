@@ -3149,3 +3149,60 @@ details[open] summary {
         height: 12px;
     }
 }
+
+/* ========== AI Quick Actions Redesign ========== */
+.ai-quick-actions {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    padding: 10px;
+    max-height: 220px;
+    overflow-y: auto;
+    border-top: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+}
+
+.ai-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-align: left;
+    width: 100%;
+    transition: all 0.2s ease;
+}
+
+.ai-action-btn:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--accent-primary);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+}
+
+.ai-action-btn svg {
+    width: 20px;
+    height: 20px;
+    color: var(--accent-primary-light);
+    flex-shrink: 0;
+}
+
+/* Make sure modal content is visible on mobile */
+@media (max-width: 480px) {
+    .ai-quick-actions {
+        grid-template-columns: 1fr;
+        /* Stack vertically on small screens like reference */
+        max-height: 200px;
+        padding: 8px;
+    }
+
+    .ai-action-btn {
+        padding: 10px;
+        font-size: 0.8rem;
+    }
+}
