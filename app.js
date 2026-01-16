@@ -1591,85 +1591,7 @@ async function manualSyncFromTelegram() {
 }
 
 // ========== AI Assistant ==========
-function loadAISettings() {
-    const saved = localStorage.getItem(STORAGE_KEYS.AI_SETTINGS);
-    if (saved) {
-        const settings = JSON.parse(saved);
-        state.aiApiKey = settings.apiKey || '';
-        document.getElementById('geminiApiKey').value = state.aiApiKey;
-        updateAIStatus();
-    }
-}
-
-function saveAISettings() {
-    const apiKey = document.getElementById('geminiApiKey').value.trim();
-    state.aiApiKey = apiKey;
-    localStorage.setItem(STORAGE_KEYS.AI_SETTINGS, JSON.stringify({ apiKey }));
-    updateAIStatus();
-    closeModal('aiSettingsModal');
-    showToast('Pengaturan AI tersimpan!', 'success');
-}
-
-function updateAIStatus() {
-    const statusEl = document.getElementById('aiStatus');
-    const apiStatus = document.getElementById('aiApiStatus');
-
-    if (state.aiApiKey) {
-        statusEl.className = 'ai-status connected';
-        statusEl.querySelector('.status-text').textContent = 'Terhubung - Siap digunakan';
-        if (apiStatus) {
-            apiStatus.className = 'ai-api-status connected';
-            apiStatus.textContent = 'Terkonfigurasi';
-        }
-    } else {
-        statusEl.className = 'ai-status';
-        statusEl.querySelector('.status-text').textContent = 'Belum dikonfigurasi - Klik ⚙️ untuk setup API Key';
-        if (apiStatus) {
-            apiStatus.className = 'ai-api-status';
-            apiStatus.textContent = 'Belum dikonfigurasi';
-        }
-    }
-}
-
-async function testAIKey() {
-    const apiKey = document.getElementById('geminiApiKey').value.trim();
-    const statusEl = document.getElementById('aiApiStatus');
-
-    if (!apiKey) {
-        showToast('Masukkan API Key terlebih dahulu', 'error');
-        return;
-    }
-
-    statusEl.className = 'ai-api-status';
-    statusEl.textContent = 'Testing...';
-
-    try {
-        const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: 'Halo' }] }]
-                })
-            }
-        );
-
-        if (response.ok) {
-            statusEl.className = 'ai-api-status connected';
-            statusEl.textContent = 'Valid ✓';
-            showToast('API Key valid!', 'success');
-        } else {
-            statusEl.className = 'ai-api-status error';
-            statusEl.textContent = 'Invalid';
-            showToast('API Key tidak valid', 'error');
-        }
-    } catch (e) {
-        statusEl.className = 'ai-api-status error';
-        statusEl.textContent = 'Error';
-        showToast('Error: ' + e.message, 'error');
-    }
-}
+// AI settings removed - using server-side key
 
 function getFinancialContext() {
     const transactions = state.transactions;
@@ -1799,45 +1721,35 @@ function formatAIResponse(text) {
 }
 
 async function sendToGemini(userMessage, systemPrompt = '') {
-    if (!state.aiApiKey) {
-        showToast('Setup API Key terlebih dahulu di pengaturan', 'error');
-        return null;
-    }
-
-    const messages = [];
-    if (systemPrompt) {
-        messages.push({ role: 'user', parts: [{ text: systemPrompt }] });
-        messages.push({ role: 'model', parts: [{ text: 'Baik, saya mengerti. Saya siap membantu analisis keuangan Anda.' }] });
-    }
-    messages.push({ role: 'user', parts: [{ text: userMessage }] });
+    const context = getFinancialContext();
+    const contextString = `
+Total Pemasukan: ${formatCurrency(context.totalIncome)}
+Total Pengeluaran: ${formatCurrency(context.totalExpense)}
+Saldo: ${formatCurrency(context.balance)}
+Rasio Tabungan: ${context.savingsRatio}%
+Top Kategori: ${context.topCategories.join(', ')}
+Transaksi Terakhir: ${context.recentTransactions.join('; ')}
+Tabungan: ${context.savingsGoals.map(s => `${s.name}: ${formatCurrency(s.current)}/${formatCurrency(s.target)}`).join(', ')}
+    `;
 
     try {
-        const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${state.aiApiKey}`,
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: messages,
-                    generationConfig: {
-                        temperature: 0.7,
-                        maxOutputTokens: 2048
-                    }
-                })
+        const { data, error } = await window.FinansialKuAPI.supabase.functions.invoke('ai-chat', {
+            body: {
+                message: userMessage,
+                context: contextString,
+                history: state.aiChatHistory
             }
-        );
+        });
 
-        const data = await response.json();
+        if (error) throw error;
+        if (data.error) throw new Error(data.error);
 
-        if (data.candidates && data.candidates[0]) {
-            return data.candidates[0].content.parts[0].text;
-        } else {
-            throw new Error(data.error?.message || 'Unknown error');
-        }
+        return data.reply;
+
     } catch (e) {
-        console.error('Gemini API error:', e);
-        showToast('Error: ' + e.message, 'error');
-        return null;
+        console.error('AI Error:', e);
+        showToast('Gagal menghubungi AI: ' + e.message, 'error');
+        return "Maaf, terjadi kesalahan saat menghubungi asisten. Pastikan koneksi internet lancar.";
     }
 }
 
@@ -1887,12 +1799,7 @@ async function handleAIChat() {
 }
 
 function initAIEventListeners() {
-    // Settings modal
-    document.getElementById('aiSettingsBtn')?.addEventListener('click', () => openModal('aiSettingsModal'));
-    document.getElementById('closeAISettings')?.addEventListener('click', () => closeModal('aiSettingsModal'));
-    document.getElementById('closeAISettingsBtn')?.addEventListener('click', () => closeModal('aiSettingsModal'));
-    document.getElementById('saveAISettings')?.addEventListener('click', saveAISettings);
-    document.getElementById('testAIKey')?.addEventListener('click', testAIKey);
+    // AI Settings listeners removed
 
     // Quick actions
     document.querySelectorAll('.ai-action-btn').forEach(btn => {

@@ -1254,55 +1254,7 @@
         </div>
     </div>
 
-    <!-- AI Settings Modal -->
-    <div class="modal" id="aiSettingsModal">
-        <div class="modal-overlay"></div>
-        <div class="modal-content modal-small">
-            <div class="modal-header">
-                <h3>🤖 Pengaturan AI</h3>
-                <button class="btn-close" id="closeAISettings">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                        <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                </button>
-            </div>
-            <div class="ai-settings-content" style="padding: var(--space-6);">
-                <div class="ai-info"
-                    style="background: var(--bg-card); padding: var(--space-4); border-radius: var(--radius-lg); margin-bottom: var(--space-4);">
-                    <h4 style="margin-bottom: var(--space-2);">Cara Mendapatkan API Key:</h4>
-                    <ol
-                        style="padding-left: var(--space-4); color: var(--text-secondary); font-size: var(--font-size-sm);">
-                        <li>Buka <a href="https://aistudio.google.com/apikey" target="_blank"
-                                style="color: var(--accent-primary-light);">Google AI Studio</a></li>
-                        <li>Login dengan akun Google</li>
-                        <li>Klik "Create API Key"</li>
-                        <li>Copy dan paste di bawah</li>
-                    </ol>
-                </div>
-
-                <div class="form-group">
-                    <label>Google Gemini API Key</label>
-                    <input type="password" id="geminiApiKey" placeholder="AIzaSy...">
-                    <small style="color: var(--text-tertiary); font-size: 12px;">API key disimpan lokal di browser
-                        Anda</small>
-                </div>
-
-                <div class="form-group">
-                    <label>Status</label>
-                    <div style="display: flex; align-items: center; gap: var(--space-3);">
-                        <span class="ai-api-status" id="aiApiStatus">Belum dikonfigurasi</span>
-                        <button class="btn-text" id="testAIKey">Test</button>
-                    </div>
-                </div>
-
-                <div class="form-actions">
-                    <button type="button" class="btn-secondary" id="closeAISettingsBtn">Tutup</button>
-                    <button type="button" class="btn-primary" id="saveAISettings">Simpan</button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- AI Settings Modal Removed (Server-side managed) -->
 
     <!-- Toast Notification -->
     <div class="toast-container" id="toastContainer"></div>
