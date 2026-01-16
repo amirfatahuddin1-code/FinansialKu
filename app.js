@@ -1362,7 +1362,7 @@ function initEventListeners() {
     document.getElementById('closeTelegramSettingsBtn')?.addEventListener('click', () => closeModal('telegramSettingsModal'));
 
     // AI Assistant initialization
-    loadAISettings();
+    // loadAISettings removed - server side
     initAIEventListeners();
 
     // Theme toggle
