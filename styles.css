@@ -3218,3 +3218,120 @@ details[open] summary {
         font-size: 0.75rem;
     }
 }
+
+/* ========== Debt Management Styles ========== */
+.debt-card {
+    padding: var(--space-4);
+    border-left: 4px solid var(--border-color);
+    margin-bottom: var(--space-3);
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.debt-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.debt-card.payable {
+    border-left-color: var(--accent-danger);
+}
+
+.debt-card.receivable {
+    border-left-color: var(--accent-success);
+}
+
+.debt-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--space-2);
+}
+
+.debt-person {
+    font-weight: 600;
+    font-size: var(--font-size-base);
+    color: var(--text-primary);
+}
+
+.debt-amount {
+    font-weight: 700;
+    font-size: var(--font-size-base);
+}
+
+.debt-card.payable .debt-amount {
+    color: var(--accent-danger);
+}
+
+.debt-card.receivable .debt-amount {
+    color: var(--accent-success);
+}
+
+.debt-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+    margin-top: var(--space-2);
+}
+
+.debt-progress {
+    margin-top: var(--space-3);
+    height: 6px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.debt-progress-bar {
+    height: 100%;
+    background: var(--text-muted);
+    transition: width 0.3s ease;
+    width: 0%;
+}
+
+.debt-card.payable .debt-progress-bar {
+    background: var(--accent-danger);
+}
+
+.debt-card.receivable .debt-progress-bar {
+    background: var(--accent-success);
+}
+
+.debt-badges {
+    display: flex;
+    gap: 4px;
+    margin-top: 8px;
+}
+
+.badge {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.badge.paid {
+    background: rgba(16, 185, 129, 0.2);
+    color: var(--accent-success);
+}
+
+.badge.unpaid {
+    background: rgba(239, 68, 68, 0.2);
+    color: var(--accent-danger);
+}
+
+.badge.partial {
+    background: rgba(245, 158, 11, 0.2);
+    color: var(--warning);
+}
+
+.badge.overdue {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--accent-danger);
+    border: 1px solid var(--accent-danger);
+}

@@ -414,6 +414,52 @@
         }
     };
 
+    // ========== DEBTS API ==========
+
+    const debtsAPI = {
+        async getAll() {
+            const { user } = await authAPI.getUser();
+            if (!user) return { data: null, error: 'Not authenticated' };
+
+            const { data, error } = await supabaseClient
+                .from('debts')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false });
+            return { data, error };
+        },
+
+        async create(debt) {
+            const { user } = await authAPI.getUser();
+            if (!user) return { data: null, error: 'Not authenticated' };
+
+            const { data, error } = await supabaseClient
+                .from('debts')
+                .insert([{ ...debt, user_id: user.id }])
+                .select()
+                .single();
+            return { data, error };
+        },
+
+        async update(id, updates) {
+            const { data, error } = await supabaseClient
+                .from('debts')
+                .update(updates)
+                .eq('id', id)
+                .select()
+                .single();
+            return { data, error };
+        },
+
+        async delete(id) {
+            const { error } = await supabaseClient
+                .from('debts')
+                .delete()
+                .eq('id', id);
+            return { error };
+        }
+    };
+
     // ========== EXPORT TO GLOBAL ==========
 
     window.FinansialKuAPI = {
@@ -426,7 +472,8 @@
         savings: savingsAPI,
         events: eventsAPI,
         eventItems: eventItemsAPI,
-        telegram: telegramAPI
+        telegram: telegramAPI,
+        debts: debtsAPI
     };
 
     console.log('FinansialKu Supabase API loaded');

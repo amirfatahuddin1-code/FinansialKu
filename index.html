@@ -123,6 +123,13 @@
                 </svg>
                 <span>Laporan</span>
             </button>
+            <button class="nav-item" data-tab="debts">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2" />
+                    <path d="M9 19h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm0 0v-2" />
+                </svg>
+                <span>Hutang</span>
+            </button>
             <button class="nav-item" data-tab="aiAssistant">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="3" />
@@ -354,6 +361,67 @@
                         <div class="empty-state small">
                             <p>Belum ada target atau acara</p>
                         </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Debts Tab -->
+            <section class="tab-content" id="debts">
+                <div class="section-header">
+                    <h2>Hutang Piutang</h2>
+                    <button class="btn-primary" id="addDebtBtn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19" />
+                            <line x1="5" y1="12" x2="19" y2="12" />
+                        </svg>
+                        Catat Baru
+                    </button>
+                </div>
+
+                <!-- Type Tabs (Payable vs Receivable) -->
+                <div class="calc-tabs">
+                    <button class="calc-tab active" data-debt-type="payable">🔴 Hutang Saya</button>
+                    <button class="calc-tab" data-debt-type="receivable">🟢 Piutang (Orang)</button>
+                </div>
+
+                <!-- Filter Tabs -->
+                <div class="period-selector" style="margin-bottom: var(--space-4);">
+                    <button class="period-btn active" data-debt-status="all">Semua</button>
+                    <button class="period-btn" data-debt-status="unpaid">Belum Lunas</button>
+                    <button class="period-btn" data-debt-status="paid">Lunas</button>
+                </div>
+
+                <!-- Summary Cards -->
+                <div class="summary-cards">
+                    <div class="summary-card expense" id="debtSummaryCard">
+                        <div class="card-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2" />
+                                <path d="M9 19h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm0 0v-2" />
+                            </svg>
+                        </div>
+                        <div class="card-content">
+                            <span class="card-label">Total Hutang</span>
+                            <span class="card-value" id="totalDebts">Rp 0</span>
+                        </div>
+                    </div>
+                    <div class="summary-card income" id="receivableSummaryCard" style="display: none;">
+                        <div class="card-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                            </svg>
+                        </div>
+                        <div class="card-content">
+                            <span class="card-label">Total Piutang</span>
+                            <span class="card-value" id="totalReceivables">Rp 0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Debts List -->
+                <div class="transactions-list" id="debtsList">
+                    <div class="empty-state">
+                        <p>Belum ada data hutang/piutang</p>
                     </div>
                 </div>
             </section>
@@ -1269,6 +1337,101 @@
 
     <!-- Toast Notification -->
     <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Debt Modal -->
+    <div class="modal" id="debtModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="debtModalTitle">Catat Hutang Baru</h3>
+                <button class="btn-close" id="closeDebtModal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <form id="debtForm">
+                <input type="hidden" id="debtId" value="">
+                <input type="hidden" id="debtType" value="payable">
+
+                <div class="form-group">
+                    <label>Jenis</label>
+                    <div class="start-end-dates">
+                        <button type="button" class="btn-group-item active" data-type="payable" id="typePayableBtn">🔴
+                            Saya Berhutang</button>
+                        <button type="button" class="btn-group-item" data-type="receivable" id="typeReceivableBtn">🟢
+                            Orang Berhutang</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label id="debtNameLabel">Nama Pemberi Pinjaman</label>
+                    <input type="text" id="debtName" placeholder="Contoh: Bank ABC / Budi" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Deskripsi (Opsional)</label>
+                    <input type="text" id="debtDescription" placeholder="Contoh: Pinjaman Renovasi Rumah">
+                </div>
+
+                <div class="form-group">
+                    <label>Total Nominal</label>
+                    <div class="amount-input">
+                        <span class="currency">Rp</span>
+                        <input type="text" id="debtAmount" placeholder="0" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Jatuh Tempo (Opsional)</label>
+                    <input type="date" id="debtDueDate">
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="cancelDebt">Batal</button>
+                    <button type="submit" class="btn-primary">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Pay Debt Modal -->
+    <div class="modal" id="payDebtModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h3>Catat Pembayaran</h3>
+                <button class="btn-close" id="closePayDebtModal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <form id="payDebtForm">
+                <input type="hidden" id="payDebtId" value="">
+
+                <div class="form-group">
+                    <p style="margin-bottom: 8px; font-size: 0.9rem;" id="payDebtInfo">Sisa Hutang: Rp 0</p>
+                    <label>Jumlah Bayar</label>
+                    <div class="amount-input">
+                        <span class="currency">Rp</span>
+                        <input type="text" id="payDebtAmount" placeholder="0" required>
+                    </div>
+                    <label class="checkbox-label" style="margin-top: 8px;">
+                        <input type="checkbox" id="recordAsTransaction" checked>
+                        <span>Catat juga sebagai Transaksi (Pengeluaran/Pemasukan)</span>
+                    </label>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="cancelPayDebt">Batal</button>
+                    <button type="submit" class="btn-primary">Simpan Pembayaran</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <script src="supabase.js"></script>
     <script src="app.js"></script>

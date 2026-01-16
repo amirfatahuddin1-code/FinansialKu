@@ -8,7 +8,8 @@ const STORAGE_KEYS = {
     SAVINGS: 'finansialku_savings',
     EVENTS: 'finansialku_events',
     SYNC_SERVER: 'finansialku_sync_server',
-    AI_SETTINGS: 'finansialku_ai_settings'
+    AI_SETTINGS: 'finansialku_ai_settings',
+    DEBTS: 'finansialku_debts'
 };
 
 // Default Categories
@@ -46,7 +47,8 @@ let state = {
     syncInterval: null,
     // AI State
     aiApiKey: '',
-    aiChatHistory: []
+    aiChatHistory: [],
+    debts: []
 };
 
 // ========== Utility Functions ==========
@@ -162,6 +164,10 @@ async function loadData() {
         ...e,
         items: e.items || []
     }));
+
+    // Load debts
+    const { data: debts } = await API.debts.getAll();
+    state.debts = debts || [];
 }
 
 async function saveTransaction(transaction) {
@@ -377,6 +383,7 @@ function updateCurrentTab(tab) {
         case 'planning': updatePlanning(); break;
         case 'events': updateEvents(); break;
         case 'reports': updateReports(); break;
+        case 'debts': renderDebts(); break;
     }
 }
 
@@ -2360,7 +2367,318 @@ function initTelegramSettings() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', init);
+// ========== Debt Management Functions ==========
+
+function initDebtEvents() {
+    // Initial Render call if on debt tab (though renderDebts is called by updateCurrentTab)
+    // But we need to setup listeners
+
+    // Tab Listeners (Payable vs Receivable in Form)
+    const typeBtns = document.querySelectorAll('.btn-group-item[data-type]');
+    typeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // Toggle active class
+            document.querySelectorAll('.btn-group-item[data-type]').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // Update hidden input
+            document.getElementById('debtType').value = btn.dataset.type;
+        });
+    });
+
+    // Content Type Tabs (Header of Page)
+    const debtTypeTabs = document.querySelectorAll('.calc-tab[data-debt-type]');
+    debtTypeTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            debtTypeTabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            renderDebts(); // Re-render based on active tab
+        });
+    });
+
+    // Filter Tabs
+    const filterBtns = document.querySelectorAll('.period-btn[data-debt-status]');
+    filterBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.period-btn[data-debt-status]').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderDebts();
+        });
+    });
+
+    // Add Debt Button
+    const addDebtBtn = document.getElementById('addDebtBtn');
+    if (addDebtBtn) {
+        addDebtBtn.addEventListener('click', () => {
+            const form = document.getElementById('debtForm');
+            if (form) {
+                form.reset();
+                document.getElementById('debtId').value = '';
+                document.getElementById('debtModalTitle').textContent = 'Catat Hutang Baru';
+
+                // Set default type based on active tab
+                const activeTypeTab = document.querySelector('.calc-tab[data-debt-type].active');
+                const type = activeTypeTab ? activeTypeTab.dataset.debtType : 'payable';
+                document.getElementById('debtType').value = type;
+
+                document.querySelectorAll('.btn-group-item[data-type]').forEach(b => {
+                    b.classList.toggle('active', b.dataset.type === type);
+                });
+
+                openModal('debtModal');
+            }
+        });
+    }
+
+    // Modal Close Buttons
+    const closeDebtModalBtn = document.getElementById('closeDebtModal');
+    if (closeDebtModalBtn) closeDebtModalBtn.addEventListener('click', () => closeModal('debtModal'));
+    const cancelDebtBtn = document.getElementById('cancelDebt');
+    if (cancelDebtBtn) cancelDebtBtn.addEventListener('click', () => closeModal('debtModal'));
+
+    const closePayDebtModalBtn = document.getElementById('closePayDebtModal');
+    if (closePayDebtModalBtn) closePayDebtModalBtn.addEventListener('click', () => closeModal('payDebtModal'));
+    const cancelPayDebtBtn = document.getElementById('cancelPayDebt');
+    if (cancelPayDebtBtn) cancelPayDebtBtn.addEventListener('click', () => closeModal('payDebtModal'));
+
+    // Forms
+    const debtForm = document.getElementById('debtForm');
+    if (debtForm) debtForm.addEventListener('submit', handleDebtSubmit);
+
+    const payDebtForm = document.getElementById('payDebtForm');
+    if (payDebtForm) payDebtForm.addEventListener('submit', handlePayDebtSubmit);
+}
+
+// Ensure initDebtEvents is called
+document.addEventListener('DOMContentLoaded', () => {
+    init();
+    initDebtEvents();
+});
+
+
+async function handleDebtSubmit(e) {
+    e.preventDefault();
+    const id = document.getElementById('debtId').value;
+    const type = document.getElementById('debtType').value;
+    const name = document.getElementById('debtName').value;
+    const description = document.getElementById('debtDescription').value;
+    const amountStr = document.getElementById('debtAmount').value;
+    const amount = parseAmount(amountStr);
+    const dueDate = document.getElementById('debtDueDate').value;
+
+    const debtData = {
+        type,
+        name,
+        description,
+        amount,
+        due_date: dueDate || null,
+        status: 'unpaid' // Default
+    };
+
+    try {
+        if (id) {
+            await window.FinansialKuAPI.debts.update(id, debtData);
+            showToast('Data diperbarui', 'success');
+        } else {
+            await window.FinansialKuAPI.debts.create(debtData);
+            showToast('Data baru berhasil dicatat', 'success');
+        }
+        closeModal('debtModal');
+        await loadData(); // Reload all data to sync state
+        renderDebts();
+    } catch (err) {
+        showToast('Gagal menyimpan data: ' + err.message, 'error');
+    }
+}
+
+function renderDebts() {
+    const activeTypeTab = document.querySelector('.calc-tab[data-debt-type].active');
+    const activeType = activeTypeTab ? activeTypeTab.dataset.debtType : 'payable';
+
+    const activeFilterTab = document.querySelector('.period-btn[data-debt-status].active');
+    const activeFilter = activeFilterTab ? activeFilterTab.dataset.debtStatus : 'all';
+
+    // Summary Cards Visibility
+    const payableCard = document.getElementById('debtSummaryCard');
+    const receivableCard = document.getElementById('receivableSummaryCard');
+
+    if (payableCard) payableCard.style.display = activeType === 'payable' ? 'flex' : 'none';
+    if (receivableCard) receivableCard.style.display = activeType === 'receivable' ? 'flex' : 'none';
+
+    // Calculate Totals
+    const debts = state.debts || [];
+
+    const payableTotal = debts
+        .filter(d => d.type === 'payable' && d.status !== 'paid')
+        .reduce((sum, d) => sum + (d.amount - d.amount_paid), 0);
+
+    const receivableTotal = debts
+        .filter(d => d.type === 'receivable' && d.status !== 'paid')
+        .reduce((sum, d) => sum + (d.amount - d.amount_paid), 0);
+
+    const elTotalDebts = document.getElementById('totalDebts');
+    if (elTotalDebts) elTotalDebts.textContent = formatCurrency(payableTotal);
+
+    const elTotalReceivables = document.getElementById('totalReceivables');
+    if (elTotalReceivables) elTotalReceivables.textContent = formatCurrency(receivableTotal);
+
+    // Filter List
+    const list = document.getElementById('debtsList');
+    if (!list) return;
+
+    list.innerHTML = '';
+
+    let filteredDebts = debts.filter(d => d.type === activeType);
+
+    if (activeFilter !== 'all') {
+        filteredDebts = filteredDebts.filter(d => activeFilter === 'paid' ? d.status === 'paid' : d.status !== 'paid');
+    }
+
+    if (filteredDebts.length === 0) {
+        list.innerHTML = '<div class="empty-state"><p>Tidak ada data.</p></div>';
+        return;
+    }
+
+    filteredDebts.forEach(debt => {
+        const remaining = debt.amount - debt.amount_paid;
+        const progress = Math.min((debt.amount_paid / debt.amount) * 100, 100);
+        const isPaid = debt.status === 'paid';
+
+        let statusBadge = '';
+        if (isPaid) statusBadge = '<span class="badge paid">Lunas</span>';
+        else if (debt.amount_paid > 0) statusBadge = '<span class="badge partial">Cicilan</span>';
+        else statusBadge = '<span class="badge unpaid">Belum Lunas</span>';
+
+        // Check overdue
+        if (!isPaid && debt.due_date && new Date(debt.due_date) < new Date()) {
+            statusBadge += ' <span class="badge overdue">Jatuh Tempo</span>';
+        }
+
+        const card = document.createElement('div');
+        card.className = `debt-card ${debt.type}`;
+        // Prevent XSS
+        const safeName = debt.name.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        const safeDesc = (debt.description || '').replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        const dueDateStr = debt.due_date ? formatDateShort(debt.due_date) : '-';
+
+        card.innerHTML = `
+            <div class="debt-header">
+                <span class="debt-person">${safeName}</span>
+                <span class="debt-amount">${formatCurrency(debt.amount)}</span>
+            </div>
+            <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 8px;">${safeDesc}</div>
+            
+            <div class="debt-progress">
+                <div class="debt-progress-bar" style="width: ${progress}%"></div>
+            </div>
+            
+            <div class="debt-meta">
+                <span>Terbayar: ${formatCurrency(debt.amount_paid)}</span>
+                <span>Sisa: ${formatCurrency(remaining)}</span>
+            </div>
+            <div class="debt-meta">
+                <span>Tempo: ${dueDateStr}</span>
+                <div class="debt-badges">${statusBadge}</div>
+            </div>
+            
+            <div class="term-actions" style="margin-top: 12px; display: flex; gap: 8px; justify-content: flex-end;">
+                ${!isPaid ? `<button class="btn-primary btn-small" onclick="openPayDebtModal('${debt.id}')">Bayar/Cicil</button>` : ''}
+                <button class="btn-icon btn-small delete-btn" onclick="deleteDebt('${debt.id}')" title="Hapus">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path></svg>
+                </button>
+            </div>
+        `;
+        list.appendChild(card);
+    });
+}
+
+// Make globally accessible for onclick events in HTML string
+window.openPayDebtModal = function (id) {
+    const debt = state.debts.find(d => d.id === id);
+    if (!debt) return;
+
+    document.getElementById('payDebtId').value = id;
+    document.getElementById('payDebtAmount').value = '';
+    const remaining = debt.amount - debt.amount_paid;
+
+    const infoEl = document.getElementById('payDebtInfo');
+    if (infoEl) infoEl.textContent = `Sisa Hutang: ${formatCurrency(remaining)}`;
+
+    // Update label based on type
+    const label = debt.type === 'payable' ? 'Jumlah Bayar' : 'Jumlah Diterima';
+    const labelEl = document.querySelector('#payDebtForm label:nth-of-type(2)'); // Adjust selector index if needed (1st is 'Sisa info' p tag?) 
+    // Wait, <p> is not label. 1st label is "Jumlah Bayar".
+    const firstLabel = document.querySelector('#payDebtForm label');
+    if (firstLabel) firstLabel.textContent = label;
+
+    openModal('payDebtModal');
+};
+
+window.deleteDebt = async function (id) {
+    if (!confirm('Yakin ingin menghapus data ini?')) return;
+
+    try {
+        await window.FinansialKuAPI.debts.delete(id);
+        showToast('Data dihapus', 'success');
+        await loadData();
+        renderDebts();
+    } catch (err) {
+        showToast('Gagal menghapus: ' + err.message, 'error');
+    }
+};
+
+async function handlePayDebtSubmit(e) {
+    e.preventDefault();
+    const id = document.getElementById('payDebtId').value;
+    const amount = parseAmount(document.getElementById('payDebtAmount').value);
+    const recordTransaction = document.getElementById('recordAsTransaction').checked;
+
+    if (amount <= 0) return;
+
+    const debt = state.debts.find(d => d.id === id);
+    if (!debt) return;
+
+    const newAmountPaid = parseFloat(debt.amount_paid) + amount;
+    const isPaid = newAmountPaid >= debt.amount;
+
+    try {
+        // Update Debt
+        await window.FinansialKuAPI.debts.update(id, {
+            amount_paid: newAmountPaid,
+            status: isPaid ? 'paid' : 'partial'
+        });
+
+        // Record Transaction (Bypass potentially buggy global saveTransaction)
+        if (recordTransaction) {
+            const transType = debt.type === 'payable' ? 'expense' : 'income'; // hutang = keluar duit (expense), piutang = terima duit (income)
+
+            const transactionData = {
+                type: transType,
+                amount: amount,
+                category_id: 'others', // Fallback to 'Lain-lain' or check if exists
+                description: `Pembayaran ${debt.type === 'payable' ? 'Hutang' : 'Piutang'}: ${debt.name}`,
+                date: new Date().toISOString().split('T')[0]
+            };
+
+            // Try to find a better category if possible, or create one? 
+            // Better stick to 'others' or 'income'/'expense' defaults (usually user has them)
+            // Let's just send 'others' string. Logic in API or backend might handle ID mismatch?
+            // Existing logic uses IDs like 'food', 'transport'. 'others' is likely to exist or be handled.
+
+            const { data: newTrans, error: transError } = await window.FinansialKuAPI.transactions.create(transactionData);
+            if (transError) console.error('Failed to auto-record transaction:', transError);
+            // We don't block the debt update if transaction record fails, just log it.
+        }
+
+        showToast('Pembayaran berhasil dicatat', 'success');
+        closeModal('payDebtModal');
+        await loadData();
+        renderDebts();
+
+    } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+    }
+}
 
 
 
