@@ -1157,7 +1157,41 @@ function renderCategoryPie() {
 
     const ctx = document.getElementById('categoryPieChart').getContext('2d');
     if (pieChart) pieChart.destroy();
-    if (data.length) { pieChart = new Chart(ctx, { type: 'pie', data: { labels: data.map(c => c.name), datasets: [{ data: data.map(c => c.total), backgroundColor: data.map(c => c.color) }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } }); }
+    if (data.length) {
+        pieChart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: data.map(c => c.name),
+                datasets: [{
+                    data: data.map(c => c.total),
+                    backgroundColor: data.map(c => c.color),
+                    borderWidth: 1,
+                    borderColor: 'rgba(255, 255, 255, 0.1)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                let label = context.label || '';
+                                if (label) label += ': ';
+                                if (context.parsed !== null) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = Math.round((context.parsed / total) * 100);
+                                    label += formatCurrency(context.parsed) + ' (' + percentage + '%)';
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
 
     const legend = document.getElementById('categoryLegend');
     const total = data.reduce((s, c) => s + c.total, 0);
