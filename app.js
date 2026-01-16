@@ -131,6 +131,33 @@ function monthsUntil(dateStr) {
     return Math.max(1, months);
 }
 
+// Helper to ensure debt categories exist for the logged-in user
+async function ensureDebtCategory(name, type, icon, color) {
+    if (!state.categories) return null;
+
+    // Find existing category by name and type
+    let cat = state.categories.find(c => c.name === name && c.type === type);
+    if (cat) return cat.id;
+
+    // Create if missing
+    try {
+        const { data, error } = await window.FinansialKuAPI.categories.create({
+            name, type, icon, color
+        });
+        if (error) throw error;
+        if (data) {
+            state.categories.push(data); // Update local state
+            return data.id;
+        }
+    } catch (err) {
+        console.error('Failed to create debt category:', err);
+        // Fallback to any category of that type
+        const fallback = state.categories.find(c => c.type === type);
+        return fallback ? fallback.id : null;
+    }
+    return null;
+}
+
 // ========== Storage Functions (Supabase) ==========
 async function loadData() {
     const API = window.FinansialKuAPI;
