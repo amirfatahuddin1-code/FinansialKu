@@ -27,11 +27,7 @@ const DEFAULT_CATEGORIES = [
     { id: 'bonus', name: 'Bonus', icon: '🎁', color: '#f59e0b', type: 'income' },
     { id: 'investment', name: 'Investasi', icon: '📈', color: '#8b5cf6', type: 'income' },
     { id: 'freelance', name: 'Freelance', icon: '💼', color: '#3b82f6', type: 'income' },
-    // Debt Categories
-    { id: '93498308-b119-4537-b648-52541334863a', name: 'Dapat Pinjaman', icon: '💰', color: '#10b981', type: 'income' },
-    { id: '17799564-901d-4861-9cc4-773411030245', name: 'Bayar Hutang', icon: '💸', color: '#ef4444', type: 'expense' },
-    { id: 'e23058a5-d858-450f-aae6-553b6fa72d32', name: 'Beri Pinjaman', icon: '🤝', color: '#f59e0b', type: 'expense' },
-    { id: 'f7380907-7469-424f-a2e6-c146d9d13e00', name: 'Terima Piutang', icon: '📥', color: '#3b82f6', type: 'income' }
+    { id: 'freelance', name: 'Freelance', icon: '💼', color: '#3b82f6', type: 'income' }
 ];
 
 const ICON_OPTIONS = ['🍽️', '🚗', '🛒', '🎬', '💊', '📄', '📚', '📦', '💰', '🎁', '📈', '💼', '🏠', '✈️', '🎮', '👔', '💍', '📸', '🎨', '🏛️'];
@@ -2515,20 +2511,28 @@ async function handleDebtSubmit(e) {
             // Auto Transaction: Initial Debt/Loan Record
             if (newDebt) {
                 const isPayable = newDebt.type === 'payable';
-                // Payable (Utang Saya) -> Income (Dapat Pinjaman)
-                // Receivable (Utang Orang/Piutang) -> Expense (Beri Pinjaman)
+                // Payable -> Income (Dapat Pinjaman)
+                // Receivable -> Expense (Beri Pinjaman)
                 const transType = isPayable ? 'income' : 'expense';
-                // Use explicit UUIDs matching the SQL script
-                const catId = isPayable ? '93498308-b119-4537-b648-52541334863a' : 'e23058a5-d858-450f-aae6-553b6fa72d32';
-                const desc = isPayable ? `Pinjaman dari: ${newDebt.name}` : `Pinjaman ke: ${newDebt.name}`;
 
-                await window.FinansialKuAPI.transactions.create({
-                    type: transType,
-                    amount: newDebt.amount,
-                    category_id: catId,
-                    description: desc,
-                    date: new Date().toISOString().split('T')[0]
-                });
+                // Get dynamic Category ID
+                let catId;
+                if (isPayable) {
+                    catId = await ensureDebtCategory('Dapat Pinjaman', 'income', '💰', '#10b981');
+                } else {
+                    catId = await ensureDebtCategory('Beri Pinjaman', 'expense', '🤝', '#f59e0b');
+                }
+
+                if (catId) {
+                    const desc = isPayable ? `Pinjaman dari: ${newDebt.name}` : `Pinjaman ke: ${newDebt.name}`;
+                    await window.FinansialKuAPI.transactions.create({
+                        type: transType,
+                        amount: newDebt.amount,
+                        category_id: catId,
+                        description: desc,
+                        date: new Date().toISOString().split('T')[0]
+                    });
+                }
             }
         }
         closeModal('debtModal');
@@ -2702,26 +2706,29 @@ async function handlePayDebtSubmit(e) {
             // Receivable (Piutang/Orang Berhutang) -> Terima -> Income (Terima Piutang)
             const isPayable = debt.type === 'payable';
             const transType = isPayable ? 'expense' : 'income';
-            // Use explicit UUIDs matching the SQL script
-            const catId = isPayable ? '17799564-901d-4861-9cc4-773411030245' : 'f7380907-7469-424f-a2e6-c146d9d13e00';
+
+            // Get dynamic Category ID
+            let catId;
+            if (isPayable) {
+                catId = await ensureDebtCategory('Bayar Hutang', 'expense', '💸', '#ef4444');
+            } else {
+                catId = await ensureDebtCategory('Terima Piutang', 'income', '📥', '#3b82f6');
+            }
+
             const actionDesc = isPayable ? 'Bayar Hutang ke' : 'Terima Piutang dari';
 
-            const transactionData = {
-                type: transType,
-                amount: amount,
-                category_id: catId,
-                description: `${actionDesc}: ${debt.name}`,
-                date: new Date().toISOString().split('T')[0]
-            };
+            if (catId) {
+                const transactionData = {
+                    type: transType,
+                    amount: amount,
+                    category_id: catId,
+                    description: `${actionDesc}: ${debt.name}`,
+                    date: new Date().toISOString().split('T')[0]
+                };
 
-            // Try to find a better category if possible, or create one? 
-            // Better stick to 'others' or 'income'/'expense' defaults (usually user has them)
-            // Let's just send 'others' string. Logic in API or backend might handle ID mismatch?
-            // Existing logic uses IDs like 'food', 'transport'. 'others' is likely to exist or be handled.
-
-            const { data: newTrans, error: transError } = await window.FinansialKuAPI.transactions.create(transactionData);
-            if (transError) console.error('Failed to auto-record transaction:', transError);
-            // We don't block the debt update if transaction record fails, just log it.
+                const { data: newTrans, error: transError } = await window.FinansialKuAPI.transactions.create(transactionData);
+                if (transError) console.error('Failed to auto-record transaction:', transError);
+            }
         }
 
         showToast('Pembayaran berhasil dicatat', 'success');
