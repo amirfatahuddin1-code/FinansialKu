@@ -26,7 +26,12 @@ const DEFAULT_CATEGORIES = [
     { id: 'salary', name: 'Gaji', icon: '💰', color: '#10b981', type: 'income' },
     { id: 'bonus', name: 'Bonus', icon: '🎁', color: '#f59e0b', type: 'income' },
     { id: 'investment', name: 'Investasi', icon: '📈', color: '#8b5cf6', type: 'income' },
-    { id: 'freelance', name: 'Freelance', icon: '💼', color: '#3b82f6', type: 'income' }
+    { id: 'freelance', name: 'Freelance', icon: '💼', color: '#3b82f6', type: 'income' },
+    // Debt Categories
+    { id: 'income_debt', name: 'Dapat Pinjaman', icon: '💰', color: '#10b981', type: 'income' },
+    { id: 'expense_pay_debt', name: 'Bayar Hutang', icon: '💸', color: '#ef4444', type: 'expense' },
+    { id: 'expense_loan', name: 'Beri Pinjaman', icon: '🤝', color: '#f59e0b', type: 'expense' },
+    { id: 'income_collect_debt', name: 'Terima Piutang', icon: '📥', color: '#3b82f6', type: 'income' }
 ];
 
 const ICON_OPTIONS = ['🍽️', '🚗', '🛒', '🎬', '💊', '📄', '📚', '📦', '💰', '🎁', '📈', '💼', '🏠', '✈️', '🎮', '👔', '💍', '📸', '🎨', '🏛️'];
@@ -2503,8 +2508,27 @@ async function handleDebtSubmit(e) {
             await window.FinansialKuAPI.debts.update(id, debtData);
             showToast('Data diperbarui', 'success');
         } else {
-            await window.FinansialKuAPI.debts.create(debtData);
+            const { data: newDebt, error } = await window.FinansialKuAPI.debts.create(debtData);
+            if (error) throw new Error(error.message);
             showToast('Data baru berhasil dicatat', 'success');
+
+            // Auto Transaction: Initial Debt/Loan Record
+            if (newDebt) {
+                const isPayable = newDebt.type === 'payable';
+                // Payable (Utang Saya) -> Income (Dapat Pinjaman)
+                // Receivable (Utang Orang/Piutang) -> Expense (Beri Pinjaman)
+                const transType = isPayable ? 'income' : 'expense';
+                const catId = isPayable ? 'income_debt' : 'expense_loan';
+                const desc = isPayable ? `Pinjaman dari: ${newDebt.name}` : `Pinjaman ke: ${newDebt.name}`;
+
+                await window.FinansialKuAPI.transactions.create({
+                    type: transType,
+                    amount: newDebt.amount,
+                    category_id: catId,
+                    description: desc,
+                    date: new Date().toISOString().split('T')[0]
+                });
+            }
         }
         closeModal('debtModal');
         await loadData(); // Reload all data to sync state
@@ -2673,13 +2697,18 @@ async function handlePayDebtSubmit(e) {
 
         // Record Transaction (Bypass potentially buggy global saveTransaction)
         if (recordTransaction) {
-            const transType = debt.type === 'payable' ? 'expense' : 'income'; // hutang = keluar duit (expense), piutang = terima duit (income)
+            // Payable (Hutang Saya) -> Bayar -> Expense (Bayar Hutang)
+            // Receivable (Piutang/Orang Berhutang) -> Terima -> Income (Terima Piutang)
+            const isPayable = debt.type === 'payable';
+            const transType = isPayable ? 'expense' : 'income';
+            const catId = isPayable ? 'expense_pay_debt' : 'income_collect_debt';
+            const actionDesc = isPayable ? 'Bayar Hutang ke' : 'Terima Piutang dari';
 
             const transactionData = {
                 type: transType,
                 amount: amount,
-                category_id: 'other', // Fallback to 'Lain-lain' or check if exists
-                description: `Pembayaran ${debt.type === 'payable' ? 'Hutang' : 'Piutang'}: ${debt.name}`,
+                category_id: catId,
+                description: `${actionDesc}: ${debt.name}`,
                 date: new Date().toISOString().split('T')[0]
             };
 
