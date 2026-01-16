@@ -28,10 +28,10 @@ const DEFAULT_CATEGORIES = [
     { id: 'investment', name: 'Investasi', icon: '📈', color: '#8b5cf6', type: 'income' },
     { id: 'freelance', name: 'Freelance', icon: '💼', color: '#3b82f6', type: 'income' },
     // Debt Categories
-    { id: 'income_debt', name: 'Dapat Pinjaman', icon: '💰', color: '#10b981', type: 'income' },
-    { id: 'expense_pay_debt', name: 'Bayar Hutang', icon: '💸', color: '#ef4444', type: 'expense' },
-    { id: 'expense_loan', name: 'Beri Pinjaman', icon: '🤝', color: '#f59e0b', type: 'expense' },
-    { id: 'income_collect_debt', name: 'Terima Piutang', icon: '📥', color: '#3b82f6', type: 'income' }
+    { id: '93498308-b119-4537-b648-52541334863a', name: 'Dapat Pinjaman', icon: '💰', color: '#10b981', type: 'income' },
+    { id: '17799564-901d-4861-9cc4-773411030245', name: 'Bayar Hutang', icon: '💸', color: '#ef4444', type: 'expense' },
+    { id: 'e23058a5-d858-450f-aae6-553b6fa72d32', name: 'Beri Pinjaman', icon: '🤝', color: '#f59e0b', type: 'expense' },
+    { id: 'f7380907-7469-424f-a2e6-c146d9d13e00', name: 'Terima Piutang', icon: '📥', color: '#3b82f6', type: 'income' }
 ];
 
 const ICON_OPTIONS = ['🍽️', '🚗', '🛒', '🎬', '💊', '📄', '📚', '📦', '💰', '🎁', '📈', '💼', '🏠', '✈️', '🎮', '👔', '💍', '📸', '🎨', '🏛️'];
@@ -2518,7 +2518,8 @@ async function handleDebtSubmit(e) {
                 // Payable (Utang Saya) -> Income (Dapat Pinjaman)
                 // Receivable (Utang Orang/Piutang) -> Expense (Beri Pinjaman)
                 const transType = isPayable ? 'income' : 'expense';
-                const catId = isPayable ? 'income_debt' : 'expense_loan';
+                // Use explicit UUIDs matching the SQL script
+                const catId = isPayable ? '93498308-b119-4537-b648-52541334863a' : 'e23058a5-d858-450f-aae6-553b6fa72d32';
                 const desc = isPayable ? `Pinjaman dari: ${newDebt.name}` : `Pinjaman ke: ${newDebt.name}`;
 
                 await window.FinansialKuAPI.transactions.create({
@@ -2701,7 +2702,8 @@ async function handlePayDebtSubmit(e) {
             // Receivable (Piutang/Orang Berhutang) -> Terima -> Income (Terima Piutang)
             const isPayable = debt.type === 'payable';
             const transType = isPayable ? 'expense' : 'income';
-            const catId = isPayable ? 'expense_pay_debt' : 'income_collect_debt';
+            // Use explicit UUIDs matching the SQL script
+            const catId = isPayable ? '17799564-901d-4861-9cc4-773411030245' : 'f7380907-7469-424f-a2e6-c146d9d13e00';
             const actionDesc = isPayable ? 'Bayar Hutang ke' : 'Terima Piutang dari';
 
             const transactionData = {
