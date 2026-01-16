@@ -1269,6 +1269,7 @@ async function init() {
     loadSyncSettings();
     initCalculators();
     initTelegramSettings();
+    initAIEventListeners(); // Initialize AI chat listeners
 }
 
 async function checkAuth() {
