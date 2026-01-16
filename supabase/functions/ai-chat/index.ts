@@ -1,47 +1,63 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
     // Handle CORS
     if (req.method === 'OPTIONS') {
         return new Response('ok', { headers: corsHeaders })
     }
 
     try {
-        const { message, context, history } = await req.json()
         const apiKey = Deno.env.get('GEMINI_API_KEY')
 
+        // Debugging: Cek apakah API Key ada (tanpa log nilai aslinya)
         if (!apiKey) {
-            throw new Error('Gemini API Key not configured on server')
+            console.error("CRITICAL: GEMINI_API_KEY is missing in environment variables!");
+            throw new Error('Server Configuration Error: API Key not found. Please set GEMINI_API_KEY in Supabase Secrets.')
         }
 
-        // Construct prompt with context
-        const limitHistory = history ? history.slice(-10) : []; // Ambil 10 chat terakhir
+        // Parse Body
+        let body;
+        try {
+            body = await req.json();
+        } catch (e) {
+            throw new Error("Invalid JSON body");
+        }
 
-        // Format history for Gemini API is generic content generation
-        // Simple prompt construction
-        let fullPrompt = `Peran: Kamu adalah Asisten Keuangan Pribadi untuk aplikasi "FinansialKu".
-Konteks Keuangan User Saat Ini:
-${context}
+        const { message, context, history } = body;
+
+        if (!message) {
+            throw new Error("Message is required");
+        }
+
+        // Limit history untuk efisiensi token
+        const limitHistory = Array.isArray(history) ? history.slice(-10) : [];
+
+        const fullPrompt = `Peran: Kamu adalah Asisten Keuangan Pribadi untuk aplikasi "FinansialKu".
+Konteks Keuangan User:
+${context || 'Tidak ada data keuangan.'}
 
 Instruksi:
-1. Jawab pertanyaan user dengan ramah, singkat, dan memotivasi.
-2. Gunakan data konteks di atas untuk memberikan saran spesifik jika relevan.
-3. Jangan berikan saran investasi yang spesifik (saham X, crypto Y), tapi saran umum boleh.
-4. Gunakan Bahasa Indonesia yang luwes (baku tapi santai).
-5. Jika user meminta rekap/analisis, gunakan data yang tersedia.
+1. Jawab ramah, singkat, memotivasi.
+2. Gunakan Bahasa Indonesia santai tapi sopan.
+3. Berikan saran praktis berdasarkan data di atas.
+4. Jangan berikan nasihat investasi spesifik (saham/crypto).
 
-Riwayat Chat:
+Riwayat Chat Terakhir:
 ${limitHistory.map((h: any) => `${h.role}: ${h.text}`).join('\n')}
 
 User: ${message}
 Asisten:`;
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
+        // Call Gemini API (v1beta gemini-1.5-flash)
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+        console.log("Sending request to Gemini...");
+
+        const response = await fetch(geminiUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -51,27 +67,43 @@ Asisten:`;
                     parts: [{
                         text: fullPrompt
                     }]
-                }]
+                }],
+                generationConfig: {
+                    temperature: 0.7,
+                    maxOutputTokens: 1000,
+                }
             })
         })
 
         const data = await response.json()
 
-        if (data.error) {
-            throw new Error(data.error.message || 'Gemini API Error')
+        if (!response.ok) {
+            console.error("Gemini API Error Response:", JSON.stringify(data));
+            const errorMessage = data.error?.message || `Gemini API returned status ${response.status}`;
+            throw new Error(`Gemini API Error: ${errorMessage}`);
         }
 
-        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Maaf, saya tidak dapat memproses permintaan saat ini.";
+        if (data.error) {
+            console.error("Gemini Data Error:", JSON.stringify(data.error));
+            throw new Error(data.error.message || 'Unknown Gemini Error');
+        }
+
+        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Maaf, saya tidak dapat memproses permintaan saat ini. (No candidate)";
 
         return new Response(JSON.stringify({ reply }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 200,
         })
 
-    } catch (error) {
-        return new Response(JSON.stringify({ error: error.message }), {
+    } catch (error: any) {
+        console.error("Edge Function Error:", error);
+
+        return new Response(JSON.stringify({
+            error: error.message,
+            details: "Check Supabase Edge Function Logs for more info."
+        }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 400,
+            status: 500, // Return 500 so client knows it failed on server
         })
     }
 })
