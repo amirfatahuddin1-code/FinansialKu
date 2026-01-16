@@ -52,8 +52,8 @@ ${limitHistory.map((h: any) => `${h.role}: ${h.text}`).join('\n')}
 User: ${message}
 Asisten:`;
 
-        // Call Gemini API (v1beta gemini-1.5-flash)
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        // Call Gemini API (v1beta gemini-2.5-flash)
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
         console.log("Sending request to Gemini...");
 
@@ -98,12 +98,14 @@ Asisten:`;
     } catch (error: any) {
         console.error("Edge Function Error:", error);
 
+        // Return 200 with error field so client can read the message
+        // instead of getting a generic "non-2xx status code" error
         return new Response(JSON.stringify({
             error: error.message,
             details: "Check Supabase Edge Function Logs for more info."
         }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 500, // Return 500 so client knows it failed on server
+            status: 200,
         })
     }
 })
