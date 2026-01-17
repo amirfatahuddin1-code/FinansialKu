@@ -2947,7 +2947,10 @@ function initSettings() {
         });
     }
 
-    document.getElementById('updatePasswordBtn').addEventListener('click', updatePasswordSettings);
+    const updatePasswordBtn = document.getElementById('updatePasswordBtn');
+    if (updatePasswordBtn) {
+        updatePasswordBtn.addEventListener('click', updatePasswordSettings);
+    }
     document.getElementById('settingsAddCategoryBtn').addEventListener('click', () => openCategoryModalSettings());
     document.getElementById('exportCsvBtn').addEventListener('click', exportToCSV);
     document.getElementById('backupDataBtn').addEventListener('click', backupData);
@@ -2993,8 +2996,11 @@ function initNotificationSettings() {
 }
 
 async function updateProfileHeader() {
-    const { data: { user } } = await window.FinansialKuAPI.auth.getUser();
-    if (user) {
+    try {
+        const response = await window.FinansialKuAPI.auth.getUser();
+        if (!response || !response.data || !response.data.user) return;
+
+        const user = response.data.user;
         // Name
         const metaName = user.user_metadata?.name || 'User';
         const nameEl = document.getElementById('headerProfileName');
@@ -3014,6 +3020,8 @@ async function updateProfileHeader() {
             imgEl.style.display = 'block';
             svgEl.style.display = 'none';
         }
+    } catch (err) {
+        console.warn('Failed to update profile header:', err);
     }
 }
 
@@ -3034,8 +3042,11 @@ function switchSettingsTab(tabName) {
 }
 
 async function loadProfileSettings() {
-    const { data: { user } } = await window.FinansialKuAPI.auth.getUser();
-    if (user) {
+    try {
+        const response = await window.FinansialKuAPI.auth.getUser();
+        if (!response || !response.data || !response.data.user) return; // Handle no user/error gracefully
+
+        const user = response.data.user;
         // Populate Read-Only View
         const viewName = document.getElementById('viewProfileName');
         const viewEmail = document.getElementById('viewProfileEmail');
@@ -3053,6 +3064,8 @@ async function loadProfileSettings() {
         if (avatarUrl) {
             updateAvatarDisplay(avatarUrl);
         }
+    } catch (err) {
+        console.warn('Failed to load profile settings:', err);
     }
 }
 
