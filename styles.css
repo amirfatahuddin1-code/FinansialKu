@@ -3924,3 +3924,78 @@ details[open] summary {
     background: var(--border-color);
     margin: 6px 0;
 }
+
+/* ========== Mobile Header Fixes ========== */
+@media (max-width: 480px) {
+    .app-header {
+        padding: 0.5rem 0.25rem;
+        gap: 0.5rem;
+        flex-wrap: nowrap;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .logo {
+        gap: 0.5rem;
+        min-width: 0; /* Allow shrinking */
+        flex-shrink: 1;
+    }
+
+    .logo-icon {
+        width: 36px;
+        height: 36px;
+    }
+
+    .logo-icon svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .logo-text {
+        min-width: 0; /* Allow text truncate if needed */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .logo-text h1 {
+        font-size: 1.1rem;
+        white-space: nowrap;
+        margin: 0;
+    }
+
+    /* Hide tagline on mobile to save space and align better */
+    .logo-text .tagline {
+        display: none;
+    }
+
+    .header-actions {
+        gap: 4px;
+        flex-shrink: 0;
+    }
+
+    .btn-icon {
+        width: 34px;
+        height: 34px;
+        padding: 6px;
+    }
+
+    .btn-icon svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    /* Adjust profile trigger for mobile */
+    .profile-trigger {
+        padding: 2px;
+        gap: 2px;
+    }
+
+    .header-user-info, .chevron-down {
+        display: none; /* Hide name/role on mobile, show only avatar */
+    }
+
+    .app-container {
+        padding: 0.75rem;
+    }
+}
