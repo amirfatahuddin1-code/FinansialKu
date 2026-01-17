@@ -55,6 +55,11 @@
             return { error };
         },
 
+        async updateUser(attributes) {
+            const { data, error } = await supabaseClient.auth.updateUser(attributes);
+            return { data, error };
+        },
+
         onAuthStateChange(callback) {
             return supabaseClient.auth.onAuthStateChange(callback);
         }

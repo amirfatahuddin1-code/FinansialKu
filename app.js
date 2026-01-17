@@ -2870,7 +2870,29 @@ function initSettings() {
     });
 
     // Bind Actions
+    // Bind Actions
     document.getElementById('saveProfileBtn').addEventListener('click', saveProfileSettings);
+
+    // Avatar Edit
+    const editAvatarBtn = document.querySelector('.edit-avatar-btn');
+    if (editAvatarBtn) {
+        editAvatarBtn.addEventListener('click', () => {
+            // Create a hidden file input dynamically
+            let fileInput = document.getElementById('avatarInput');
+            if (!fileInput) {
+                fileInput = document.createElement('input');
+                fileInput.type = 'file';
+                fileInput.id = 'avatarInput';
+                fileInput.accept = 'image/*';
+                fileInput.style.display = 'none';
+                document.body.appendChild(fileInput);
+
+                fileInput.addEventListener('change', handleAvatarSelect);
+            }
+            fileInput.click();
+        });
+    }
+
     document.getElementById('updatePasswordBtn').addEventListener('click', updatePasswordSettings);
     document.getElementById('settingsAddCategoryBtn').addEventListener('click', () => openCategoryModalSettings());
     document.getElementById('exportCsvBtn').addEventListener('click', exportToCSV);
@@ -2935,11 +2957,43 @@ function switchSettingsTab(tabName) {
 async function loadProfileSettings() {
     const { data: { user } } = await window.FinansialKuAPI.auth.getUser();
     if (user) {
-        document.getElementById('settingsProfileEmail').value = user.email;
-        // Assume metadata name exists
+        document.getElementById('settingsProfileEmail').value = user.email || '';
         const metaName = user.user_metadata?.name || '';
         document.getElementById('settingsProfileName').value = metaName;
+
+        // Load Avatar
+        const avatarUrl = user.user_metadata?.avatar_url;
+        if (avatarUrl) {
+            updateAvatarDisplay(avatarUrl);
+        }
     }
+}
+
+function updateAvatarDisplay(src) {
+    const avatarContainer = document.querySelector('.profile-avatar');
+    if (avatarContainer) {
+        avatarContainer.innerHTML = `<img src="${src}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+    }
+}
+
+let tempAvatarFile = null; // Store selected file temporarily
+
+function handleAvatarSelect(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) { // 2MB limit
+        showToast('Ukuran foto maksimal 2MB', 'warning');
+        return;
+    }
+
+    // Preview
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        updateAvatarDisplay(ev.target.result);
+        tempAvatarFile = ev.target.result; // Store Base64 for saving
+    };
+    reader.readAsDataURL(file);
 }
 
 async function saveProfileSettings() {
@@ -2950,11 +3004,27 @@ async function saveProfileSettings() {
 
     try {
         const name = document.getElementById('settingsProfileName').value;
-        const { error } = await window.FinansialKuAPI.auth.updateUser({
+        const email = document.getElementById('settingsProfileEmail').value;
+
+        const updates = {
+            email: email,
             data: { name: name }
-        });
+        };
+
+        // Include avatar if changed
+        if (tempAvatarFile) {
+            updates.data.avatar_url = tempAvatarFile;
+        }
+
+        const { error } = await window.FinansialKuAPI.auth.updateUser(updates);
+
         if (error) throw error;
+
         showToast('Profil diperbarui', 'success');
+
+        // Clear temp file
+        tempAvatarFile = null;
+
     } catch (err) {
         showToast('Gagal update profil: ' + err.message, 'error');
     } finally {
