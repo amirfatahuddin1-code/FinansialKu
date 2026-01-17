@@ -7,20 +7,41 @@
     const SUPABASE_URL = 'https://neeawjydtdcubwrklnua.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5lZWF3anlkdGRjdWJ3cmtsbnVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0NDcxODMsImV4cCI6MjA4NDAyMzE4M30._XeWSMSZvTH2Q6Tr7Or8kBaKtkXsV35TfljLfUnZfhA';
 
-    // Initialize Supabase client
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // Initialize Supabase client with custom options
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: {
+            autoRefreshToken: true,
+            persistSession: true,
+            detectSessionInUrl: true
+        },
+        global: {
+            headers: {
+                'X-Client-Info': 'finansialku-web'
+            }
+        }
+    });
 
     // ========== AUTH FUNCTIONS ==========
 
     const authAPI = {
         async getUser() {
-            const { data: { user }, error } = await supabaseClient.auth.getUser();
-            return { user, error };
+            try {
+                const { data: { user }, error } = await supabaseClient.auth.getUser();
+                return { data: { user }, error };
+            } catch (err) {
+                console.warn('Auth getUser failed:', err.message);
+                return { data: { user: null }, error: err };
+            }
         },
 
         async getSession() {
-            const { data: { session }, error } = await supabaseClient.auth.getSession();
-            return { session, error };
+            try {
+                const { data: { session }, error } = await supabaseClient.auth.getSession();
+                return { data: { session }, error };
+            } catch (err) {
+                console.warn('Auth getSession failed:', err.message);
+                return { data: { session: null }, error: err };
+            }
         },
 
         async signUp(email, password, name) {
