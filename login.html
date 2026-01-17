@@ -366,12 +366,33 @@
 
                 authAPI = window.FinansialKuAPI.auth;
 
+                // Check for logout parameter - if present, sign out first
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.get('logout') === 'true') {
+                    try {
+                        await authAPI.signOut();
+                        // Remove the parameter from URL
+                        window.history.replaceState({}, document.title, 'login.html');
+                    } catch (err) {
+                        console.warn('Logout error:', err);
+                    }
+                }
+
                 try {
                     // Check if already logged in
                     const response = await authAPI.getSession();
                     const session = response?.data?.session;
                     if (session) {
-                        window.location.href = 'index.html';
+                        // Show option to continue or logout
+                        const userEmail = session.user?.email || 'akun sebelumnya';
+                        const continueSession = confirm(`Anda sudah login sebagai ${userEmail}.\n\nKlik OK untuk melanjutkan ke dashboard.\nKlik Cancel untuk logout dan buat akun baru.`);
+
+                        if (continueSession) {
+                            window.location.href = 'index.html';
+                        } else {
+                            await authAPI.signOut();
+                            showSuccess('Berhasil logout. Silakan daftar akun baru.');
+                        }
                         return;
                     }
                 } catch (err) {
