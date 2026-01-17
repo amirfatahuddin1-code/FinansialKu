@@ -366,39 +366,7 @@
 
                 authAPI = window.FinansialKuAPI.auth;
 
-                // Check for logout parameter - if present, sign out first
-                const urlParams = new URLSearchParams(window.location.search);
-                if (urlParams.get('logout') === 'true') {
-                    try {
-                        await authAPI.signOut();
-                        // Remove the parameter from URL
-                        window.history.replaceState({}, document.title, 'login.html');
-                    } catch (err) {
-                        console.warn('Logout error:', err);
-                    }
-                }
-
-                try {
-                    // Check if already logged in
-                    const response = await authAPI.getSession();
-                    const session = response?.data?.session;
-                    if (session) {
-                        // Show option to continue or logout
-                        const userEmail = session.user?.email || 'akun sebelumnya';
-                        const continueSession = confirm(`Anda sudah login sebagai ${userEmail}.\n\nKlik OK untuk melanjutkan ke dashboard.\nKlik Cancel untuk logout dan buat akun baru.`);
-
-                        if (continueSession) {
-                            window.location.href = 'index.html';
-                        } else {
-                            await authAPI.signOut();
-                            showSuccess('Berhasil logout. Silakan daftar akun baru.');
-                        }
-                        return;
-                    }
-                } catch (err) {
-                    console.warn('Session check error:', err);
-                }
-
+                // ALWAYS initialize event listeners first
                 // Tab switching
                 document.querySelectorAll('.login-tab').forEach(tab => {
                     tab.addEventListener('click', () => {
@@ -414,6 +382,41 @@
 
                 // Google login
                 document.getElementById('googleBtn').addEventListener('click', handleGoogleLogin);
+
+                // Check for logout parameter - if present, sign out first
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.get('logout') === 'true') {
+                    try {
+                        await authAPI.signOut();
+                        // Remove the parameter from URL
+                        window.history.replaceState({}, document.title, 'login.html');
+                        showSuccess('Berhasil logout. Silakan daftar akun baru.');
+                    } catch (err) {
+                        console.warn('Logout error:', err);
+                    }
+                    return; // Don't check session after explicit logout
+                }
+
+                try {
+                    // Check if already logged in
+                    const response = await authAPI.getSession();
+                    const session = response?.data?.session;
+                    if (session) {
+                        // Show option to continue or logout
+                        const userEmail = session.user?.email || 'akun sebelumnya';
+                        const continueSession = confirm(`Anda sudah login sebagai ${userEmail}.\n\nKlik OK untuk melanjutkan ke dashboard.\nKlik Cancel untuk logout dan buat akun baru.`);
+
+                        if (continueSession) {
+                            window.location.href = 'index.html';
+                            return;
+                        } else {
+                            await authAPI.signOut();
+                            showSuccess('Berhasil logout. Silakan daftar akun baru.');
+                        }
+                    }
+                } catch (err) {
+                    console.warn('Session check error:', err);
+                }
             });
 
             function updateFormMode() {
