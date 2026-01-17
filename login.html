@@ -368,13 +368,14 @@
 
                 try {
                     // Check if already logged in
-                    const { session } = await authAPI.getSession();
+                    const response = await authAPI.getSession();
+                    const session = response?.data?.session;
                     if (session) {
                         window.location.href = 'index.html';
                         return;
                     }
                 } catch (err) {
-                    console.error('Session check error:', err);
+                    console.warn('Session check error:', err);
                 }
 
                 // Tab switching

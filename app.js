@@ -1360,12 +1360,19 @@ async function init() {
 
 async function checkAuth() {
     const API = window.FinansialKuAPI;
-    const { session } = await API.auth.getSession();
-    if (!session) {
+    try {
+        const response = await API.auth.getSession();
+        const session = response?.data?.session;
+        if (!session) {
+            window.location.href = 'landing.html';
+            return false;
+        }
+        return true;
+    } catch (err) {
+        console.warn('Auth check failed:', err);
         window.location.href = 'landing.html';
         return false;
     }
-    return true;
 }
 
 async function loadUserInfo() {
