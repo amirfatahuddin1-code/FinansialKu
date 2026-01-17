@@ -54,37 +54,13 @@
                             d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
                     </svg>
                 </button>
-                <div class="settings-dropdown">
-                    <button class="btn-icon settings-btn" id="settingsBtn" title="Pengaturan">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="3" />
-                            <path
-                                d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
-                        </svg>
-                    </button>
-                    <div class="settings-menu" id="settingsMenu">
-                        <div class="settings-header">
-                            <span class="settings-user-name" id="settingsUserName">User</span>
-                            <span class="settings-user-email" id="settingsUserEmail">user@email.com</span>
-                        </div>
-                        <div class="settings-divider"></div>
-                        <button class="settings-item" id="resetDataBtn" onclick="resetAllData()">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="1 4 1 10 7 10" />
-                                <path d="M3.51 15a9 9 0 102.13-9.36L1 10" />
-                            </svg>
-                            Reset Semua Data
-                        </button>
-                        <button class="settings-item logout" id="logoutBtn" onclick="logout()">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
-                                <polyline points="16 17 21 12 16 7" />
-                                <line x1="21" y1="12" x2="9" y2="12" />
-                            </svg>
-                            Keluar
-                        </button>
-                    </div>
-                </div>
+                <button class="btn-icon settings-btn" id="settingsBtn" title="Pengaturan">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3" />
+                        <path
+                            d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
+                    </svg>
+                </button>
             </div>
         </header>
 
@@ -1432,6 +1408,259 @@
                     <button type="submit" class="btn-primary">Simpan Pembayaran</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Settings Modal (Comprehensive) -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content modal-large settings-modal-content">
+            <div class="modal-header">
+                <h3>Pengaturan</h3>
+                <button class="btn-close" id="closeSettingsModal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="settings-layout">
+                <aside class="settings-sidebar">
+                    <button class="settings-tab active" data-tab="account">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                            <circle cx="12" cy="7" r="4" />
+                        </svg>
+                        Akun & Profil
+                    </button>
+                    <button class="settings-tab" data-tab="categories">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="7" height="7" />
+                            <rect x="14" y="3" width="7" height="7" />
+                            <rect x="14" y="14" width="7" height="7" />
+                            <rect x="3" y="14" width="7" height="7" />
+                        </svg>
+                        Kategori
+                    </button>
+                    <button class="settings-tab" data-tab="notifications">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                        </svg>
+                        Notifikasi
+                    </button>
+                    <button class="settings-tab" data-tab="data">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="7 10 12 15 17 10" />
+                            <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
+                        Data & Sync
+                    </button>
+                    <button class="settings-tab" data-tab="appearance">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5" />
+                            <path
+                                d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+                        </svg>
+                        Tampilan
+                    </button>
+                    <button class="settings-tab" data-tab="about">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="12" y1="16" x2="12" y2="12" />
+                            <line x1="12" y1="8" x2="12.01" y2="8" />
+                        </svg>
+                        Tentang
+                    </button>
+                    <div class="settings-divider" style="margin: var(--space-2) 0;"></div>
+                    <button class="settings-tab" id="settingsLogoutBtn" style="color: var(--danger);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+                            <polyline points="16 17 21 12 16 7" />
+                            <line x1="21" y1="12" x2="9" y2="12" />
+                        </svg>
+                        Keluar
+                    </button>
+                </aside>
+                <main class="settings-content">
+                    <!-- Account Tab -->
+                    <div class="settings-panel active" id="settings-account">
+                        <h4>Profil Pengguna</h4>
+                        <div class="profile-section">
+                            <div class="profile-avatar-container">
+                                <div class="profile-avatar">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M24 24H0V0h24v24z" fill="none" />
+                                        <path
+                                            d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                                    </svg>
+                                </div>
+                                <button class="btn-icon-small edit-avatar-btn" title="Ubah Foto">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="profile-inputs">
+                                <div class="form-group">
+                                    <label>Nama Lengkap</label>
+                                    <input type="text" id="settingsProfileName" placeholder="Nama Anda">
+                                </div>
+                                <div class="form-group">
+                                    <label>Email</label>
+                                    <input type="email" id="settingsProfileEmail" placeholder="email@example.com"
+                                        readonly style="opacity: 0.7;">
+                                </div>
+                                <button class="btn-primary" id="saveProfileBtn">Simpan Profil</button>
+                            </div>
+                        </div>
+
+                        <div class="settings-divider"></div>
+                        <h4>Keamanan</h4>
+                        <div class="form-group">
+                            <label>Ubah Password</label>
+                            <input type="password" id="settingsNewPassword" placeholder="Password Baru">
+                        </div>
+                        <button class="btn-secondary" id="updatePasswordBtn">Update Password</button>
+                    </div>
+
+                    <!-- Categories Tab -->
+                    <div class="settings-panel" id="settings-categories">
+                        <div class="panel-header">
+                            <h4>Kelola Kategori</h4>
+                            <button class="btn-small btn-primary" id="settingsAddCategoryBtn">+ Tambah</button>
+                        </div>
+                        <div class="settings-categories-list" id="settingsCategoriesList">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Notifications Tab -->
+                    <div class="settings-panel" id="settings-notifications">
+                        <h4>Preferensi Notifikasi</h4>
+                        <div class="setting-toggle-item">
+                            <div class="toggle-info">
+                                <span class="toggle-title">Pengingat Harian</span>
+                                <span class="toggle-desc">Notifikasi untuk mencatat transaksi harian (20:00)</span>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="notifyDaily">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                        <div class="setting-toggle-item">
+                            <div class="toggle-info">
+                                <span class="toggle-title">Jatuh Tempo Hutang</span>
+                                <span class="toggle-desc">Ingatkan 1 hari sebelum jatuh tempo</span>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="notifyDebt">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                        <div class="setting-toggle-item">
+                            <div class="toggle-info">
+                                <span class="toggle-title">Pencapaian Target</span>
+                                <span class="toggle-desc">Notifikasi saat target tabungan tercapai</span>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="notifyGoal">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Data Tab -->
+                    <div class="settings-panel" id="settings-data">
+                        <h4>Ekspor & Impor Data</h4>
+                        <div class="data-actions-grid">
+                            <div class="data-card">
+                                <div class="data-icon">📊</div>
+                                <h5>Ekspor CSV</h5>
+                                <p>Unduh data transaksi ke format Excel/CSV.</p>
+                                <button class="btn-secondary btn-full" id="exportCsvBtn">Download CSV</button>
+                            </div>
+                            <div class="data-card">
+                                <div class="data-icon">💾</div>
+                                <h5>Backup Data</h5>
+                                <p>Simpan seluruh data aplikasi ke file JSON.</p>
+                                <button class="btn-secondary btn-full" id="backupDataBtn">Backup JSON</button>
+                            </div>
+                            <div class="data-card">
+                                <div class="data-icon">📂</div>
+                                <h5>Restore Data</h5>
+                                <p>Kembalikan data dari file backup JSON.</p>
+                                <input type="file" id="restoreFile" accept=".json" style="display: none;">
+                                <button class="btn-secondary btn-full"
+                                    onclick="document.getElementById('restoreFile').click()">Restore JSON</button>
+                            </div>
+                        </div>
+                        <div class="settings-divider"></div>
+                        <div class="danger-zone">
+                            <h4>Zona Bahaya</h4>
+                            <button class="btn-danger" id="resetDataSettingsBtn">Reset Semua Data</button>
+                        </div>
+                    </div>
+
+                    <!-- Appearance Tab -->
+                    <div class="settings-panel" id="settings-appearance">
+                        <h4>Tampilan Aplikasi</h4>
+                        <div class="setting-toggle-item">
+                            <div class="toggle-info">
+                                <span class="toggle-title">Mode Gelap</span>
+                                <span class="toggle-desc">Gunakan tema gelap untuk kenyamanan mata</span>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="settingsThemeToggle">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- About Tab -->
+                    <div class="settings-panel" id="settings-about">
+                        <div class="about-header">
+                            <div class="logo-icon large">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                                    <path d="M2 17l10 5 10-5" />
+                                    <path d="M2 12l10 5 10-5" />
+                                </svg>
+                            </div>
+                            <h3>FinansialKu</h3>
+                            <span class="version-tag">Versi 1.2.0</span>
+                        </div>
+                        <div class="about-links">
+                            <a href="#" class="about-link-item">
+                                <span class="icon">❓</span>
+                                <div class="link-info">
+                                    <span class="link-title">FAQ / Bantuan</span>
+                                    <span class="link-desc">Pertanyaan yang sering diajukan</span>
+                                </div>
+                            </a>
+                            <a href="https://wa.me/6281234567890" target="_blank" class="about-link-item">
+                                <span class="icon">📞</span>
+                                <div class="link-info">
+                                    <span class="link-title">Hubungi Dukungan</span>
+                                    <span class="link-desc">Chat via WhatsApp</span>
+                                </div>
+                            </a>
+                            <a href="#" class="about-link-item">
+                                <span class="icon">📄</span>
+                                <div class="link-info">
+                                    <span class="link-title">Syarat & Ketentuan</span>
+                                    <span class="link-desc">Kebijakan penggunaan aplikasi</span>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="about-footer">
+                            <p>© 2026 FinansialKu. Dibuat dengan ❤️ untuk Indonesia.</p>
+                        </div>
+                    </div>
+                </main>
+            </div>
         </div>
     </div>
 
