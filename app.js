@@ -2851,11 +2851,49 @@ async function handlePayDebtSubmit(e) {
 // ========== Settings Management ==========
 
 function initSettings() {
-    // Bind Settings Button
-    const settingsBtn = document.getElementById('settingsBtn');
-    if (settingsBtn) {
-        settingsBtn.addEventListener('click', openSettingsModal);
+    // Bind Settings Dropdown Logic
+    const profileTrigger = document.getElementById('profileTrigger');
+    const profileDropdown = document.getElementById('profileDropdown');
+
+    if (profileTrigger && profileDropdown) {
+        // Toggle Dropdown
+        profileTrigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            profileDropdown.classList.toggle('show');
+
+            // Rotate chevron if we want animation
+            const chevron = profileTrigger.querySelector('.chevron-down');
+            if (chevron) {
+                chevron.style.transform = profileDropdown.classList.contains('show') ? 'rotate(180deg)' : 'rotate(0deg)';
+            }
+        });
+
+        // Close on click outside
+        document.addEventListener('click', (e) => {
+            if (!profileTrigger.contains(e.target) && !profileDropdown.contains(e.target)) {
+                profileDropdown.classList.remove('show');
+                const chevron = profileTrigger.querySelector('.chevron-down');
+                if (chevron) chevron.style.transform = 'rotate(0deg)';
+            }
+        });
+
+        // Bind Menu Items
+        document.getElementById('menuAccount')?.addEventListener('click', () => {
+            profileDropdown.classList.remove('show');
+            openSettingsModal();
+            switchSettingsTab('account');
+        });
+
+        document.getElementById('menuSettings')?.addEventListener('click', () => {
+            profileDropdown.classList.remove('show');
+            openSettingsModal();
+        });
+
+        document.getElementById('menuLogout')?.addEventListener('click', logout);
     }
+
+    // Initial Load of header profile
+    updateProfileHeader();
 
     // Bind Close Button
     document.getElementById('closeSettingsModal').addEventListener('click', () => {
@@ -2936,6 +2974,31 @@ function initNotificationSettings() {
     if (notifyDaily) notifyDaily.addEventListener('change', (e) => localStorage.setItem('notify_daily', e.target.checked));
     if (notifyDebt) notifyDebt.addEventListener('change', (e) => localStorage.setItem('notify_debt', e.target.checked));
     if (notifyGoal) notifyGoal.addEventListener('change', (e) => localStorage.setItem('notify_goal', e.target.checked));
+}
+
+async function updateProfileHeader() {
+    const { data: { user } } = await window.FinansialKuAPI.auth.getUser();
+    if (user) {
+        // Name
+        const metaName = user.user_metadata?.name || 'User';
+        const nameEl = document.getElementById('headerProfileName');
+        if (nameEl) nameEl.textContent = metaName;
+
+        // Email
+        const emailEl = document.getElementById('headerProfileEmail');
+        if (emailEl) emailEl.textContent = user.email;
+
+        // Avatar
+        const avatarUrl = user.user_metadata?.avatar_url;
+        const imgEl = document.getElementById('headerAvatarImg');
+        const svgEl = document.getElementById('headerAvatarSvg');
+
+        if (avatarUrl && imgEl && svgEl) {
+            imgEl.src = avatarUrl;
+            imgEl.style.display = 'block';
+            svgEl.style.display = 'none';
+        }
+    }
 }
 
 function openSettingsModal() {
