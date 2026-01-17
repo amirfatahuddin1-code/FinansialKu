@@ -2909,6 +2909,22 @@ function initSettings() {
 
     // Bind Actions
     // Bind Actions
+    // Open Edit Profile Modal
+    const openEditProfileBtn = document.getElementById('openEditProfileBtn');
+    if (openEditProfileBtn) {
+        openEditProfileBtn.addEventListener('click', () => {
+            // Populate fields handled by loadProfileSettings called previously, 
+            // but we ensure clean state or re-fetch if needed.
+            // For now just open modal.
+            openModal('editProfileModal');
+        });
+    }
+
+    // Close Edit Profile Modal
+    document.getElementById('closeEditProfileModal')?.addEventListener('click', () => {
+        closeModal('editProfileModal');
+    });
+
     document.getElementById('saveProfileBtn').addEventListener('click', saveProfileSettings);
 
     // Avatar Edit
@@ -3020,8 +3036,16 @@ function switchSettingsTab(tabName) {
 async function loadProfileSettings() {
     const { data: { user } } = await window.FinansialKuAPI.auth.getUser();
     if (user) {
-        document.getElementById('settingsProfileEmail').value = user.email || '';
+        // Populate Read-Only View
+        const viewName = document.getElementById('viewProfileName');
+        const viewEmail = document.getElementById('viewProfileEmail');
+
         const metaName = user.user_metadata?.name || '';
+        if (viewName) viewName.textContent = metaName;
+        if (viewEmail) viewEmail.textContent = user.email;
+
+        // Populate Edit Modal Inputs
+        document.getElementById('settingsProfileEmail').value = user.email || '';
         document.getElementById('settingsProfileName').value = metaName;
 
         // Load Avatar
@@ -3033,9 +3057,24 @@ async function loadProfileSettings() {
 }
 
 function updateAvatarDisplay(src) {
-    const avatarContainer = document.querySelector('.profile-avatar');
-    if (avatarContainer) {
-        avatarContainer.innerHTML = `<img src="${src}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+    const containers = [
+        document.querySelector('#viewProfileAvatar'),
+        document.querySelector('#editProfileAvatarPreview')
+    ];
+
+    containers.forEach(container => {
+        if (container) {
+            container.innerHTML = `<img src="${src}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+        }
+    });
+
+    // Also update header immediately if possible
+    const headerImg = document.getElementById('headerAvatarImg');
+    const headerSvg = document.getElementById('headerAvatarSvg');
+    if (headerImg && headerSvg) {
+        headerImg.src = src;
+        headerImg.style.display = 'block';
+        headerSvg.style.display = 'none';
     }
 }
 
@@ -3084,6 +3123,13 @@ async function saveProfileSettings() {
         if (error) throw error;
 
         showToast('Profil diperbarui', 'success');
+
+        // Refresh UI
+        loadProfileSettings();
+        updateProfileHeader();
+
+        // Close Modal
+        closeModal('editProfileModal');
 
         // Clear temp file
         tempAvatarFile = null;
