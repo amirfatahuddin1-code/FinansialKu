@@ -90,7 +90,7 @@
 
     const profilesAPI = {
         async get() {
-            const { user } = await authAPI.getUser();
+            const { data: { user } } = await authAPI.getUser();
             if (!user) return { data: null, error: 'Not authenticated' };
 
             const { data, error } = await supabaseClient
@@ -102,7 +102,7 @@
         },
 
         async update(updates) {
-            const { user } = await authAPI.getUser();
+            const { data: { user } } = await authAPI.getUser();
             if (!user) return { data: null, error: 'Not authenticated' };
 
             const { data, error } = await supabaseClient
@@ -128,7 +128,7 @@
         },
 
         async create(category) {
-            const { user } = await authAPI.getUser();
+            const { data: { user } } = await authAPI.getUser();
             if (!user) return { data: null, error: 'Not authenticated' };
 
             const { data, error } = await supabaseClient
@@ -167,7 +167,7 @@
         },
 
         async create(transaction) {
-            const { user } = await authAPI.getUser();
+            const { data: { user } } = await authAPI.getUser();
             if (!user) return { data: null, error: 'Not authenticated' };
 
             const { data, error } = await supabaseClient
@@ -210,7 +210,7 @@
         },
 
         async upsert(budget) {
-            const { user } = await authAPI.getUser();
+            const { data: { user } } = await authAPI.getUser();
             if (!user) return { data: null, error: 'Not authenticated' };
 
             const { data, error } = await supabaseClient
@@ -236,7 +236,7 @@
         },
 
         async create(savings) {
-            const { user } = await authAPI.getUser();
+            const { data: { user } } = await authAPI.getUser();
             if (!user) return { data: null, error: 'Not authenticated' };
 
             const { data, error } = await supabaseClient
@@ -302,7 +302,7 @@
         },
 
         async create(event) {
-            const { user } = await authAPI.getUser();
+            const { data: { user } } = await authAPI.getUser();
             if (!user) return { data: null, error: 'Not authenticated' };
 
             const { data, error } = await supabaseClient
@@ -376,7 +376,7 @@
     const telegramAPI = {
         // Get pending (unsynced) transactions from Telegram
         async getPending() {
-            const { user } = await authAPI.getUser();
+            const { data: { user } } = await authAPI.getUser();
             if (!user) return { data: null, error: 'Not authenticated' };
 
             const { data, error } = await supabaseClient
@@ -399,7 +399,7 @@
 
         // Link Telegram account
         async linkTelegram(telegramUserId, telegramUsername) {
-            const { user } = await authAPI.getUser();
+            const { data: { user } } = await authAPI.getUser();
             if (!user) return { data: null, error: 'Not authenticated' };
 
             const { data, error } = await supabaseClient
@@ -416,7 +416,7 @@
 
         // Get linked Telegram account
         async getLinkedAccount() {
-            const { user } = await authAPI.getUser();
+            const { data: { user } } = await authAPI.getUser();
             if (!user) return { data: null, error: 'Not authenticated' };
 
             const { data, error } = await supabaseClient
@@ -429,7 +429,7 @@
 
         // Unlink Telegram account
         async unlinkTelegram() {
-            const { user } = await authAPI.getUser();
+            const { data: { user } } = await authAPI.getUser();
             if (!user) return { data: null, error: 'Not authenticated' };
 
             const { data, error } = await supabaseClient
@@ -444,7 +444,7 @@
 
     const debtsAPI = {
         async getAll() {
-            const { user } = await authAPI.getUser();
+            const { data: { user } } = await authAPI.getUser();
             if (!user) return { data: null, error: 'Not authenticated' };
 
             const { data, error } = await supabaseClient
@@ -456,7 +456,7 @@
         },
 
         async create(debt) {
-            const { user } = await authAPI.getUser();
+            const { data: { user } } = await authAPI.getUser();
             if (!user) return { data: null, error: 'Not authenticated' };
 
             const { data, error } = await supabaseClient
