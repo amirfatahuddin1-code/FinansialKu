@@ -3300,14 +3300,9 @@ function restoreData(event) {
 
 // Duplicate logout removed (using existing one)
 
-// Initialize
+// Initialize settings on page load
 document.addEventListener('DOMContentLoaded', () => {
     initSettings();
-    // Additional Init
-    initFAB();
-    initNavigation();
-    loadData().then(() => {
-        updateDashboard();
-        checkBudgetWarnings();
-    });
+    // NOTE: initFAB() and initNavigation() are already called from init() in the earlier DOMContentLoaded listener
+    // Do not call them again here to avoid double event listeners
 });
