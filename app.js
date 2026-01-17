@@ -49,7 +49,8 @@ let state = {
     // AI State
     aiApiKey: '',
     aiChatHistory: [],
-    debts: []
+    debts: [],
+    aiCache: {}
 };
 
 // ========== Utility Functions ==========
@@ -1802,6 +1803,16 @@ Transaksi Terakhir: ${context.recentTransactions.join('; ')}
 Tabungan: ${context.savingsGoals.map(s => `${s.name}: ${formatCurrency(s.current)}/${formatCurrency(s.target)}`).join(', ')}
     `;
 
+    // Cache key based on message and financial context
+    const cacheKey = `msg:${userMessage}_ctx:${contextString}`;
+
+    if (state.aiCache[cacheKey]) {
+        console.log('AI: Using cached response');
+        // Add a small delay for natural feeling
+        await new Promise(resolve => setTimeout(resolve, 800));
+        return state.aiCache[cacheKey];
+    }
+
     try {
         const { data, error } = await window.FinansialKuAPI.supabase.functions.invoke('ai-chat', {
             body: {
@@ -1814,12 +1825,28 @@ Tabungan: ${context.savingsGoals.map(s => `${s.name}: ${formatCurrency(s.current
         if (error) throw error;
         if (data.error) throw new Error(data.error);
 
+        // Store in cache
+        state.aiCache[cacheKey] = data.reply;
+
+        // limit cache size to 20 items to save memory
+        const cacheKeys = Object.keys(state.aiCache);
+        if (cacheKeys.length > 20) {
+            delete state.aiCache[cacheKeys[0]];
+        }
+
         return data.reply;
 
     } catch (e) {
         console.error('AI Error:', e);
+
+        // Handle Quota/Rate Limit Errors specifically
+        if (e.message.toLowerCase().includes('quota') || e.message.toLowerCase().includes('limit')) {
+            showToast('Kuota AI Terlampaui (Free Tier)', 'warning');
+            return "Maaf, sepertinya kuota harian/menit untuk asisten AI gratis sedang penuh. Silakan coba lagi beberapa saat lagi (biasanya 1 menit). ⏳";
+        }
+
         showToast('Gagal menghubungi AI: ' + e.message, 'error');
-        return "Maaf, terjadi kesalahan saat menghubungi asisten. Pastikan koneksi internet lancar.";
+        return "Maaf, terjadi kesalahan saat menghubungi asisten. Pastikan koneksi internet lancar atau coba lagi nanti.";
     }
 }
 

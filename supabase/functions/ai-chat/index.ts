@@ -52,10 +52,10 @@ ${limitHistory.map((h: any) => `${h.role}: ${h.text}`).join('\n')}
 User: ${message}
 Asisten:`;
 
-        // Call Gemini API (v1beta gemini-2.5-flash)
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+        // Call Gemini API (v1beta gemini-1.5-flash)
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
-        console.log("Sending request to Gemini...");
+        console.log(`Sending request to Gemini (gemini-1.5-flash)...`);
 
         const response = await fetch(geminiUrl, {
             method: 'POST',
