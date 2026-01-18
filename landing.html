@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FinansialKu - Atur Keuangan, Wujudkan Mimpi</title>
+    <title>Karsafin - Atur Keuangan, Wujudkan Mimpi</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -27,7 +27,7 @@
             left: 0;
             right: 0;
             z-index: 100;
-            background: rgba(10, 10, 15, 0.8);
+            background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(20px);
         }
 
@@ -43,7 +43,7 @@
         .landing-logo-icon {
             width: 40px;
             height: 40px;
-            background: var(--accent-gradient);
+            /* background: var(--accent-gradient); */
             border-radius: var(--radius-lg);
             display: flex;
             align-items: center;
@@ -71,7 +71,8 @@
             text-align: center;
             padding: var(--space-12) var(--space-6);
             padding-top: 120px;
-            background:
+            background-color: var(--bg-primary);
+            background-image:
                 radial-gradient(ellipse at 50% 0%, rgba(124, 58, 237, 0.15) 0%, transparent 50%),
                 radial-gradient(ellipse at 80% 50%, rgba(6, 182, 212, 0.1) 0%, transparent 40%),
                 radial-gradient(ellipse at 20% 80%, rgba(124, 58, 237, 0.1) 0%, transparent 40%);
@@ -211,7 +212,8 @@
         .cta-section {
             padding: var(--space-12) var(--space-6);
             text-align: center;
-            background:
+            background-color: var(--bg-primary);
+            background-image:
                 radial-gradient(ellipse at 50% 100%, rgba(124, 58, 237, 0.2) 0%, transparent 50%);
         }
 
@@ -254,11 +256,12 @@
     </style>
 </head>
 
-<body class="landing-page">
+<body class="landing-page light-theme">
     <header class="landing-header">
         <div class="landing-logo">
-            <div class="landing-logo-icon">💰</div>
-            <span>FinansialKu</span>
+            <img src="assets/img/logo.png" alt="Logo"
+                style="width: 40px; height: 40px; border-radius: var(--radius-lg); object-fit: contain; margin-right: 6px;">
+            <span style="color: #1a56db;">Karsafin</span>
         </div>
         <nav class="landing-nav">
             <a href="#features">Fitur</a>
@@ -329,7 +332,7 @@
     </section>
 
     <footer class="landing-footer">
-        <p>© 2026 FinansialKu. Dibuat dengan ❤️ untuk Indonesia.</p>
+        <p>© 2026 Karsafin. Dibuat dengan ❤️ untuk Indonesia.</p>
     </footer>
 </body>
 

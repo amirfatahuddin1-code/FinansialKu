@@ -212,12 +212,12 @@ a:hover {
 .logo-icon {
     width: 48px;
     height: 48px;
-    background: var(--accent-gradient);
+    /* background: var(--accent-gradient); */
     border-radius: var(--radius-lg);
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: var(--shadow-glow);
+    /* box-shadow: var(--shadow-glow); */
 }
 
 .logo-icon svg {
@@ -3937,7 +3937,8 @@ details[open] summary {
 
     .logo {
         gap: 0.5rem;
-        min-width: 0; /* Allow shrinking */
+        min-width: 0;
+        /* Allow shrinking */
         flex-shrink: 1;
     }
 
@@ -3952,7 +3953,8 @@ details[open] summary {
     }
 
     .logo-text {
-        min-width: 0; /* Allow text truncate if needed */
+        min-width: 0;
+        /* Allow text truncate if needed */
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -3991,8 +3993,10 @@ details[open] summary {
         gap: 2px;
     }
 
-    .header-user-info, .chevron-down {
-        display: none; /* Hide name/role on mobile, show only avatar */
+    .header-user-info,
+    .chevron-down {
+        display: none;
+        /* Hide name/role on mobile, show only avatar */
     }
 
     .app-container {
