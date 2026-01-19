@@ -172,7 +172,8 @@ async function loadData() {
     state.transactions = (transactions || []).map(t => ({
         ...t,
         categoryId: t.category_id,
-        category: t.category
+        category: t.category,
+        senderName: t.sender_name
     }));
 
     // Load budgets for current month

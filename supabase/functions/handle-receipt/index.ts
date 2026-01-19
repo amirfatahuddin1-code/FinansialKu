@@ -160,6 +160,8 @@ serve(async (req) => {
                 description: body.description || body.originalMessage || 'Transaksi Telegram',
                 // FORCE use server time (WIB) untuk chat manual, abaikan tanggal kiriman n8n yang mungkin UTC
                 date: getWIBDate(),
+                // Save sender name for group transactions
+                sender_name: body.senderName || null,
                 created_at: new Date().toISOString()
             })
         }
