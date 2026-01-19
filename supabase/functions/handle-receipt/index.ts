@@ -83,60 +83,54 @@ serve(async (req) => {
             .select('id, name, type')
             .eq('user_id', userId)
 
-        // Helper function cari category ID berdasarkan nama dan tipe transaksi
-        const findCategoryId = (catName: string, transactionType: string = 'expense') => {
+        // Helper function cari category ID - FLEKSIBEL berdasarkan nama kategori user
+        const findCategoryId = (catName: string, transactionType: string = 'expense', description: string = '') => {
             if (!categories) return null
 
             // Filter kategori berdasarkan tipe transaksi
             const relevantCategories = categories.filter(c => c.type === transactionType)
 
-            if (!catName) {
-                const fallback = relevantCategories[0] || categories.find(c => c.type === transactionType)
+            if (!catName && !description) {
+                const fallback = relevantCategories[0]
                 return fallback?.id || null
             }
 
-            const catLower = catName.toLowerCase()
+            const searchText = `${catName || ''} ${description || ''}`.toLowerCase()
+            const catLower = (catName || '').toLowerCase()
 
-            // Coba match exact name (case insensitive) pada kategori yang relevan
+            // 1. Coba match exact name (case insensitive)
             const exact = relevantCategories.find(c => c.name.toLowerCase() === catLower)
             if (exact) return exact.id
 
-            // Mapping dari OpenAI category ke keywords Indonesia
-            const categoryKeywords: Record<string, string[]> = {
-                // Expense categories
-                'food': ['makanan', 'makan', 'food', 'minum', 'jajan', 'kuliner', 'resto'],
-                'transport': ['transportasi', 'transport', 'bensin', 'ojek', 'parkir', 'tol', 'kendaraan'],
-                'shopping': ['belanja', 'shopping', 'mart', 'market', 'mall', 'toko', 'beli'],
-                'entertainment': ['hiburan', 'entertainment', 'nonton', 'game', 'rekreasi'],
-                'health': ['kesehatan', 'health', 'obat', 'dokter', 'sehat', 'apotek'],
-                'bills': ['tagihan', 'bills', 'listrik', 'air', 'internet', 'pulsa', 'utilitas'],
-                'education': ['pendidikan', 'education', 'kursus', 'buku', 'sekolah'],
-                // Income categories
-                'salary': ['gaji', 'salary', 'pendapatan', 'penghasilan', 'income'],
-                'bonus': ['bonus', 'thr', 'insentif', 'reward', 'hadiah'],
-                'investment': ['investasi', 'investment', 'dividen', 'bunga'],
-                'other': ['lainnya', 'other', 'lain']
+            // 2. Coba match jika nama kategori OpenAI MENGANDUNG nama kategori user
+            // atau sebaliknya (untuk fleksibilitas maksimal)
+            for (const cat of relevantCategories) {
+                const catNameLower = cat.name.toLowerCase()
+                // Match jika: 
+                // - Nama kategori user ada di dalam searchText
+                // - ATAU searchText ada di dalam nama kategori user
+                if (searchText.includes(catNameLower) || catNameLower.includes(catLower)) {
+                    return cat.id
+                }
             }
 
-            // Cari kategori user berdasarkan keyword match
-            for (const [aiCategory, keywords] of Object.entries(categoryKeywords)) {
-                // Jika OpenAI return category ini
-                if (catLower === aiCategory || keywords.includes(catLower)) {
-                    // Cari di kategori user yang cocok dengan keywords DAN tipe yang sesuai
-                    for (const keyword of keywords) {
-                        const found = relevantCategories.find(c =>
-                            c.name.toLowerCase().includes(keyword) ||
-                            c.name.toLowerCase() === keyword
-                        )
-                        if (found) return found.id
+            // 3. Coba match berdasarkan kata-kata dalam searchText vs nama kategori
+            const words = searchText.split(/\s+/).filter(w => w.length > 2)
+            for (const word of words) {
+                for (const cat of relevantCategories) {
+                    const catNameLower = cat.name.toLowerCase()
+                    // Jika kata dari searchText cocok dengan nama kategori
+                    if (catNameLower.includes(word) || word.includes(catNameLower)) {
+                        return cat.id
                     }
                 }
             }
 
-            // Fallback: category pertama yang sesuai tipe
-            const fallback = relevantCategories[0] || categories.find(c => c.type === transactionType)
+            // 4. Fallback: category pertama yang sesuai tipe
+            const fallback = relevantCategories[0]
             return fallback?.id || null
         }
+
 
 
 
@@ -171,8 +165,9 @@ serve(async (req) => {
         // KASUS B: INPUT ADALAH SINGLE TRANSACTION (Manual Chat)
         else if (body.amount) {
             const transactionType = body.type || 'expense'
-            const categoryName = body.category || body.categoryId || 'Lainnya'
-            const categoryId = findCategoryId(categoryName, transactionType)
+            const categoryName = body.category || body.categoryId || ''
+            const description = body.description || body.originalMessage || ''
+            const categoryId = findCategoryId(categoryName, transactionType, description)
 
             transactionsToInsert.push({
                 user_id: userId,
