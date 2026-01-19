@@ -1,0 +1,219 @@
+{
+    "name": "FinansialKu Telegram Bot - Group Support",
+    "nodes": [
+        {
+            "parameters": {
+                "updates": [
+                    "message"
+                ]
+            },
+            "id": "telegram-trigger-001",
+            "name": "Telegram Trigger",
+            "type": "n8n-nodes-base.telegramTrigger",
+            "typeVersion": 1.1,
+            "position": [
+                240,
+                300
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "1",
+                    "name": "Telegram account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "model": "gpt-4o-mini",
+                "messages": {
+                    "values": [
+                        {
+                            "content": "=Kamu adalah asisten keuangan. Ekstrak info transaksi dari pesan: \"{{ $json.message.text }}\"\n\nAturan: 50rb=50000, 5jt=5000000. Default=expense. Kata gaji/bonus/dapat/terima=income.\n\nKembalikan HANYA JSON (tanpa markdown, tanpa penjelasan):\n{\"type\":\"expense\",\"amount\":50000,\"category\":\"food\",\"description\":\"Makan siang\"}\n\nKategori: food, transport, shopping, entertainment, health, bills, education, salary, bonus, other"
+                        }
+                    ]
+                },
+                "options": {
+                    "temperature": 0.2
+                }
+            },
+            "id": "openai-parse-001",
+            "name": "OpenAI",
+            "type": "@n8n/n8n-nodes-langchain.openAi",
+            "typeVersion": 1.8,
+            "position": [
+                480,
+                300
+            ],
+            "credentials": {
+                "openAiApi": {
+                    "id": "1",
+                    "name": "OpenAi account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "// Ambil response dari OpenAI\nconst response = $input.first().json;\nlet aiText = '';\n\n// Coba berbagai format output OpenAI\nif (response.choices && response.choices[0]) {\n  aiText = response.choices[0].message?.content || response.choices[0].text || '';\n} else if (response.message) {\n  aiText = response.message.content || response.message;\n} else if (response.text) {\n  aiText = response.text;\n} else if (response.content) {\n  aiText = response.content;\n} else {\n  aiText = JSON.stringify(response);\n}\n\n// Get chat info from trigger\nconst chat = $('Telegram Trigger').first().json.message.chat;\nconst from = $('Telegram Trigger').first().json.message.from;\n\n// Detect if from group\nconst isGroup = chat.type === 'group' || chat.type === 'supergroup';\n\ntry {\n  // Cari JSON di response\n  const jsonMatch = aiText.match(/\\{[\\s\\S]*?\\}/);\n  if (jsonMatch) {\n    const parsed = JSON.parse(jsonMatch[0]);\n    \n    // Validasi field wajib\n    if (!parsed.type || !parsed.amount) {\n      return { json: { error: 'Missing required fields', raw: aiText } };\n    }\n    \n    return {\n      json: {\n        type: parsed.type,\n        amount: parseInt(parsed.amount),\n        categoryId: parsed.category || 'other',\n        description: parsed.description || 'Transaksi',\n        date: new Date().toISOString().split('T')[0],\n        source: 'telegram',\n        chatId: chat.id.toString(),\n        isGroup: isGroup,\n        groupName: isGroup ? chat.title : null,\n        senderId: from.id.toString(),\n        senderName: from.first_name + (from.last_name ? ' ' + from.last_name : ''),\n        originalMessage: $('Telegram Trigger').first().json.message.text,\n        success: true\n      }\n    };\n  }\n  return { json: { error: 'No JSON in response', raw: aiText } };\n} catch (e) {\n  return { json: { error: e.message, raw: aiText } };\n}"
+            },
+            "id": "parse-json-001",
+            "name": "Parse JSON",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                720,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "boolean": [
+                        {
+                            "value1": "={{ $json.success }}",
+                            "value2": true
+                        }
+                    ]
+                }
+            },
+            "id": "if-success-001",
+            "name": "IF Success",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                960,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://localhost:3001/api/transaction",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"type\": \"{{ $json.type }}\",\n  \"amount\": {{ $json.amount }},\n  \"categoryId\": \"{{ $json.categoryId }}\",\n  \"description\": \"{{ $json.description }}\",\n  \"date\": \"{{ $json.date }}\",\n  \"source\": \"telegram\",\n  \"chatId\": \"{{ $json.chatId }}\",\n  \"isGroup\": {{ $json.isGroup }},\n  \"groupName\": \"{{ $json.groupName }}\",\n  \"senderId\": \"{{ $json.senderId }}\",\n  \"senderName\": \"{{ $json.senderName }}\",\n  \"originalMessage\": \"{{ $json.originalMessage }}\"\n}"
+            },
+            "id": "http-request-001",
+            "name": "HTTP Request",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1200,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+                "text": "=✅ Tercatat{{ $('Parse JSON').first().json.isGroup ? ' oleh ' + $('Parse JSON').first().json.senderName : '' }}!\n\n{{ $('Parse JSON').first().json.type === 'income' ? '💰 Pemasukan' : '💸 Pengeluaran' }}\n💵 Rp {{ $('Parse JSON').first().json.amount.toLocaleString('id-ID') }}\n📁 {{ $('Parse JSON').first().json.categoryId }}\n📝 {{ $('Parse JSON').first().json.description }}"
+            },
+            "id": "reply-success-001",
+            "name": "Reply Sukses",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1.2,
+            "position": [
+                1440,
+                200
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "1",
+                    "name": "Telegram account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+                "text": "❌ Maaf, saya tidak mengerti.\n\nContoh format:\n• Makan siang 50rb\n• Gaji bulan ini 5jt\n• Grab 25ribu"
+            },
+            "id": "reply-error-001",
+            "name": "Reply Error",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1.2,
+            "position": [
+                1200,
+                400
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "1",
+                    "name": "Telegram account"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "Telegram Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "OpenAI",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "OpenAI": {
+            "main": [
+                [
+                    {
+                        "node": "Parse JSON",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse JSON": {
+            "main": [
+                [
+                    {
+                        "node": "IF Success",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "IF Success": {
+            "main": [
+                [
+                    {
+                        "node": "HTTP Request",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Reply Error",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "HTTP Request": {
+            "main": [
+                [
+                    {
+                        "node": "Reply Sukses",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "staticData": null,
+    "meta": {
+        "templateCredsSetupCompleted": true
+    },
+    "pinData": {},
+    "versionId": "2",
+    "tags": []
+}

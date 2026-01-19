@@ -440,7 +440,63 @@
         }
     };
 
-    // ========== DEBTS API ==========
+    // ========== TELEGRAM GROUP SYNC API ==========
+
+    const telegramGroupAPI = {
+        // Link a Telegram group to user account
+        async linkGroup(telegramGroupId, groupName) {
+            const { data: { user } } = await authAPI.getUser();
+            if (!user) return { data: null, error: 'Not authenticated' };
+
+            const { data, error } = await supabaseClient
+                .from('telegram_group_links')
+                .upsert({
+                    user_id: user.id,
+                    telegram_group_id: telegramGroupId,
+                    group_name: groupName
+                }, { onConflict: 'telegram_group_id' })
+                .select()
+                .single();
+            return { data, error };
+        },
+
+        // Get all linked Telegram groups for current user
+        async getLinkedGroups() {
+            const { data: { user } } = await authAPI.getUser();
+            if (!user) return { data: null, error: 'Not authenticated' };
+
+            const { data, error } = await supabaseClient
+                .from('telegram_group_links')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('linked_at', { ascending: false });
+            return { data, error };
+        },
+
+        // Unlink a Telegram group
+        async unlinkGroup(telegramGroupId) {
+            const { data: { user } } = await authAPI.getUser();
+            if (!user) return { data: null, error: 'Not authenticated' };
+
+            const { data, error } = await supabaseClient
+                .from('telegram_group_links')
+                .delete()
+                .eq('user_id', user.id)
+                .eq('telegram_group_id', telegramGroupId);
+            return { data, error };
+        },
+
+        // Check if a group is linked (used by sync server)
+        async getGroupOwner(telegramGroupId) {
+            const { data, error } = await supabaseClient
+                .from('telegram_group_links')
+                .select('user_id, group_name')
+                .eq('telegram_group_id', telegramGroupId)
+                .single();
+            return { data, error };
+        }
+    };
+
 
     const debtsAPI = {
         async getAll() {
@@ -499,6 +555,7 @@
         events: eventsAPI,
         eventItems: eventItemsAPI,
         telegram: telegramAPI,
+        telegramGroup: telegramGroupAPI,
         debts: debtsAPI
     };
 

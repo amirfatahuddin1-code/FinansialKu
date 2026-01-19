@@ -43,10 +43,16 @@ function generateId() {
 /**
  * POST /api/transaction
  * Receive transaction from n8n workflow
+ * Now supports group transactions with sender info
  */
 app.post('/api/transaction', (req, res) => {
     try {
-        const { type, amount, categoryId, description, date, source, chatId, originalMessage } = req.body;
+        const {
+            type, amount, categoryId, description, date, source,
+            chatId, originalMessage,
+            // New group fields
+            isGroup, groupName, senderId, senderName
+        } = req.body;
 
         if (!type || !amount || !categoryId) {
             return res.status(400).json({ error: 'Missing required fields: type, amount, categoryId' });
@@ -63,6 +69,11 @@ app.post('/api/transaction', (req, res) => {
             source: source || 'telegram',
             chatId,
             originalMessage,
+            // Group info
+            isGroup: isGroup || false,
+            groupName: groupName || null,
+            senderId: senderId || null,
+            senderName: senderName || null,
             synced: false,
             createdAt: new Date().toISOString()
         };
@@ -70,13 +81,15 @@ app.post('/api/transaction', (req, res) => {
         data.transactions.push(transaction);
         writeData(data);
 
-        console.log(`✅ Transaction received: ${type} ${amount} - ${description}`);
+        const groupInfo = isGroup ? ` [Group: ${groupName}] by ${senderName}` : '';
+        console.log(`✅ Transaction received: ${type} ${amount} - ${description}${groupInfo}`);
         res.status(201).json({ success: true, transaction });
     } catch (error) {
         console.error('Error saving transaction:', error);
         res.status(500).json({ error: 'Failed to save transaction' });
     }
 });
+
 
 /**
  * POST /api/transactions/batch
