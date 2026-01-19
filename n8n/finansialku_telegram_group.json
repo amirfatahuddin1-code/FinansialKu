@@ -148,7 +148,7 @@
         {
             "parameters": {
                 "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
-                "text": "=✅ Tercatat{{ $('Parse JSON').first().json.isGroup ? ' oleh ' + $('Parse JSON').first().json.senderName : '' }}!\n\n{{ $('Parse JSON').first().json.type === 'income' ? '💰 Pemasukan' : '💸 Pengeluaran' }}\n💵 Rp {{ $('Parse JSON').first().json.amount.toLocaleString('id-ID') }}\n📁 {{ $('Parse JSON').first().json.categoryId }}\n📝 {{ $('Parse JSON').first().json.description }}"
+                "text": "=✅ Tercatat!\n\n{{ $json.type === 'income' ? '💰 Pemasukan' : '💸 Pengeluaran' }}\n💵 Rp {{ parseInt($json.amount).toLocaleString('id-ID') }}\n📁 {{ $json.categoryName }}\n📝 {{ $json.description }}"
             },
             "id": "reply-success-001",
             "name": "Reply Sukses",
