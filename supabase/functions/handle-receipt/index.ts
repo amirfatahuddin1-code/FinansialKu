@@ -32,24 +32,47 @@ serve(async (req) => {
         }
 
         // 1. Cari User ID berdasarkan Telegram Chat ID
+        // Support both private chat (telegram_user_links) and group (telegram_group_links)
         const telegramId = String(chatId)
-        const { data: link, error: linkError } = await supabase
+        let userId: string | null = null
+
+        // First, try telegram_user_links (for private chats)
+        const { data: userLink, error: userLinkError } = await supabase
             .from('telegram_user_links')
             .select('user_id')
             .eq('telegram_user_id', telegramId)
             .single()
 
-        if (linkError || !link) {
-            console.error('User link not found for chatId:', telegramId)
+        if (userLink && !userLinkError) {
+            userId = userLink.user_id
+            console.log('Found user via telegram_user_links:', userId)
+        }
+
+        // If not found, try telegram_group_links (for group chats)
+        if (!userId) {
+            const { data: groupLink, error: groupLinkError } = await supabase
+                .from('telegram_group_links')
+                .select('user_id')
+                .eq('telegram_group_id', telegramId)
+                .single()
+
+            if (groupLink && !groupLinkError) {
+                userId = groupLink.user_id
+                console.log('Found user via telegram_group_links:', userId)
+            }
+        }
+
+        if (!userId) {
+            console.error('User/Group link not found for chatId:', telegramId)
             return new Response(JSON.stringify({
-                error: 'User not linked. Please link your Telegram account in the app first.'
+                error: 'User not linked. Please link your Telegram account or group in the app first.',
+                chatId: telegramId
             }), {
                 status: 404,
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             })
         }
 
-        const userId = link.user_id
 
         // 2. Siapkan data untuk insert
         const transactionsToInsert = []
