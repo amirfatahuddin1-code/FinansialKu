@@ -156,7 +156,7 @@
         },
         {
             "parameters": {
-                "jsCode": "// Parse text message\nconst items = $input.all();\nif (!items || items.length === 0) {\n  return { json: { ok: false } };\n}\n\nconst r = items[0].json;\nlet t = r.choices?.[0]?.message?.content || r.text || r.content || '';\n\ntry {\n  const m = t.match(/\\{[\\s\\S]*?\\}/);\n  if (m) {\n    const p = JSON.parse(m[0]);\n    let chatId = '';\n    try { chatId = $('Telegram Trigger').first().json.message.chat.id; } catch(e) {}\n    \n    return {\n      json: {\n        type: p.type || 'expense',\n        amount: parseInt(p.amount) || 0,\n        categoryId: p.category || 'other',\n        description: p.description || '',\n        date: new Date().toISOString().split('T')[0],\n        source: 'telegram',\n        chatId: chatId,\n        ok: true\n      }\n    };\n  }\n} catch(e) {}\nreturn { json: { ok: false } };"
+                "jsCode": "// Parse text message with Group Support\nconst items = $input.all();\nif (!items || items.length === 0) {\n  return { json: { ok: false } };\n}\n\nconst r = items[0].json;\nlet t = r.choices?.[0]?.message?.content || r.text || r.content || '';\n\nconst chat = $('Telegram Trigger').first().json.message.chat;\nconst from = $('Telegram Trigger').first().json.message.from;\nconst isGroup = chat.type === 'group' || chat.type === 'supergroup';\n\ntry {\n  const m = t.match(/\\{[\\s\\S]*?\\}/);\n  if (m) {\n    const p = JSON.parse(m[0]);\n    \n    return {\n      json: {\n        type: p.type || 'expense',\n        amount: parseInt(p.amount) || 0,\n        categoryId: p.category || 'other',\n        description: p.description || '',\n        date: new Date().toISOString().split('T')[0],\n        source: 'telegram',\n        chatId: chat.id.toString(),\n        isGroup: isGroup,\n        groupName: isGroup ? chat.title : null,\n        senderId: from.id.toString(),\n        senderName: from.first_name + (from.last_name ? ' ' + from.last_name : ''),\n        originalMessage: $('Telegram Trigger').first().json.message.text,\n        ok: true\n      }\n    };\n  }\n} catch(e) {}\nreturn { json: { ok: false } };"
             },
             "id": "parse-text",
             "name": "Parse Text",
@@ -242,7 +242,7 @@
                 "url": "https://neeawjydtdcubwrklnua.supabase.co/functions/v1/handle-receipt",
                 "sendBody": true,
                 "specifyBody": "json",
-                "jsonBody": "={\n  \"type\": \"{{ $json.type }}\",\n  \"amount\": {{ $json.amount }},\n  \"categoryId\": \"{{ $json.categoryId }}\",\n  \"description\": \"{{ $json.description }}\",\n  \"date\": \"{{ $json.date }}\",\n  \"source\": \"telegram\",\n  \"chatId\": \"{{ $json.chatId }}\"\n}",
+                "jsonBody": "={\n  \"type\": \"{{ $json.type }}\",\n  \"amount\": {{ $json.amount }},\n  \"categoryId\": \"{{ $json.categoryId }}\",\n  \"description\": \"{{ $json.description }}\",\n  \"date\": \"{{ $json.date }}\",\n  \"source\": \"telegram\",\n  \"chatId\": \"{{ $json.chatId }}\",\n  \"isGroup\": {{ $json.isGroup }},\n  \"groupName\": \"{{ $json.groupName }}\",\n  \"senderId\": \"{{ $json.senderId }}\",\n  \"senderName\": \"{{ $json.senderName }}\",\n  \"originalMessage\": \"{{ $json.originalMessage }}\"\n}",
                 "headerParameters": {
                     "parameters": [
                         {
