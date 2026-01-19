@@ -1350,13 +1350,25 @@ function editTransaction(id) {
     openModal('transactionModal');
 }
 
-function deleteTransaction(id) {
+async function deleteTransaction(id) {
     if (!confirm('Hapus transaksi ini?')) return;
-    state.transactions = state.transactions.filter(t => t.id !== id);
-    saveTransactions();
-    renderAllTransactions();
-    updateDashboard();
-    showToast('Transaksi dihapus', 'success');
+
+    try {
+        const API = window.FinansialKuAPI;
+        const { error } = await API.transactions.delete(id);
+
+        if (error) throw error;
+
+        // Update local state ONLY on success
+        state.transactions = state.transactions.filter(t => t.id !== id);
+
+        renderAllTransactions();
+        updateDashboard();
+        showToast('Transaksi dihapus permanen', 'success');
+    } catch (err) {
+        console.error('Delete failed:', err);
+        showToast('Gagal menghapus: ' + err.message, 'error');
+    }
 }
 
 // ========== Initialization ==========
