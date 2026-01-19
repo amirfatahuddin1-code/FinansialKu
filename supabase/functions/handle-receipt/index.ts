@@ -91,26 +91,36 @@ serve(async (req) => {
                 return fallback?.id || null
             }
 
+            const catLower = catName.toLowerCase()
+
             // Coba match exact name (case insensitive)
-            const exact = categories.find(c => c.name.toLowerCase() === catName.toLowerCase())
+            const exact = categories.find(c => c.name.toLowerCase() === catLower)
             if (exact) return exact.id
 
-            // Coba match default categories
-            const map: any = {
-                'food': ['makan', 'food', 'minum', 'jajan'],
-                'transport': ['transport', 'bensin', 'ojek', 'parkir', 'tol'],
-                'shopping': ['belanja', 'mart', 'market', 'mall'],
-                'entertainment': ['nonton', 'game', 'hiburan'],
-                'health': ['obat', 'dokter', 'sehat'],
-                'bills': ['tagihan', 'listrik', 'air', 'internet', 'pulsa'],
+            // Mapping dari OpenAI category ke keywords Indonesia
+            const categoryKeywords: Record<string, string[]> = {
+                'food': ['makanan', 'makan', 'food', 'minum', 'jajan', 'kuliner', 'resto'],
+                'transport': ['transportasi', 'transport', 'bensin', 'ojek', 'parkir', 'tol', 'kendaraan'],
+                'shopping': ['belanja', 'shopping', 'mart', 'market', 'mall', 'toko', 'beli'],
+                'entertainment': ['hiburan', 'entertainment', 'nonton', 'game', 'rekreasi'],
+                'health': ['kesehatan', 'health', 'obat', 'dokter', 'sehat', 'apotek'],
+                'bills': ['tagihan', 'bills', 'listrik', 'air', 'internet', 'pulsa', 'utilitas'],
+                'education': ['pendidikan', 'education', 'kursus', 'buku', 'sekolah'],
+                'other': ['lainnya', 'other', 'lain']
             }
 
-            // Cek mapping
-            for (const [key, keywords] of Object.entries(map)) {
-                if (keywords.some((k: string) => catName.toLowerCase().includes(k)) ||
-                    (catName.toLowerCase() === key)) {
-                    const found = categories.find(c => c.id === key || c.name.toLowerCase().includes(key))
-                    if (found) return found.id
+            // Cari kategori user berdasarkan keyword match
+            for (const [aiCategory, keywords] of Object.entries(categoryKeywords)) {
+                // Jika OpenAI return category ini
+                if (catLower === aiCategory || keywords.includes(catLower)) {
+                    // Cari di kategori user yang cocok dengan keywords
+                    for (const keyword of keywords) {
+                        const found = categories.find(c =>
+                            c.name.toLowerCase().includes(keyword) ||
+                            c.name.toLowerCase() === keyword
+                        )
+                        if (found) return found.id
+                    }
                 }
             }
 
@@ -118,6 +128,7 @@ serve(async (req) => {
             const fallback = categories.find(c => c.type === 'expense')
             return fallback?.id || null
         }
+
 
         // Helper untuk tanggal WIB (UTC+7)
         // Solusi Hard-coded: Geser waktu server (UTC) sejauh +7 jam
