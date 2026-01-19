@@ -72,7 +72,7 @@
                 "messages": {
                     "values": [
                         {
-                            "content": "=Kamu adalah asisten keuangan. Ekstrak info transaksi dari pesan: \"{{ $json.message.text }}\"\n\nAturan: 50rb=50000, 5jt=5000000. Default=expense. Kata gaji/bonus/dapat/terima=income.\n\nKembalikan HANYA JSON (tanpa markdown, tanpa penjelasan):\n{\"type\":\"expense\",\"amount\":50000,\"category\":\"food\",\"description\":\"Makan siang\"}\n\nKategori: food, transport, shopping, entertainment, health, bills, education, salary, bonus, other"
+                            "content": "=Kamu adalah asisten keuangan. Ekstrak info transaksi dari pesan: \"{{ $json.message.text }}\"\n\nAturan: 50rb=50000, 5jt=5000000. Default=expense. Kata gaji/bonus/dapat/terima=income.\n\nKembalikan HANYA JSON (tanpa markdown, tanpa penjelasan):\n{\"type\":\"expense\",\"amount\":50000,\"category\":\"food\",\"description\":\"Makan siang\"}\n\nKategori:\n- entertainment (bioskop, nonton, game, rekreasi, hobi)\n- bills (listrik, air, internet, tagihan)\n- debt (bayar hutang, cicilan, pinjaman)\n- food (makan, minum, jajan)\n- transport (bensin, ojek, parkir)\n- shopping (belanja, beli baju, mart)\n- health (obat, dokter)\n- education (buku, kursus)\n- salary (gaji, pendapatan)\n- bonus (thr, hadiah)\n- other"
                         }
                     ]
                 },

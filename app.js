@@ -1284,11 +1284,22 @@ function renderAllTransactions() {
     if (!filtered.length) { list.innerHTML = '<div class="empty-state"><p>Tidak ada transaksi</p></div>'; return; }
     list.innerHTML = filtered.map(t => {
         const c = state.categories.find(x => x.id === t.categoryId) || { icon: '📦', name: 'Lainnya', color: '#64748b' };
+        // Sender Badge Logic
+        const senderBadge = (t.senderName || t.sender_name)
+            ? `<span class="sender-badge" style="font-size: 0.75rem; background: #e0f2fe; color: #0284c7; padding: 2px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px; margin-top: 4px;">
+                <svg style="width: 10px; height: 10px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Dicatat oleh ${(t.senderName || t.sender_name)}
+               </span>`
+            : '';
+
         return `<div class="transaction-item">
             <div class="transaction-icon" style="background:${c.color}20">${c.icon}</div>
             <div class="transaction-info">
                 <div class="transaction-category">${c.name}</div>
-                <div class="transaction-description">${t.description || '-'}</div>
+                <div class="transaction-description">
+                    ${t.description || '-'}
+                    ${senderBadge ? '<br>' + senderBadge : ''}
+                </div>
             </div>
             <div class="transaction-amount-col">
                 <div class="transaction-amount ${t.type}">${t.type === 'income' ? '+' : '-'}${formatCurrency(t.amount)}</div>

@@ -95,38 +95,67 @@ serve(async (req) => {
                 return fallback?.id || null
             }
 
-            const searchText = `${catName || ''} ${description || ''}`.toLowerCase()
             const catLower = (catName || '').toLowerCase()
+            const descLower = (description || '').toLowerCase()
 
-            // 1. Coba match exact name (case insensitive)
-            const exact = relevantCategories.find(c => c.name.toLowerCase() === catLower)
-            if (exact) return exact.id
+            // Keyword Mapping: OpenAI Category -> Indonesian Keywords
+            const keywordMap: Record<string, string[]> = {
+                'entertainment': ['hiburan', 'nonton', 'bioskop', 'game', 'rekreasi', 'hobi', 'wisata'],
+                'food': ['makan', 'minum', 'jajan', 'pangan', 'konsumsi'],
+                'transport': ['transport', 'bensin', 'parkir', 'kendaraan', 'ojek', 'grab', 'gojek'],
+                'shopping': ['belanja', 'shopping', 'mart', 'baju', 'pakaian'],
+                'bills': ['tagihan', 'listrik', 'air', 'internet', 'telpon', 'pulsa'],
+                'health': ['kesehatan', 'obat', 'dokter', 'medis'],
+                'education': ['pendidikan', 'sekolah', 'kuliah', 'kursus', 'buku'],
+                'debt': ['cicilan', 'hutang', 'kredit', 'pinjaman'],
+                'salary': ['gaji', 'upah', 'pendapatan', 'honor'],
+                'bonus': ['bonus', 'thr', 'hadiah', 'dividen']
+            }
 
-            // 2. Coba match jika nama kategori OpenAI MENGANDUNG nama kategori user
-            // atau sebaliknya (untuk fleksibilitas maksimal)
-            for (const cat of relevantCategories) {
-                const catNameLower = cat.name.toLowerCase()
-                // Match jika: 
-                // - Nama kategori user ada di dalam searchText
-                // - ATAU searchText ada di dalam nama kategori user
-                if (searchText.includes(catNameLower) || catNameLower.includes(catLower)) {
-                    return cat.id
+            // 1. Matched based on Mapped Keywords (High Priority)
+            // Jika catName adalah kategori umum (misal 'entertainment'), cari kategori user yang mengandung keyword relevan
+            const targetKeywords = keywordMap[catLower]
+            if (targetKeywords) {
+                for (const keyword of targetKeywords) {
+                    const match = relevantCategories.find(c => c.name.toLowerCase().includes(keyword))
+                    if (match) return match.id
                 }
             }
 
-            // 3. Coba match berdasarkan kata-kata dalam searchText vs nama kategori
-            const words = searchText.split(/\s+/).filter(w => w.length > 2)
-            for (const word of words) {
-                for (const cat of relevantCategories) {
-                    const catNameLower = cat.name.toLowerCase()
-                    // Jika kata dari searchText cocok dengan nama kategori
-                    if (catNameLower.includes(word) || word.includes(catNameLower)) {
+            // 2. Exact Match Name
+            const exact = relevantCategories.find(c => c.name.toLowerCase() === catLower)
+            if (exact) return exact.id
+
+            // 3. Partial Match: Category Name matches Description Keywords (Medium Priority)
+            // Hanya mencari nama kategori DI DALAM deskripsi, BUKAN sebaliknya.
+            // Agar "Bayar Bioskop" (desc) tidak match "Bayar Hutang" (cat) hanya karena kata "Bayar".
+            // Tapi "Uang Makan" (cat) bisa match "Makan siang" (desc).
+            for (const cat of relevantCategories) {
+                const catNameLower = cat.name.toLowerCase()
+
+                // Strict check: Nama kategori harus ada di deskripsi ATAU OpenAI category
+                // Hindari match kata umum pendek (<=3 huruf) kecuali exact
+                if (catNameLower.length > 3) {
+                    if (descLower.includes(catNameLower) || catLower.includes(catNameLower)) {
                         return cat.id
                     }
                 }
             }
 
-            // 4. Fallback: category pertama yang sesuai tipe
+            // 4. Fallback: Word by Word Match (Low Priority - Last Resort)
+            // Hati-hati dengan kata umum "Bayar", "Beli"
+            const blacklistWords = ['bayar', 'beli', 'uang', 'transaksi']
+            const words = descLower.split(/\s+/).filter(w => w.length > 3 && !blacklistWords.includes(w))
+
+            for (const word of words) {
+                for (const cat of relevantCategories) {
+                    if (cat.name.toLowerCase().includes(word)) {
+                        return cat.id
+                    }
+                }
+            }
+
+            // 5. Absolute Fallback: category pertama yang sesuai tipe
             const fallback = relevantCategories[0]
             return fallback?.id || null
         }
@@ -158,6 +187,7 @@ serve(async (req) => {
                     category_id: categoryId,
                     description: store ? `${store} - ${item.name}` : item.name,
                     date: date || getWIBDate(), // Prioritize tanggal struk, fallback ke NOW
+                    sender_name: body.senderName || null,
                     created_at: new Date().toISOString()
                 })
             }
@@ -211,7 +241,10 @@ serve(async (req) => {
                 success: true,
                 message: `Successfully saved ${data.length} transactions`,
                 data: responseData,
-                // For convenience in simple single-transaction flows (n8n)
+                // Debugging Info
+                receivedSenderName: body.senderName || 'UNDEFINED IN BODY',
+                receivedBodyKeys: Object.keys(body),
+
                 // For convenience in simple single-transaction flows (n8n)
                 categoryName: transactionsToInsert[0]?._categoryName,
                 amount: transactionsToInsert[0]?.amount,
