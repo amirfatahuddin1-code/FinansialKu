@@ -212,10 +212,11 @@ serve(async (req) => {
                 message: `Successfully saved ${data.length} transactions`,
                 data: responseData,
                 // For convenience in simple single-transaction flows (n8n)
-                categoryName: responseData[0]?.categoryName,
-                amount: responseData[0]?.amount,
-                type: responseData[0]?.type,
-                description: responseData[0]?.description
+                // For convenience in simple single-transaction flows (n8n)
+                categoryName: transactionsToInsert[0]?._categoryName,
+                amount: transactionsToInsert[0]?.amount,
+                type: transactionsToInsert[0]?.type,
+                description: transactionsToInsert[0]?.description
             }), {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             })
