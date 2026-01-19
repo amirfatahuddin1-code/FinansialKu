@@ -1504,6 +1504,13 @@
                         </svg>
                         Tampilan
                     </button>
+                    <button class="settings-tab" data-tab="telegramGroup">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path
+                                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z" />
+                        </svg>
+                        Grup Telegram
+                    </button>
                     <button class="settings-tab" data-tab="about">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="10" />
@@ -1673,6 +1680,83 @@
                                 <input type="checkbox" id="settingsThemeToggle">
                                 <span class="slider round"></span>
                             </label>
+                        </div>
+                    </div>
+
+                    <!-- Telegram Group Tab -->
+                    <div class="settings-panel" id="settings-telegramGroup">
+                        <h4>Grup Telegram Bersama</h4>
+                        <p
+                            style="color: var(--text-secondary); font-size: var(--font-size-sm); margin-bottom: var(--space-5);">
+                            Hubungkan grup Telegram untuk mencatat keuangan bersama pasangan. Semua anggota grup bisa
+                            input transaksi via chat.
+                        </p>
+
+                        <!-- Link New Group Section -->
+                        <div
+                            style="background: var(--bg-card); padding: var(--space-5); border-radius: var(--radius-xl); margin-bottom: var(--space-5); border: 1px solid var(--border-color);">
+                            <h5
+                                style="margin-bottom: var(--space-4); display: flex; align-items: center; gap: var(--space-2);">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    style="width: 20px; height: 20px; color: var(--accent-primary);">
+                                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                                </svg>
+                                Hubungkan Grup Baru
+                            </h5>
+                            <div class="form-group" style="margin-bottom: var(--space-3);">
+                                <label>ID Grup Telegram</label>
+                                <input type="text" id="telegramGroupIdInput" placeholder="-1001234567890">
+                                <p style="font-size: var(--font-size-xs); color: var(--text-muted); margin-top: 4px;">
+                                    Kirim <code>/info</code> di grup untuk mendapatkan ID grup
+                                </p>
+                            </div>
+                            <div class="form-group" style="margin-bottom: var(--space-3);">
+                                <label>Nama Grup (opsional)</label>
+                                <input type="text" id="telegramGroupNameInput" placeholder="Keuangan Bersama">
+                            </div>
+                            <button class="btn-primary btn-small" id="linkTelegramGroupBtn">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    style="width: 16px; height: 16px;">
+                                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                                </svg>
+                                Hubungkan Grup
+                            </button>
+                        </div>
+
+                        <!-- Linked Groups List -->
+                        <div>
+                            <h5 style="margin-bottom: var(--space-4);">Grup yang Terhubung</h5>
+                            <div id="linkedGroupsList" class="settings-categories-list">
+                                <div class="empty-state small">
+                                    <p>Belum ada grup yang terhubung</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Info Box -->
+                        <div
+                            style="margin-top: var(--space-5); padding: var(--space-4); background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%); border-radius: var(--radius-lg); border: 1px solid rgba(59, 130, 246, 0.2);">
+                            <div style="display: flex; align-items: flex-start; gap: var(--space-3);">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    style="width: 20px; height: 20px; color: var(--accent-primary); flex-shrink: 0;">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <line x1="12" y1="16" x2="12" y2="12" />
+                                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                                </svg>
+                                <div>
+                                    <p
+                                        style="font-size: var(--font-size-sm); color: var(--text-primary); margin: 0; font-weight: 500;">
+                                        Tips Penggunaan</p>
+                                    <ul
+                                        style="font-size: var(--font-size-xs); color: var(--text-secondary); margin: var(--space-2) 0 0 0; padding-left: var(--space-4);">
+                                        <li>Buat grup Telegram bersama pasangan Anda</li>
+                                        <li>Invite @FinanzaidBot ke grup tersebut</li>
+                                        <li>Kirim pesan seperti: "Makan siang 50rb"</li>
+                                        <li>Transaksi akan tercatat dengan nama pengirim</li>
+                                    </ul>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

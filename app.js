@@ -668,9 +668,17 @@ function renderTransactions() {
     const { start, end } = getDateRange(state.currentPeriod);
     const filtered = state.transactions.filter(t => { const d = new Date(t.date); return d >= start && d <= end; }).slice(0, 10);
     const list = document.getElementById('transactionsList');
-    if (!filtered.length) { list.innerHTML = '<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg><p>Belum ada transaksi</p><span>Tekan + untuk menambah</span></div>'; return; }
-    list.innerHTML = filtered.map(t => { const c = state.categories.find(x => x.id === t.categoryId) || { icon: '📦', name: 'Lainnya', color: '#64748b' }; return `<div class="transaction-item" data-id="${t.id}"><div class="transaction-icon" style="background:${c.color}20">${c.icon}</div><div class="transaction-info"><div class="transaction-category">${c.name}</div><div class="transaction-description">${t.description || '-'}</div></div><div><div class="transaction-amount ${t.type}">${t.type === 'income' ? '+' : '-'}${formatCurrency(t.amount)}</div><div class="transaction-date">${formatDateShort(t.date)}</div></div><div class="transaction-actions"><button onclick="editTx('${t.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="delete" onclick="deleteTransaction('${t.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button></div></div>`; }).join('');
+    if (!filtered.length) {
+        list.innerHTML = '<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg><p>Belum ada transaksi</p><span>Tekan + untuk menambah</span></div>';
+        return;
+    }
+    list.innerHTML = filtered.map(t => {
+        const c = state.categories.find(x => x.id === t.categoryId) || { icon: '📦', name: 'Lainnya', color: '#64748b' };
+        const senderBadge = t.senderName ? `<div class="transaction-sender" style="font-size: 0.7rem; color: var(--text-muted); margin-top: 2px;">👤 ${t.senderName}</div>` : '';
+        return `<div class="transaction-item" data-id="${t.id}"><div class="transaction-icon" style="background:${c.color}20">${c.icon}</div><div class="transaction-info"><div class="transaction-category">${c.name}</div><div class="transaction-description">${t.description || '-'}</div>${senderBadge}</div><div><div class="transaction-amount ${t.type}">${t.type === 'income' ? '+' : '-'}${formatCurrency(t.amount)}</div><div class="transaction-date">${formatDateShort(t.date)}</div></div><div class="transaction-actions"><button onclick="editTx('${t.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="delete" onclick="deleteTransaction('${t.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button></div></div>`;
+    }).join('');
 }
+
 
 function editTx(id) { const t = state.transactions.find(x => x.id === id); if (t) openTransactionModal(t.type, t); }
 
@@ -2984,6 +2992,112 @@ function initSettings() {
 
     // Notifications Init
     initNotificationSettings();
+
+    // Telegram Group Init
+    initTelegramGroupSettings();
+}
+
+// ========== Telegram Group Management ==========
+
+function initTelegramGroupSettings() {
+    const linkBtn = document.getElementById('linkTelegramGroupBtn');
+    if (linkBtn) {
+        linkBtn.addEventListener('click', linkTelegramGroup);
+    }
+}
+
+async function loadLinkedGroups() {
+    const API = window.FinansialKuAPI;
+    if (!API.telegramGroup) {
+        console.warn('telegramGroup API not available');
+        return;
+    }
+
+    const { data, error } = await API.telegramGroup.getLinkedGroups();
+    if (error) {
+        console.error('Failed to load linked groups:', error);
+        return;
+    }
+
+    renderLinkedGroups(data || []);
+}
+
+function renderLinkedGroups(groups) {
+    const container = document.getElementById('linkedGroupsList');
+    if (!container) return;
+
+    if (!groups || groups.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state small">
+                <p>Belum ada grup yang terhubung</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = groups.map(group => `
+        <div class="category-row" style="display: flex; justify-content: space-between; align-items: center; padding: var(--space-3); background: var(--bg-secondary); border-radius: var(--radius-lg); margin-bottom: var(--space-2);">
+            <div style="display: flex; align-items: center; gap: var(--space-3);">
+                <div style="width: 40px; height: 40px; border-radius: var(--radius-full); background: linear-gradient(135deg, #0088cc 0%, #00aced 100%); display: flex; align-items: center; justify-content: center;">
+                    <svg viewBox="0 0 24 24" fill="white" style="width: 22px; height: 22px;">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
+                    </svg>
+                </div>
+                <div>
+                    <div style="font-weight: 500; color: var(--text-primary);">${group.group_name || 'Grup Telegram'}</div>
+                    <div style="font-size: var(--font-size-xs); color: var(--text-muted);">ID: ${group.telegram_group_id}</div>
+                </div>
+            </div>
+            <button class="btn-icon" onclick="unlinkTelegramGroup('${group.telegram_group_id}')" title="Putuskan koneksi" style="color: var(--danger);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+    `).join('');
+}
+
+async function linkTelegramGroup() {
+    const groupId = document.getElementById('telegramGroupIdInput').value.trim();
+    const groupName = document.getElementById('telegramGroupNameInput').value.trim() || 'Grup Telegram';
+
+    if (!groupId) {
+        showToast('Masukkan ID Grup Telegram', 'warning');
+        return;
+    }
+
+    const API = window.FinansialKuAPI;
+    if (!API.telegramGroup) {
+        showToast('Fitur belum tersedia', 'error');
+        return;
+    }
+
+    const { data, error } = await API.telegramGroup.linkGroup(groupId, groupName);
+
+    if (error) {
+        showToast('Gagal menghubungkan grup: ' + error.message, 'error');
+        return;
+    }
+
+    showToast('Grup berhasil dihubungkan!', 'success');
+    document.getElementById('telegramGroupIdInput').value = '';
+    document.getElementById('telegramGroupNameInput').value = '';
+    loadLinkedGroups();
+}
+
+async function unlinkTelegramGroup(groupId) {
+    if (!confirm('Putuskan koneksi grup ini?')) return;
+
+    const API = window.FinansialKuAPI;
+    const { error } = await API.telegramGroup.unlinkGroup(groupId);
+
+    if (error) {
+        showToast('Gagal memutuskan koneksi: ' + error.message, 'error');
+        return;
+    }
+
+    showToast('Grup telah diputuskan', 'success');
+    loadLinkedGroups();
 }
 
 function initNotificationSettings() {
@@ -3046,6 +3160,11 @@ function switchSettingsTab(tabName) {
     // Update Content
     document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
     document.getElementById(`settings-${tabName}`).classList.add('active');
+
+    // Load tab-specific data
+    if (tabName === 'telegramGroup') {
+        loadLinkedGroups();
+    }
 }
 
 async function loadProfileSettings() {
