@@ -210,10 +210,22 @@
         {
             "parameters": {
                 "method": "POST",
-                "url": "YOUR_NGROK_URL/api/transaction",
+                "url": "https://neeawjydtdcubwrklnua.supabase.co/functions/v1/handle-receipt",
                 "sendBody": true,
                 "specifyBody": "json",
-                "jsonBody": "={\n  \"type\": \"{{ $json.type }}\",\n  \"amount\": {{ $json.amount }},\n  \"categoryId\": \"{{ $json.categoryId }}\",\n  \"description\": \"{{ $json.description }}\",\n  \"date\": \"{{ $json.date }}\",\n  \"source\": \"{{ $json.source }}\"\n}"
+                "jsonBody": "={\n  \"transactions\": {{ JSON.stringify($json.items) }},\n  \"store\": \"{{ $json.store }}\",\n  \"date\": \"{{ $json.date }}\",\n  \"chatId\": \"{{ $json.chatId }}\"\n}",
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5lZWF3anlkdGRjdWJ3cmtsbnVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0NDcxODMsImV4cCI6MjA4NDAyMzE4M30._XeWSMSZvTH2Q6Tr7Or8kBaKtkXsV35TfljLfUnZfhA"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                }
             },
             "id": "http-receipt",
             "name": "Send Receipt",
@@ -227,10 +239,22 @@
         {
             "parameters": {
                 "method": "POST",
-                "url": "YOUR_NGROK_URL/api/transaction",
+                "url": "https://neeawjydtdcubwrklnua.supabase.co/functions/v1/handle-receipt",
                 "sendBody": true,
                 "specifyBody": "json",
-                "jsonBody": "={\n  \"type\": \"{{ $json.type }}\",\n  \"amount\": {{ $json.amount }},\n  \"categoryId\": \"{{ $json.categoryId }}\",\n  \"description\": \"{{ $json.description }}\",\n  \"date\": \"{{ $json.date }}\",\n  \"source\": \"telegram\"\n}"
+                "jsonBody": "={\n  \"type\": \"{{ $json.type }}\",\n  \"amount\": {{ $json.amount }},\n  \"categoryId\": \"{{ $json.categoryId }}\",\n  \"description\": \"{{ $json.description }}\",\n  \"date\": \"{{ $json.date }}\",\n  \"source\": \"telegram\",\n  \"chatId\": \"{{ $json.chatId }}\"\n}",
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5lZWF3anlkdGRjdWJ3cmtsbnVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0NDcxODMsImV4cCI6MjA4NDAyMzE4M30._XeWSMSZvTH2Q6Tr7Or8kBaKtkXsV35TfljLfUnZfhA"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                }
             },
             "id": "http-text",
             "name": "Send Text",
