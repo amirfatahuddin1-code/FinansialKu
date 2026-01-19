@@ -24,6 +24,50 @@
         },
         {
             "parameters": {
+                "conditions": {
+                    "string": [
+                        {
+                            "value1": "={{ $json.message.text }}",
+                            "operation": "startsWith",
+                            "value2": "/info"
+                        }
+                    ]
+                }
+            },
+            "id": "if-info-command-001",
+            "name": "IF /info Command",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                480,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+                "text": "=ℹ️ **Info Chat**\n\n📋 **Chat ID:** `{{ $('Telegram Trigger').first().json.message.chat.id }}`\n📛 **Nama:** {{ $('Telegram Trigger').first().json.message.chat.title || $('Telegram Trigger').first().json.message.chat.first_name || 'Private Chat' }}\n📁 **Tipe:** {{ $('Telegram Trigger').first().json.message.chat.type }}\n\n👤 **User ID Anda:** `{{ $('Telegram Trigger').first().json.message.from.id }}`\n🏷️ **Nama Anda:** {{ $('Telegram Trigger').first().json.message.from.first_name }} {{ $('Telegram Trigger').first().json.message.from.last_name || '' }}\n\n💡 _Gunakan Chat ID di atas untuk menghubungkan grup di web app._",
+                "additionalFields": {
+                    "parse_mode": "Markdown"
+                }
+            },
+            "id": "reply-info-001",
+            "name": "Reply Info",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1.2,
+            "position": [
+                720,
+                200
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "1",
+                    "name": "Telegram account"
+                }
+            }
+        },
+        {
+            "parameters": {
                 "model": "gpt-4o-mini",
                 "messages": {
                     "values": [
@@ -41,8 +85,8 @@
             "type": "@n8n/n8n-nodes-langchain.openAi",
             "typeVersion": 1.8,
             "position": [
-                480,
-                300
+                720,
+                400
             ],
             "credentials": {
                 "openAiApi": {
@@ -60,8 +104,8 @@
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [
-                720,
-                300
+                960,
+                400
             ]
         },
         {
@@ -80,8 +124,8 @@
             "type": "n8n-nodes-base.if",
             "typeVersion": 1,
             "position": [
-                960,
-                300
+                1200,
+                400
             ]
         },
         {
@@ -97,8 +141,8 @@
             "type": "n8n-nodes-base.httpRequest",
             "typeVersion": 4.2,
             "position": [
-                1200,
-                200
+                1440,
+                300
             ]
         },
         {
@@ -111,8 +155,8 @@
             "type": "n8n-nodes-base.telegram",
             "typeVersion": 1.2,
             "position": [
-                1440,
-                200
+                1680,
+                300
             ],
             "credentials": {
                 "telegramApi": {
@@ -124,15 +168,15 @@
         {
             "parameters": {
                 "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
-                "text": "❌ Maaf, saya tidak mengerti.\n\nContoh format:\n• Makan siang 50rb\n• Gaji bulan ini 5jt\n• Grab 25ribu"
+                "text": "❌ Maaf, saya tidak mengerti.\n\nContoh format:\n• Makan siang 50rb\n• Gaji bulan ini 5jt\n• Grab 25ribu\n\n📋 Ketik /info untuk melihat ID chat"
             },
             "id": "reply-error-001",
             "name": "Reply Error",
             "type": "n8n-nodes-base.telegram",
             "typeVersion": 1.2,
             "position": [
-                1200,
-                400
+                1440,
+                500
             ],
             "credentials": {
                 "telegramApi": {
@@ -145,6 +189,24 @@
     "connections": {
         "Telegram Trigger": {
             "main": [
+                [
+                    {
+                        "node": "IF /info Command",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "IF /info Command": {
+            "main": [
+                [
+                    {
+                        "node": "Reply Info",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
                 [
                     {
                         "node": "OpenAI",
@@ -214,6 +276,6 @@
         "templateCredsSetupCompleted": true
     },
     "pinData": {},
-    "versionId": "2",
+    "versionId": "3",
     "tags": []
 }
