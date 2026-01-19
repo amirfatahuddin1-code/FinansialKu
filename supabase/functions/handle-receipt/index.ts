@@ -169,6 +169,10 @@ serve(async (req) => {
             const description = body.description || body.originalMessage || ''
             const categoryId = findCategoryId(categoryName, transactionType, description)
 
+            // Cari nama kategori yang digunakan untuk response
+            const usedCategory = categories?.find(c => c.id === categoryId)
+            const usedCategoryName = usedCategory?.name || categoryName || 'Lainnya'
+
             transactionsToInsert.push({
                 user_id: userId,
                 type: transactionType,
@@ -179,23 +183,39 @@ serve(async (req) => {
                 date: getWIBDate(),
                 // Save sender name for group transactions
                 sender_name: body.senderName || null,
-                created_at: new Date().toISOString()
+                created_at: new Date().toISOString(),
+                // Extra field for response (won't be saved but will be in transactionsToInsert)
+                _categoryName: usedCategoryName
             })
         }
 
         // 3. Bulk Insert ke tabel transactions
         if (transactionsToInsert.length > 0) {
+            // Sanitize data for insert (remove _categoryName)
+            const cleanTransactions = transactionsToInsert.map(({ _categoryName, ...keep }) => keep)
+
             const { data, error } = await supabase
                 .from('transactions')
-                .insert(transactionsToInsert)
+                .insert(cleanTransactions)
                 .select()
 
             if (error) throw error
 
+            // Combine inserted data with category names for response
+            const responseData = data.map((item, index) => ({
+                ...item,
+                categoryName: transactionsToInsert[index]._categoryName
+            }))
+
             return new Response(JSON.stringify({
                 success: true,
                 message: `Successfully saved ${data.length} transactions`,
-                data: data
+                data: responseData,
+                // For convenience in simple single-transaction flows (n8n)
+                categoryName: responseData[0]?.categoryName,
+                amount: responseData[0]?.amount,
+                type: responseData[0]?.type,
+                description: responseData[0]?.description
             }), {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             })
