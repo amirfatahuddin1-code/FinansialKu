@@ -83,22 +83,27 @@ serve(async (req) => {
             .select('id, name, type')
             .eq('user_id', userId)
 
-        // Helper function cari category ID
-        const findCategoryId = (catName: string) => {
+        // Helper function cari category ID berdasarkan nama dan tipe transaksi
+        const findCategoryId = (catName: string, transactionType: string = 'expense') => {
             if (!categories) return null
+
+            // Filter kategori berdasarkan tipe transaksi
+            const relevantCategories = categories.filter(c => c.type === transactionType)
+
             if (!catName) {
-                const fallback = categories.find(c => c.type === 'expense')
+                const fallback = relevantCategories[0] || categories.find(c => c.type === transactionType)
                 return fallback?.id || null
             }
 
             const catLower = catName.toLowerCase()
 
-            // Coba match exact name (case insensitive)
-            const exact = categories.find(c => c.name.toLowerCase() === catLower)
+            // Coba match exact name (case insensitive) pada kategori yang relevan
+            const exact = relevantCategories.find(c => c.name.toLowerCase() === catLower)
             if (exact) return exact.id
 
             // Mapping dari OpenAI category ke keywords Indonesia
             const categoryKeywords: Record<string, string[]> = {
+                // Expense categories
                 'food': ['makanan', 'makan', 'food', 'minum', 'jajan', 'kuliner', 'resto'],
                 'transport': ['transportasi', 'transport', 'bensin', 'ojek', 'parkir', 'tol', 'kendaraan'],
                 'shopping': ['belanja', 'shopping', 'mart', 'market', 'mall', 'toko', 'beli'],
@@ -106,6 +111,10 @@ serve(async (req) => {
                 'health': ['kesehatan', 'health', 'obat', 'dokter', 'sehat', 'apotek'],
                 'bills': ['tagihan', 'bills', 'listrik', 'air', 'internet', 'pulsa', 'utilitas'],
                 'education': ['pendidikan', 'education', 'kursus', 'buku', 'sekolah'],
+                // Income categories
+                'salary': ['gaji', 'salary', 'pendapatan', 'penghasilan', 'income'],
+                'bonus': ['bonus', 'thr', 'insentif', 'reward', 'hadiah'],
+                'investment': ['investasi', 'investment', 'dividen', 'bunga'],
                 'other': ['lainnya', 'other', 'lain']
             }
 
@@ -113,9 +122,9 @@ serve(async (req) => {
             for (const [aiCategory, keywords] of Object.entries(categoryKeywords)) {
                 // Jika OpenAI return category ini
                 if (catLower === aiCategory || keywords.includes(catLower)) {
-                    // Cari di kategori user yang cocok dengan keywords
+                    // Cari di kategori user yang cocok dengan keywords DAN tipe yang sesuai
                     for (const keyword of keywords) {
-                        const found = categories.find(c =>
+                        const found = relevantCategories.find(c =>
                             c.name.toLowerCase().includes(keyword) ||
                             c.name.toLowerCase() === keyword
                         )
@@ -124,10 +133,11 @@ serve(async (req) => {
                 }
             }
 
-            // Fallback: category pertama yg tipe expense
-            const fallback = categories.find(c => c.type === 'expense')
+            // Fallback: category pertama yang sesuai tipe
+            const fallback = relevantCategories[0] || categories.find(c => c.type === transactionType)
             return fallback?.id || null
         }
+
 
 
         // Helper untuk tanggal WIB (UTC+7)
@@ -160,12 +170,13 @@ serve(async (req) => {
         }
         // KASUS B: INPUT ADALAH SINGLE TRANSACTION (Manual Chat)
         else if (body.amount) {
+            const transactionType = body.type || 'expense'
             const categoryName = body.category || body.categoryId || 'Lainnya'
-            const categoryId = findCategoryId(categoryName)
+            const categoryId = findCategoryId(categoryName, transactionType)
 
             transactionsToInsert.push({
                 user_id: userId,
-                type: body.type || 'expense',
+                type: transactionType,
                 amount: Number(body.amount),
                 category_id: categoryId,
                 description: body.description || body.originalMessage || 'Transaksi Telegram',
