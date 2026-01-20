@@ -1980,21 +1980,39 @@ function initAIEventListeners() {
         if (e.key === 'Enter') handleAIChat();
     });
 
-    // Sidebar toggle (Mobile)
+    // Sidebar toggle (Mobile) with Backdrop
     const sidebarToggle = document.getElementById('aiSidebarToggle');
     const sidebar = document.getElementById('aiSidebar');
+    const backdrop = document.getElementById('aiSidebarBackdrop');
 
     console.log('AI Sidebar Toggle Button:', sidebarToggle);
     console.log('AI Sidebar:', sidebar);
+    console.log('AI Backdrop:', backdrop);
 
     if (sidebarToggle && sidebar) {
+        // Toggle button click
         sidebarToggle.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
             console.log('Toggle button clicked!');
-            sidebar.classList.toggle('active');
-            console.log('Sidebar active:', sidebar.classList.contains('active'));
+
+            const isActive = sidebar.classList.toggle('active');
+            if (backdrop) {
+                backdrop.classList.toggle('active', isActive);
+            }
+
+            console.log('Sidebar active:', isActive);
         });
+
+        // Backdrop click to close
+        if (backdrop) {
+            backdrop.addEventListener('click', () => {
+                sidebar.classList.remove('active');
+                backdrop.classList.remove('active');
+                console.log('Backdrop clicked - sidebar closed');
+            });
+        }
+
         console.log('Sidebar toggle event listener added');
     } else {
         console.error('Sidebar toggle or sidebar element not found!');
