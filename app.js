@@ -1513,7 +1513,7 @@ function initEventListeners() {
 
             if (type === 'telegram-group') {
                 // Open Settings Modal -> Group Tab
-                openSettingsModal('telegram-group');
+                openSettingsModal('telegramGroup');
             } else if (type === 'telegram-personal') {
                 // Open Legacy Telegram Modal for Personal Link
                 openModal('telegramSettingsModal');
