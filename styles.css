@@ -2823,32 +2823,28 @@ form {
 
 /* Sidebar Toggle (Mobile) */
 .ai-sidebar-toggle {
-    position: fixed;
-    top: 80px;
-    left: var(--space-4);
-    z-index: 1000;
-    width: 44px;
-    height: 44px;
-    background: var(--accent-gradient);
-    border: none;
-    border-radius: var(--radius-lg);
     display: none;
     align-items: center;
     justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
     cursor: pointer;
     transition: all var(--transition-fast);
-    box-shadow: var(--shadow-lg);
+    flex-shrink: 0;
 }
 
 .ai-sidebar-toggle:hover {
-    transform: scale(1.05);
-    box-shadow: var(--shadow-glow);
+    background: var(--bg-card-hover);
+    border-color: var(--border-color-hover);
 }
 
 .ai-sidebar-toggle svg {
-    width: 24px;
-    height: 24px;
-    color: white;
+    width: 20px;
+    height: 20px;
+    color: var(--text-primary);
 }
 
 /* Chat Wrapper */
