@@ -1979,6 +1979,55 @@ function initAIEventListeners() {
     document.getElementById('aiChatInput')?.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') handleAIChat();
     });
+
+    // Sidebar toggle (Mobile)
+    const sidebarToggle = document.getElementById('aiSidebarToggle');
+    const sidebar = document.getElementById('aiSidebar');
+    if (sidebarToggle && sidebar) {
+        sidebarToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('active');
+        });
+    }
+
+    // New Chat button
+    const newChatBtn = document.getElementById('newChatBtn');
+    if (newChatBtn) {
+        newChatBtn.addEventListener('click', () => {
+            // Clear chat history
+            state.aiChatHistory = [];
+
+            // Clear chat messages
+            const chatMessages = document.getElementById('aiChatMessages');
+            if (chatMessages) {
+                chatMessages.innerHTML = `
+                    <div class="ai-message ai">
+                        <div class="ai-avatar">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
+                            </svg>
+                        </div>
+                        <div class="ai-message-content">
+                            <p>Halo! Saya asisten keuangan AI Anda. 👋</p>
+                            <p>Saya bisa membantu Anda:</p>
+                            <ul>
+                                <li>📊 Menganalisis pola pengeluaran</li>
+                                <li>💡 Memberikan saran budget</li>
+                                <li>💰 Tips menghemat uang</li>
+                            </ul>
+                            <p>Pilih aksi cepat di bawah atau ketik pertanyaan Anda!</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            showToast('Percakapan baru dimulai', 'success');
+
+            // Close sidebar on mobile
+            if (sidebar) {
+                sidebar.classList.remove('active');
+            }
+        });
+    }
 }
 
 // ========== Financial Calculators ==========
