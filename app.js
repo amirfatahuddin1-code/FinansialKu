@@ -1505,6 +1505,19 @@ function initEventListeners() {
             document.getElementById('settingsMenu')?.classList.remove('active');
         }
     });
+
+    // Telegram Notification Buttons (Dashboard)
+    document.querySelectorAll('.btn-notification').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const type = btn.dataset.navigate;
+            if (type === 'telegram-personal' || type === 'telegram-group') {
+                openModal('telegramSettingsModal');
+                if (typeof checkTelegramLinkStatus === 'function') {
+                    checkTelegramLinkStatus();
+                }
+            }
+        });
+    });
 }
 
 function toggleSettingsMenu() {
