@@ -1419,6 +1419,14 @@ input:checked+.slider:before {
     height: 20px;
 }
 
+.modal-body {
+    padding: var(--space-6);
+}
+
+.modal-content.modal-medium {
+    max-width: 520px;
+}
+
 /* ========== Forms ========== */
 form {
     padding: var(--space-6);
@@ -1437,6 +1445,10 @@ form {
 }
 
 .form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="password"],
+.form-group input[type="tel"],
+.form-group input[type="url"],
 .form-group input[type="date"],
 .form-group input[type="number"],
 .form-group select,
