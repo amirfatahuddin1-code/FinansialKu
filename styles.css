@@ -1314,6 +1314,12 @@ input:checked+.slider:before {
     z-index: 100;
 }
 
+/* Hide FAB when AI Assistant is active */
+#aiAssistant.active~.fab-container,
+.tab-content#aiAssistant.active~.fab-container {
+    display: none;
+}
+
 .fab {
     width: 60px;
     height: 60px;
@@ -2988,13 +2994,17 @@ form {
 /* Chat Input */
 .ai-chat-input {
     display: flex;
+    align-items: center;
     gap: var(--space-3);
     padding: var(--space-4);
     border-top: 1px solid var(--bg-tertiary);
+    flex-wrap: nowrap;
+    overflow: visible;
 }
 
 .ai-chat-input input {
     flex: 1;
+    min-width: 0;
     padding: var(--space-3) var(--space-4);
     background: var(--bg-secondary);
     border: 1px solid var(--bg-tertiary);
@@ -3009,7 +3019,7 @@ form {
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
 }
 
-.ai-chat-input button {
+.ai-chat-input #aiSendBtn {
     width: 48px;
     height: 48px;
     border-radius: 50%;
@@ -3017,9 +3027,10 @@ form {
     align-items: center;
     justify-content: center;
     padding: 0;
+    flex-shrink: 0;
 }
 
-.ai-chat-input button svg {
+.ai-chat-input #aiSendBtn svg {
     width: 20px;
     height: 20px;
 }

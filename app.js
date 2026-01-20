@@ -2039,6 +2039,32 @@ function initAIEventListeners() {
             }
         });
     }
+
+    // Hide FAB button when AI Assistant tab is active
+    const hideFABForAI = () => {
+        const aiTab = document.getElementById('aiAssistant');
+        const fabContainer = document.querySelector('.fab-container');
+
+        if (aiTab && fabContainer) {
+            // Create observer to watch for class changes on aiAssistant tab
+            const observer = new MutationObserver(() => {
+                if (aiTab.classList.contains('active')) {
+                    fabContainer.style.display = 'none';
+                } else {
+                    fabContainer.style.display = 'block';
+                }
+            });
+
+            observer.observe(aiTab, { attributes: true, attributeFilter: ['class'] });
+
+            // Initial check
+            if (aiTab.classList.contains('active')) {
+                fabContainer.style.display = 'none';
+            }
+        }
+    };
+
+    hideFABForAI();
 }
 
 // ========== Financial Calculators ==========
