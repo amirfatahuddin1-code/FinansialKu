@@ -1795,6 +1795,11 @@ ${ctx.recentTransactions.slice(0, 5).join('\n')}
 }
 
 function addMessage(role, content) {
+    // Save to history state
+    if (state.aiChatHistory) {
+        state.aiChatHistory.push({ role, text: content });
+    }
+
     const container = document.getElementById('aiChatMessages');
     const msgDiv = document.createElement('div');
     msgDiv.className = `ai-message ${role}`;

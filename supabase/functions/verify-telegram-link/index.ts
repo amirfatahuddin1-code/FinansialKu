@@ -55,7 +55,7 @@ serve(async (req) => {
                 user_id: userId,
                 telegram_user_id: telegramUserId.toString(),
                 telegram_username: telegramUsername || null,
-            }, { onConflict: 'user_id' })
+            }, { onConflict: 'telegram_user_id' }) // Changed from 'user_id'
             .select()
             .single()
 

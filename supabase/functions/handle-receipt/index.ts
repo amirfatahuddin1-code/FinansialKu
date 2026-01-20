@@ -179,16 +179,19 @@ serve(async (req) => {
             for (const item of body.transactions) {
                 const categoryName = item.category || 'Lainnya'
                 const categoryId = findCategoryId(categoryName)
+                const itemName = item.name || item.description || 'Item'
 
                 transactionsToInsert.push({
                     user_id: userId,
                     type: 'expense',
-                    amount: Number(item.price),
+                    amount: Number(item.amount || item.price),
                     category_id: categoryId,
-                    description: store ? `${store} - ${item.name}` : item.name,
+                    description: store ? `${store} - ${itemName}` : itemName,
                     date: date || getWIBDate(), // Prioritize tanggal struk, fallback ke NOW
                     sender_name: body.senderName || null,
-                    created_at: new Date().toISOString()
+                    created_at: new Date().toISOString(),
+                    _categoryName: categoryName,
+                    _originalName: itemName
                 })
             }
         }
@@ -221,8 +224,8 @@ serve(async (req) => {
 
         // 3. Bulk Insert ke tabel transactions
         if (transactionsToInsert.length > 0) {
-            // Sanitize data for insert (remove _categoryName)
-            const cleanTransactions = transactionsToInsert.map(({ _categoryName, ...keep }) => keep)
+            // Sanitize data for insert (remove _categoryName and _originalName)
+            const cleanTransactions = transactionsToInsert.map(({ _categoryName, _originalName, ...keep }) => keep)
 
             const { data, error } = await supabase
                 .from('transactions')
@@ -234,7 +237,8 @@ serve(async (req) => {
             // Combine inserted data with category names for response
             const responseData = data.map((item, index) => ({
                 ...item,
-                categoryName: transactionsToInsert[index]._categoryName
+                categoryName: transactionsToInsert[index]._categoryName,
+                name: transactionsToInsert[index]._originalName
             }))
 
             return new Response(JSON.stringify({

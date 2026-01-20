@@ -11,12 +11,12 @@ Deno.serve(async (req) => {
     }
 
     try {
-        const apiKey = Deno.env.get('GEMINI_API_KEY')
+        // Switch to GROQ_API_KEY
+        const apiKey = Deno.env.get('GROQ_API_KEY')
 
-        // Debugging: Cek apakah API Key ada (tanpa log nilai aslinya)
         if (!apiKey) {
-            console.error("CRITICAL: GEMINI_API_KEY is missing in environment variables!");
-            throw new Error('Server Configuration Error: API Key not found. Please set GEMINI_API_KEY in Supabase Secrets.')
+            console.error("CRITICAL: GROQ_API_KEY is missing in environment variables!");
+            throw new Error('Server Configuration Error: API Key not found. Please set GROQ_API_KEY in Supabase Secrets.')
         }
 
         // Parse Body
@@ -33,10 +33,8 @@ Deno.serve(async (req) => {
             throw new Error("Message is required");
         }
 
-        // Limit history untuk efisiensi token
-        const limitHistory = Array.isArray(history) ? history.slice(-10) : [];
-
-        const fullPrompt = `Peran: Kamu adalah Asisten Keuangan Pribadi untuk aplikasi "FinansialKu".
+        // Construct Messages for Groq (OpenAI compatible)
+        const systemPrompt = `Peran: Kamu adalah Asisten Keuangan Pribadi untuk aplikasi "Karsafin".
 Konteks Keuangan User:
 ${context || 'Tidak ada data keuangan.'}
 
@@ -45,50 +43,54 @@ Instruksi:
 2. Gunakan Bahasa Indonesia santai tapi sopan.
 3. Berikan saran praktis berdasarkan data di atas.
 4. Jangan berikan nasihat investasi spesifik (saham/crypto).
+5. Format jawaban dengan rapi (gunakan unnumbered list atau bold jika perlu).`;
 
-Riwayat Chat Terakhir:
-${limitHistory.map((h: any) => `${h.role}: ${h.text}`).join('\n')}
+        const messages = [
+            { role: 'system', content: systemPrompt }
+        ];
 
-User: ${message}
-Asisten:`;
+        // Add history
+        if (Array.isArray(history)) {
+            history.slice(-10).forEach((h: any) => {
+                // Map app roles to API roles
+                // App uses: 'ai' or 'user'
+                // API uses: 'assistant' or 'user'
+                const role = (h.role === 'ai') ? 'assistant' : 'user';
+                messages.push({ role, content: h.text || '' });
+            });
+        }
 
-        // Call Gemini API (v1beta gemini-1.5-flash)
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        // Add current user message
+        messages.push({ role: 'user', content: message });
 
-        console.log(`Sending request to Gemini (gemini-1.5-flash)...`);
+        // Call Groq API
+        const groqUrl = 'https://api.groq.com/openai/v1/chat/completions';
 
-        const response = await fetch(geminiUrl, {
+        console.log(`Sending request to Groq (llama-3.3-70b-versatile)...`);
+
+        const response = await fetch(groqUrl, {
             method: 'POST',
             headers: {
+                'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                contents: [{
-                    parts: [{
-                        text: fullPrompt
-                    }]
-                }],
-                generationConfig: {
-                    temperature: 0.7,
-                    maxOutputTokens: 1000,
-                }
+                model: 'llama-3.3-70b-versatile', // Menggunakan model Llama 3.3 70B yang cerdas dan cepat
+                messages: messages,
+                temperature: 0.7,
+                max_tokens: 1000,
             })
         })
 
         const data = await response.json()
 
         if (!response.ok) {
-            console.error("Gemini API Error Response:", JSON.stringify(data));
-            const errorMessage = data.error?.message || `Gemini API returned status ${response.status}`;
-            throw new Error(`Gemini API Error: ${errorMessage}`);
+            console.error("Groq API Error Response:", JSON.stringify(data));
+            const errorMessage = data.error?.message || `Groq API returned status ${response.status}`;
+            throw new Error(`Groq API Error: ${errorMessage}`);
         }
 
-        if (data.error) {
-            console.error("Gemini Data Error:", JSON.stringify(data.error));
-            throw new Error(data.error.message || 'Unknown Gemini Error');
-        }
-
-        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Maaf, saya tidak dapat memproses permintaan saat ini. (No candidate)";
+        const reply = data.choices?.[0]?.message?.content || "Maaf, saya tidak dapat memproses permintaan saat ini.";
 
         return new Response(JSON.stringify({ reply }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -98,8 +100,6 @@ Asisten:`;
     } catch (error: any) {
         console.error("Edge Function Error:", error);
 
-        // Return 200 with error field so client can read the message
-        // instead of getting a generic "non-2xx status code" error
         return new Response(JSON.stringify({
             error: error.message,
             details: "Check Supabase Edge Function Logs for more info."
