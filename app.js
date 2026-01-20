@@ -2002,26 +2002,32 @@ function initAIEventListeners() {
     };
 
     if (sidebarToggle && sidebar) {
-        // Toggle button click
+        let touchHandled = false;
+
+        // Handle touch devices (mobile)
+        sidebarToggle.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            touchHandled = true;
+            console.log('Toggle button touched!');
+            window.toggleAISidebar();
+
+            // Reset flag after a short delay
+            setTimeout(() => { touchHandled = false; }, 500);
+        }, { passive: false });
+
+        // Handle mouse devices (desktop) - only if not already handled by touch
         sidebarToggle.addEventListener('click', (e) => {
+            if (touchHandled) {
+                console.log('Click ignored - already handled by touch');
+                return;
+            }
+
             e.preventDefault();
             e.stopPropagation();
             console.log('Toggle button clicked!');
-
-            const isActive = sidebar.classList.toggle('active');
-            if (backdrop) {
-                backdrop.classList.toggle('active', isActive);
-            }
-
-            console.log('Sidebar active:', isActive);
-        });
-
-        // Add touchstart for better mobile support
-        sidebarToggle.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            console.log('Toggle button touched!');
             window.toggleAISidebar();
-        }, { passive: false });
+        });
 
         // Backdrop click to close
         if (backdrop) {
