@@ -2277,19 +2277,32 @@ function calculateEducation() {
 // ========== Telegram Linking ==========
 let telegramLinkingCode = null;
 
-function generateLinkingCode() {
-    // Generate a random 6-digit code
-    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-    telegramLinkingCode = code;
+async function generateLinkingCode() {
+    const API = window.FinansialKuAPI;
+    if (!API) return 'ERROR';
 
-    // Store the code temporarily (in reality, this would be stored in the database)
-    localStorage.setItem('telegram_linking_code', JSON.stringify({
-        code: code,
-        createdAt: Date.now(),
-        expiresAt: Date.now() + (10 * 60 * 1000) // 10 minutes
-    }));
+    try {
+        // Try to get existing active code first
+        const { data: existingCode, error: checkError } = await API.telegram.getActiveLinkCode();
 
-    return code;
+        if (existingCode && !checkError) {
+            // Return existing code if still valid
+            return existingCode.code;
+        }
+
+        // Generate new code
+        const { data, error } = await API.telegram.generateLinkCode();
+
+        if (error) {
+            console.error('Failed to generate link code:', error);
+            return 'ERROR';
+        }
+
+        return data.code;
+    } catch (err) {
+        console.error('Error generating linking code:', err);
+        return 'ERROR';
+    }
 }
 
 function copyLinkingCode() {
@@ -2357,7 +2370,7 @@ async function checkTelegramLinkStatus() {
             manualLinkSection.style.display = 'block';
 
             // Generate linking code
-            const code = generateLinkingCode();
+            const code = await generateLinkingCode();
             document.getElementById('linkingCode').textContent = code;
         }
     } catch (err) {

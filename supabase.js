@@ -423,7 +423,7 @@
                 .from('telegram_user_links')
                 .select('*')
                 .eq('user_id', user.id)
-                .single();
+                .maybeSingle(); // Changed from .single() to handle no data gracefully
             return { data, error };
         },
 
@@ -436,6 +436,46 @@
                 .from('telegram_user_links')
                 .delete()
                 .eq('user_id', user.id);
+            return { data, error };
+        },
+
+        // Generate verification code for Telegram linking
+        async generateLinkCode() {
+            const { data: { user } } = await authAPI.getUser();
+            if (!user) return { data: null, error: 'Not authenticated' };
+
+            // Generate random 6-char code
+            const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+            const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 minutes
+
+            const { data, error } = await supabaseClient
+                .from('telegram_link_codes')
+                .insert({
+                    user_id: user.id,
+                    code: code,
+                    expires_at: expiresAt
+                })
+                .select()
+                .single();
+
+            return { data, error };
+        },
+
+        // Get active link code (for display)
+        async getActiveLinkCode() {
+            const { data: { user } } = await authAPI.getUser();
+            if (!user) return { data: null, error: 'Not authenticated' };
+
+            const { data, error } = await supabaseClient
+                .from('telegram_link_codes')
+                .select('*')
+                .eq('user_id', user.id)
+                .eq('used', false)
+                .gte('expires_at', new Date().toISOString())
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle(); // Changed from .single()
+
             return { data, error };
         }
     };
