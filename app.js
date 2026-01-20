@@ -1545,27 +1545,55 @@ function initEventListeners() {
 }
 
 function switchSettingsTab(tabId) {
+    console.log(`Switching settings tab to: ${tabId}`);
+
     // Update active tab button
-    document.querySelectorAll('.settings-tab').forEach(t => {
-        if (t.dataset.tab === tabId) t.classList.add('active');
-        else t.classList.remove('active');
+    const buttons = document.querySelectorAll('.settings-tab');
+    let btnFound = false;
+
+    buttons.forEach(t => {
+        if (t.dataset.tab === tabId) {
+            t.classList.add('active');
+            btnFound = true;
+        } else {
+            t.classList.remove('active');
+        }
     });
+
+    if (!btnFound) console.warn(`No sidebar button found for tab: ${tabId}`);
 
     // Update active panel
     document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
-    const targetPanel = document.getElementById(`settings-${tabId}`);
+
+    const targetId = `settings-${tabId}`;
+    const targetPanel = document.getElementById(targetId);
+
     if (targetPanel) {
         targetPanel.classList.add('active');
+        // Special init for specific tabs
+        if (tabId === 'telegramGroup' && typeof checkTelegramGroupStatus === 'function') {
+            // checkTelegramGroupStatus(); // Uncomment if function exists
+        }
     } else {
-        console.warn(`Panel settings-${tabId} not found`);
+        console.error(`Target panel not found: #${targetId}`);
+        // Fallback: Try kebab-case if camelCase fails
+        if (tabId === 'telegramGroup') {
+            const fallbackPanel = document.getElementById('settings-telegram-group');
+            if (fallbackPanel) {
+                console.log('Found fallback panel (kebab-case)');
+                fallbackPanel.classList.add('active');
+            }
+        }
     }
 }
 
 function openSettingsModal(initialTab = 'account') {
     openModal('settingsModal');
     if (initialTab) {
-        // Short delay to ensure modal is rendered
-        setTimeout(() => switchSettingsTab(initialTab), 50);
+        // Increased delay to ensure modal rendering and DOM readiness on mobile
+        setTimeout(() => {
+            switchSettingsTab(initialTab);
+        }, 150);
     }
 }
 
