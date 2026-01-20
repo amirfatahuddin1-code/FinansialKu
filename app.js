@@ -1989,6 +1989,18 @@ function initAIEventListeners() {
     console.log('AI Sidebar:', sidebar);
     console.log('AI Backdrop:', backdrop);
 
+    // Create global toggle function for fallback
+    window.toggleAISidebar = function () {
+        console.log('Global toggle function called!');
+        if (sidebar) {
+            const isActive = sidebar.classList.toggle('active');
+            if (backdrop) {
+                backdrop.classList.toggle('active', isActive);
+            }
+            console.log('Sidebar toggled, active:', isActive);
+        }
+    };
+
     if (sidebarToggle && sidebar) {
         // Toggle button click
         sidebarToggle.addEventListener('click', (e) => {
@@ -2003,6 +2015,13 @@ function initAIEventListeners() {
 
             console.log('Sidebar active:', isActive);
         });
+
+        // Add touchstart for better mobile support
+        sidebarToggle.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            console.log('Toggle button touched!');
+            window.toggleAISidebar();
+        }, { passive: false });
 
         // Backdrop click to close
         if (backdrop) {

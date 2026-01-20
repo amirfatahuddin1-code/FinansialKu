@@ -2859,6 +2859,14 @@ form {
     cursor: pointer;
     transition: all var(--transition-fast);
     flex-shrink: 0;
+    position: relative;
+    z-index: 10;
+    pointer-events: auto;
+}
+
+.ai-sidebar-toggle:active {
+    transform: scale(0.95);
+    background: var(--bg-card-hover);
 }
 
 .ai-sidebar-toggle:hover {
@@ -2870,6 +2878,7 @@ form {
     width: 20px;
     height: 20px;
     color: var(--text-primary);
+    pointer-events: none;
 }
 
 /* Chat Wrapper */
