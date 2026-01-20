@@ -2823,30 +2823,32 @@ form {
 
 /* Sidebar Toggle (Mobile) */
 .ai-sidebar-toggle {
-    position: absolute;
-    top: var(--space-4);
+    position: fixed;
+    top: 80px;
     left: var(--space-4);
-    z-index: 10;
-    width: 40px;
-    height: 40px;
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
+    z-index: 1000;
+    width: 44px;
+    height: 44px;
+    background: var(--accent-gradient);
+    border: none;
     border-radius: var(--radius-lg);
     display: none;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: all var(--transition-fast);
+    box-shadow: var(--shadow-lg);
 }
 
 .ai-sidebar-toggle:hover {
-    background: var(--bg-card-hover);
+    transform: scale(1.05);
+    box-shadow: var(--shadow-glow);
 }
 
 .ai-sidebar-toggle svg {
-    width: 20px;
-    height: 20px;
-    color: var(--text-primary);
+    width: 24px;
+    height: 24px;
+    color: white;
 }
 
 /* Chat Wrapper */
@@ -4221,11 +4223,12 @@ details[open] summary {
         left: 0;
         top: 0;
         bottom: 0;
-        z-index: 100;
+        z-index: 999;
         transform: translateX(-100%);
         width: 280px;
         max-width: 80vw;
         border-radius: 0;
+        box-shadow: var(--shadow-xl);
     }
 
     .ai-sidebar.active {

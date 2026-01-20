@@ -1983,10 +1983,21 @@ function initAIEventListeners() {
     // Sidebar toggle (Mobile)
     const sidebarToggle = document.getElementById('aiSidebarToggle');
     const sidebar = document.getElementById('aiSidebar');
+
+    console.log('AI Sidebar Toggle Button:', sidebarToggle);
+    console.log('AI Sidebar:', sidebar);
+
     if (sidebarToggle && sidebar) {
-        sidebarToggle.addEventListener('click', () => {
+        sidebarToggle.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Toggle button clicked!');
             sidebar.classList.toggle('active');
+            console.log('Sidebar active:', sidebar.classList.contains('active'));
         });
+        console.log('Sidebar toggle event listener added');
+    } else {
+        console.error('Sidebar toggle or sidebar element not found!');
     }
 
     // New Chat button
