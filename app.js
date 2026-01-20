@@ -1967,6 +1967,14 @@ async function handleAIChat() {
 }
 
 function initAIEventListeners() {
+    // Guard against multiple initialization
+    if (window._aiEventListenersInitialized) {
+        console.log('[GUARD] AI event listeners already initialized, skipping...');
+        return;
+    }
+    window._aiEventListenersInitialized = true;
+    console.log('[INIT] Initializing AI event listeners...');
+
     // AI Settings listeners removed
 
     // Quick actions
@@ -2016,16 +2024,16 @@ function initAIEventListeners() {
             setTimeout(() => { touchHandled = false; }, 500);
         }, { passive: false });
 
-        // Handle mouse devices (desktop) - only if not already handled by touch
-        sidebarToggle.addEventListener('click', (e) => {
+        // Remove click listener completely, use mousedown for desktop
+        sidebarToggle.addEventListener('mousedown', (e) => {
             if (touchHandled) {
-                console.log('Click ignored - already handled by touch');
+                console.log('Mousedown ignored - already handled by touch');
                 return;
             }
 
             e.preventDefault();
             e.stopPropagation();
-            console.log('Toggle button clicked!');
+            console.log('Toggle button mousedown!');
             window.toggleAISidebar();
         });
 
