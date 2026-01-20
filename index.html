@@ -1589,6 +1589,23 @@
                             <line x1="12" y1="16" x2="12" y2="12" />
                             <line x1="12" y1="8" x2="12.01" y2="8" />
                         </svg>
+                        Tampilan
+                    </button>
+                    <button class="settings-tab" data-tab="telegram-group">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                        Grup Telegram
+                    </button>
+                    <button class="settings-tab" data-tab="settings-about">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="12" y1="16" x2="12" y2="12" />
+                            <line x1="12" y1="8" x2="12.01" y2="8" />
+                        </svg>
                         Tentang
                     </button>
                     <div class="settings-divider" style="margin: var(--space-2) 0;"></div>
@@ -1743,125 +1760,157 @@
                     </div>
 
                     <!-- Telegram Group Tab -->
-                    <div class="settings-panel" id="settings-telegramGroup">
-                        <h4>Grup Telegram Bersama</h4>
+                    <div class="settings-panel" id="settings-telegram-group">
+                        <h4 style="margin-bottom: var(--space-2);">Grup Telegram Bersama</h4>
                         <p
-                            style="color: var(--text-secondary); font-size: var(--font-size-sm); margin-bottom: var(--space-5);">
+                            style="color: var(--text-muted); font-size: var(--font-size-sm); margin-bottom: var(--space-5); line-height: 1.5;">
                             Hubungkan grup Telegram untuk mencatat keuangan bersama pasangan. Semua anggota grup bisa
                             input transaksi via chat.
                         </p>
 
                         <!-- Link New Group Section -->
                         <div
-                            style="background: var(--bg-card); padding: var(--space-5); border-radius: var(--radius-xl); margin-bottom: var(--space-5); border: 1px solid var(--border-color);">
+                            style="background: var(--bg-hover); padding: var(--space-5); border-radius: var(--radius-xl); margin-bottom: var(--space-5); border: 1px solid var(--border-color);">
                             <h5
-                                style="margin-bottom: var(--space-4); display: flex; align-items: center; gap: var(--space-2);">
+                                style="margin-bottom: var(--space-4); display: flex; align-items: center; gap: var(--space-2); color: var(--accent-primary);">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                    style="width: 20px; height: 20px; color: var(--accent-primary);">
-                                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                                    style="width: 20px; height: 20px;">
+                                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
                                 </svg>
                                 Hubungkan Grup Baru
                             </h5>
-                            <div class="form-group" style="margin-bottom: var(--space-3);">
-                                <label>ID Grup Telegram</label>
-                                <input type="text" id="telegramGroupIdInput" placeholder="-1001234567890">
-                                <p style="font-size: var(--font-size-xs); color: var(--text-muted); margin-top: 4px;">
-                                    Kirim <code>/info</code> di grup untuk mendapatkan ID grup
+
+                            <div class="form-group" style="margin-bottom: var(--space-4);">
+                                <label style="display: block; margin-bottom: var(--space-2); font-weight: 500;">ID Grup
+                                    Telegram</label>
+                                <input type="text" id="telegramGroupIdInput" class="form-control"
+                                    placeholder="-1001234567890" style="background: var(--bg-card);">
+                                <p style="font-size: var(--font-size-xs); color: var(--text-muted); margin-top: 6px;">
+                                    Kirim <code
+                                        style="background: var(--bg-card); padding: 2px 6px; border-radius: 4px;">/info</code>
+                                    di grup untuk mendapatkan ID grup
                                 </p>
                             </div>
-                            <div class="form-group" style="margin-bottom: var(--space-3);">
-                                <label>Nama Grup (opsional)</label>
-                                <input type="text" id="telegramGroupNameInput" placeholder="Keuangan Bersama">
+
+                            <div class="form-group" style="margin-bottom: var(--space-4);">
+                                <label style="display: block; margin-bottom: var(--space-2); font-weight: 500;">Nama
+                                    Grup (opsional)</label>
+                                <input type="text" id="telegramGroupNameInput" class="form-control"
+                                    placeholder="Keuangan Bersama" style="background: var(--bg-card);">
                             </div>
-                            <button class="btn-primary btn-small" id="linkTelegramGroupBtn">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                    style="width: 16px; height: 16px;">
-                                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+
+                            <button class="btn-primary" id="connectTelegramGroupBtn" style="width: auto;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
                                 </svg>
                                 Hubungkan Grup
                             </button>
                         </div>
 
-                        <!-- Linked Groups List -->
-                        <div>
-                            <h5 style="margin-bottom: var(--space-4);">Grup yang Terhubung</h5>
-                            <div id="linkedGroupsList" class="settings-categories-list">
-                                <div class="empty-state small">
-                                    <p>Belum ada grup yang terhubung</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Info Box -->
-                        <div
-                            style="margin-top: var(--space-5); padding: var(--space-4); background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%); border-radius: var(--radius-lg); border: 1px solid rgba(59, 130, 246, 0.2);">
-                            <div style="display: flex; align-items: flex-start; gap: var(--space-3);">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                    style="width: 20px; height: 20px; color: var(--accent-primary); flex-shrink: 0;">
-                                    <circle cx="12" cy="12" r="10" />
-                                    <line x1="12" y1="16" x2="12" y2="12" />
-                                    <line x1="12" y1="8" x2="12.01" y2="8" />
-                                </svg>
-                                <div>
-                                    <p
-                                        style="font-size: var(--font-size-sm); color: var(--text-primary); margin: 0; font-weight: 500;">
-                                        Tips Penggunaan</p>
-                                    <ul
-                                        style="font-size: var(--font-size-xs); color: var(--text-secondary); margin: var(--space-2) 0 0 0; padding-left: var(--space-4);">
-                                        <li>Buat grup Telegram bersama pasangan Anda</li>
-                                        <li>Invite @FinanzaidBot ke grup tersebut</li>
-                                        <li>Kirim pesan seperti: "Makan siang 50rb"</li>
-                                        <li>Transaksi akan tercatat dengan nama pengirim</li>
-                                    </ul>
-                                </div>
+                        <!-- Connected Groups List (Placeholder) -->
+                        <div id="connectedGroupsList">
+                            <h5 style="margin-bottom: var(--space-3);">Grup yang Terhubung</h5>
+                            <div class="empty-state small" style="padding: var(--space-4);">
+                                <p>Belum ada grup yang terhubung</p>
                             </div>
                         </div>
                     </div>
 
                     <!-- About Tab -->
                     <div class="settings-panel" id="settings-about">
-                        <div class="about-header">
-                            <div class="logo-icon large">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                                    <path d="M2 17l10 5 10-5" />
-                                    <path d="M2 12l10 5 10-5" />
-                                </svg>
-                            </div>
-                            <h3>FinansialKu</h3>
-                            <span class="version-tag">Versi 1.2.0</span>
-                        </div>
-                        <div class="about-links">
-                            <a href="#" class="about-link-item">
-                                <span class="icon">❓</span>
-                                <div class="link-info">
-                                    <span class="link-title">FAQ / Bantuan</span>
-                                    <span class="link-desc">Pertanyaan yang sering diajukan</span>
-                                </div>
-                            </a>
-                            <a href="https://wa.me/6281234567890" target="_blank" class="about-link-item">
-                                <span class="icon">📞</span>
-                                <div class="link-info">
-                                    <span class="link-title">Hubungi Dukungan</span>
-                                    <span class="link-desc">Chat via WhatsApp</span>
-                                </div>
-                            </a>
-                            <a href="#" class="about-link-item">
-                                <span class="icon">📄</span>
-                                <div class="link-info">
-                                    <span class="link-title">Syarat & Ketentuan</span>
-                                    <span class="link-desc">Kebijakan penggunaan aplikasi</span>
-                                </div>
-                            </a>
-                        </div>
-                        <div class="about-footer">
-                            <p>© 2026 FinansialKu. Dibuat dengan ❤️ untuk Indonesia.</p>
-                        </div>
+                        <label>Nama Grup (opsional)</label>
+                        <input type="text" id="telegramGroupNameInput" placeholder="Keuangan Bersama">
                     </div>
-                </main>
+                    <button class="btn-primary btn-small" id="linkTelegramGroupBtn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            style="width: 16px; height: 16px;">
+                            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                        </svg>
+                        Hubungkan Grup
+                    </button>
+            </div>
+
+            <!-- Linked Groups List -->
+            <div>
+                <h5 style="margin-bottom: var(--space-4);">Grup yang Terhubung</h5>
+                <div id="linkedGroupsList" class="settings-categories-list">
+                    <div class="empty-state small">
+                        <p>Belum ada grup yang terhubung</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Info Box -->
+            <div
+                style="margin-top: var(--space-5); padding: var(--space-4); background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%); border-radius: var(--radius-lg); border: 1px solid rgba(59, 130, 246, 0.2);">
+                <div style="display: flex; align-items: flex-start; gap: var(--space-3);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        style="width: 20px; height: 20px; color: var(--accent-primary); flex-shrink: 0;">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="16" x2="12" y2="12" />
+                        <line x1="12" y1="8" x2="12.01" y2="8" />
+                    </svg>
+                    <div>
+                        <p
+                            style="font-size: var(--font-size-sm); color: var(--text-primary); margin: 0; font-weight: 500;">
+                            Tips Penggunaan</p>
+                        <ul
+                            style="font-size: var(--font-size-xs); color: var(--text-secondary); margin: var(--space-2) 0 0 0; padding-left: var(--space-4);">
+                            <li>Buat grup Telegram bersama pasangan Anda</li>
+                            <li>Invite @FinanzaidBot ke grup tersebut</li>
+                            <li>Kirim pesan seperti: "Makan siang 50rb"</li>
+                            <li>Transaksi akan tercatat dengan nama pengirim</li>
+                        </ul>
+                    </div>
+                </div>
             </div>
         </div>
+
+        <!-- About Tab -->
+        <div class="settings-panel" id="settings-about">
+            <div class="about-header">
+                <div class="logo-icon large">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                        <path d="M2 17l10 5 10-5" />
+                        <path d="M2 12l10 5 10-5" />
+                    </svg>
+                </div>
+                <h3>FinansialKu</h3>
+                <span class="version-tag">Versi 1.2.0</span>
+            </div>
+            <div class="about-links">
+                <a href="#" class="about-link-item">
+                    <span class="icon">❓</span>
+                    <div class="link-info">
+                        <span class="link-title">FAQ / Bantuan</span>
+                        <span class="link-desc">Pertanyaan yang sering diajukan</span>
+                    </div>
+                </a>
+                <a href="https://wa.me/6281234567890" target="_blank" class="about-link-item">
+                    <span class="icon">📞</span>
+                    <div class="link-info">
+                        <span class="link-title">Hubungi Dukungan</span>
+                        <span class="link-desc">Chat via WhatsApp</span>
+                    </div>
+                </a>
+                <a href="#" class="about-link-item">
+                    <span class="icon">📄</span>
+                    <div class="link-info">
+                        <span class="link-title">Syarat & Ketentuan</span>
+                        <span class="link-desc">Kebijakan penggunaan aplikasi</span>
+                    </div>
+                </a>
+            </div>
+            <div class="about-footer">
+                <p>© 2026 FinansialKu. Dibuat dengan ❤️ untuk Indonesia.</p>
+            </div>
+        </div>
+        </main>
+    </div>
+    </div>
     </div>
 
     <script src="supabase.js"></script>

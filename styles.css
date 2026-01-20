@@ -4271,9 +4271,32 @@ details[open] summary {
         padding: var(--space-3);
     }
 
+    /* Compact Summary Cards for Mobile */
+    .summary-cards {
+        gap: var(--space-3);
+    }
+
+    .summary-card {
+        padding: var(--space-4);
+        gap: var(--space-3);
+    }
+
     .summary-card.balance .card-value {
-        font-size: 1.5rem;
-        /* Smaller font on mobile */
+        font-size: 1.5rem !important;
+    }
+
+    .card-icon {
+        width: 42px;
+        height: 42px;
+    }
+
+    .card-icon svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .card-label {
+        font-size: 0.8rem;
     }
 
 

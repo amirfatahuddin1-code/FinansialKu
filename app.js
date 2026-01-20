@@ -1510,7 +1510,12 @@ function initEventListeners() {
     document.querySelectorAll('.btn-notification').forEach(btn => {
         btn.addEventListener('click', () => {
             const type = btn.dataset.navigate;
-            if (type === 'telegram-personal' || type === 'telegram-group') {
+
+            if (type === 'telegram-group') {
+                // Open Settings Modal -> Group Tab
+                openSettingsModal('telegram-group');
+            } else if (type === 'telegram-personal') {
+                // Open Legacy Telegram Modal for Personal Link
                 openModal('telegramSettingsModal');
                 if (typeof checkTelegramLinkStatus === 'function') {
                     checkTelegramLinkStatus();
@@ -1518,6 +1523,50 @@ function initEventListeners() {
             }
         });
     });
+
+    // Handle Settings Tabs Switching
+    document.querySelectorAll('.settings-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            const targetTab = tab.dataset.tab;
+            if (targetTab) switchSettingsTab(targetTab);
+        });
+    });
+
+    // Menu Dropdown Integration
+    document.getElementById('menuSettings')?.addEventListener('click', () => {
+        openSettingsModal('account');
+        document.getElementById('settingsMenu')?.classList.remove('active');
+    });
+
+    // Close Settings Modal
+    document.getElementById('closeSettingsModal')?.addEventListener('click', () => {
+        closeModal('settingsModal');
+    });
+}
+
+function switchSettingsTab(tabId) {
+    // Update active tab button
+    document.querySelectorAll('.settings-tab').forEach(t => {
+        if (t.dataset.tab === tabId) t.classList.add('active');
+        else t.classList.remove('active');
+    });
+
+    // Update active panel
+    document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
+    const targetPanel = document.getElementById(`settings-${tabId}`);
+    if (targetPanel) {
+        targetPanel.classList.add('active');
+    } else {
+        console.warn(`Panel settings-${tabId} not found`);
+    }
+}
+
+function openSettingsModal(initialTab = 'account') {
+    openModal('settingsModal');
+    if (initialTab) {
+        // Short delay to ensure modal is rendered
+        setTimeout(() => switchSettingsTab(initialTab), 50);
+    }
 }
 
 function toggleSettingsMenu() {
