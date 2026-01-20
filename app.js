@@ -2634,6 +2634,40 @@ function initDebtEvents() {
     if (payDebtForm) payDebtForm.addEventListener('submit', handlePayDebtSubmit);
 }
 
+// ========== Profile Photo Upload (NO SIZE LIMIT) ==========
+let selectedAvatarFile = null;
+
+// Handle avatar file selection
+document.addEventListener('DOMContentLoaded', () => {
+    const avatarInput = document.getElementById('avatarFileInput');
+    const avatarPreview = document.getElementById('editProfileAvatarPreview');
+
+    if (avatarInput) {
+        avatarInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Check if it's an image
+            if (!file.type.startsWith('image/')) {
+                showToast('File harus berupa gambar', 'error');
+                return;
+            }
+
+            // NO SIZE LIMIT - Accept any file size
+            selectedAvatarFile = file;
+
+            // Preview the image
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                avatarPreview.innerHTML = `<img src="${event.target.result}" alt="Avatar Preview" style="width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius-full);">`;
+            };
+            reader.readAsDataURL(file);
+
+            showToast('Foto dipilih. Klik "Simpan Perubahan" untuk menyimpan.', 'success');
+        });
+    }
+});
+
 // Ensure initDebtEvents is called
 document.addEventListener('DOMContentLoaded', () => {
     init();
