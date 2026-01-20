@@ -1506,9 +1506,11 @@ function initEventListeners() {
         }
     });
 
-    // Telegram Notification Buttons (Dashboard)
-    document.querySelectorAll('.btn-notification').forEach(btn => {
-        btn.addEventListener('click', () => {
+    // Telegram Notification Buttons (Dashboard) - Event Delegation
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('.btn-notification');
+        if (btn) {
+            console.log('Notification button clicked:', btn.dataset.navigate);
             const type = btn.dataset.navigate;
 
             if (type === 'telegram-group') {
@@ -1521,7 +1523,7 @@ function initEventListeners() {
                     checkTelegramLinkStatus();
                 }
             }
-        });
+        }
     });
 
     // Handle Settings Tabs Switching
