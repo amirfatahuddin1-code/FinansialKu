@@ -1514,8 +1514,20 @@ function initEventListeners() {
             const type = btn.dataset.navigate;
 
             if (type === 'telegram-group') {
-                // Open Settings Modal -> Group Tab
-                openSettingsModal('telegramGroup');
+                // Direct navigation logic to debug function call issues
+                console.log('Executing direct navigation path to telegramGroup');
+                openModal('settingsModal');
+
+                // Force switch with explicit timeout
+                setTimeout(() => {
+                    console.log('Timeout fired. Attempting to switch tab to: telegramGroup');
+                    if (typeof switchSettingsTab === 'function') {
+                        switchSettingsTab('telegramGroup');
+                    } else {
+                        console.error('CRITICAL: switchSettingsTab verify function is missing!');
+                    }
+                }, 200);
+
             } else if (type === 'telegram-personal') {
                 // Open Legacy Telegram Modal for Personal Link
                 openModal('telegramSettingsModal');
