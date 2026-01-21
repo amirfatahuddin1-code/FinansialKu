@@ -3736,9 +3736,208 @@ function restoreData(event) {
 
 // Duplicate logout removed (using existing one)
 
+// ========== WHATSAPP SETTINGS FUNCTIONS ==========
+
+async function initWhatsAppSettings() {
+    await loadWhatsAppStatus();
+    await loadWhatsAppGroups();
+
+    // Add event listeners for WhatsApp settings
+    document.getElementById('connectWhatsappBtn')?.addEventListener('click', linkWhatsAppPhone);
+    document.getElementById('unlinkWhatsappBtn')?.addEventListener('click', unlinkWhatsAppPhone);
+    document.getElementById('connectWhatsappGroupBtn')?.addEventListener('click', linkWhatsAppGroup);
+}
+
+async function loadWhatsAppStatus() {
+    try {
+        const API = window.FinansialKuAPI;
+        const { data, error } = await API.whatsapp.getLinkedAccount();
+
+        const statusBox = document.getElementById('whatsappLinkStatus');
+        const linkedInfo = document.getElementById('linkedWhatsappInfo');
+        const linkSection = document.getElementById('whatsappLinkSection');
+
+        if (data && data.phone_number) {
+            // Connected state
+            statusBox.style.display = 'none';
+            linkedInfo.style.display = 'block';
+            linkSection.style.display = 'none';
+
+            document.getElementById('linkedWhatsappNumber').textContent = data.phone_number;
+            document.getElementById('linkedWhatsappDate').textContent =
+                'Terhubung sejak ' + new Date(data.linked_at).toLocaleDateString('id-ID');
+        } else {
+            // Not connected state
+            statusBox.style.display = 'block';
+            linkedInfo.style.display = 'none';
+            linkSection.style.display = 'block';
+        }
+    } catch (err) {
+        console.error('Failed to load WhatsApp status:', err);
+    }
+}
+
+async function linkWhatsAppPhone() {
+    const phoneInput = document.getElementById('whatsappPhoneInput');
+    const nameInput = document.getElementById('whatsappDisplayNameInput');
+    const phoneNumber = phoneInput.value.trim();
+    const displayName = nameInput.value.trim();
+
+    if (!phoneNumber) {
+        showToast('Masukkan nomor WhatsApp', 'warning');
+        return;
+    }
+
+    const btn = document.getElementById('connectWhatsappBtn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = 'Menghubungkan...';
+    btn.disabled = true;
+
+    try {
+        const API = window.FinansialKuAPI;
+        const { data, error } = await API.whatsapp.linkPhone(phoneNumber, displayName);
+
+        if (error) throw error;
+
+        showToast('WhatsApp berhasil dihubungkan!', 'success');
+        await loadWhatsAppStatus();
+
+        // Clear inputs
+        phoneInput.value = '';
+        nameInput.value = '';
+    } catch (err) {
+        showToast('Gagal menghubungkan: ' + err.message, 'error');
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
+
+async function unlinkWhatsAppPhone() {
+    if (!confirm('Putuskan koneksi WhatsApp? Transaksi baru dari WhatsApp tidak akan tercatat.')) {
+        return;
+    }
+
+    try {
+        const API = window.FinansialKuAPI;
+        const { error } = await API.whatsapp.unlinkPhone();
+
+        if (error) throw error;
+
+        showToast('Koneksi WhatsApp diputus', 'success');
+        await loadWhatsAppStatus();
+    } catch (err) {
+        showToast('Gagal memutus koneksi: ' + err.message, 'error');
+    }
+}
+
+async function loadWhatsAppGroups() {
+    try {
+        const API = window.FinansialKuAPI;
+        const { data, error } = await API.whatsapp.getLinkedGroups();
+
+        const container = document.getElementById('linkedWhatsappGroupsList');
+        if (!container) return;
+
+        if (!data || data.length === 0) {
+            container.innerHTML = `
+                <h5 style="margin-bottom: var(--space-3);">Grup yang Terhubung</h5>
+                <div class="empty-state small" style="padding: var(--space-4);">
+                    <p>Belum ada grup WhatsApp yang terhubung</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = `
+            <h5 style="margin-bottom: var(--space-3);">Grup yang Terhubung</h5>
+            ${data.map(group => `
+                <div class="linked-group-item" style="display: flex; align-items: center; justify-content: space-between; padding: var(--space-3); background: var(--bg-card); border-radius: var(--radius-lg); margin-bottom: var(--space-2); border: 1px solid var(--border-color);">
+                    <div style="display: flex; align-items: center; gap: var(--space-3);">
+                        <div style="width: 36px; height: 36px; border-radius: var(--radius-full); background: #25D366; display: flex; align-items: center; justify-content: center;">
+                            <svg viewBox="0 0 24 24" fill="currentColor" style="width: 18px; height: 18px; color: white;">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <p style="font-weight: 500; color: var(--text-primary); margin: 0;">${group.group_name || 'Grup WhatsApp'}</p>
+                            <p style="font-size: var(--font-size-xs); color: var(--text-muted); margin: 0;">${group.group_id}</p>
+                        </div>
+                    </div>
+                    <button class="btn-icon-small" onclick="unlinkWhatsAppGroup('${group.group_id}')" title="Hapus grup" style="color: var(--danger);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px;">
+                            <path d="M18 6L6 18M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            `).join('')}
+        `;
+    } catch (err) {
+        console.error('Failed to load WhatsApp groups:', err);
+    }
+}
+
+async function linkWhatsAppGroup() {
+    const groupIdInput = document.getElementById('whatsappGroupIdInput');
+    const groupNameInput = document.getElementById('whatsappGroupNameInput');
+    const groupId = groupIdInput.value.trim();
+    const groupName = groupNameInput.value.trim();
+
+    if (!groupId) {
+        showToast('Masukkan ID grup WhatsApp', 'warning');
+        return;
+    }
+
+    const btn = document.getElementById('connectWhatsappGroupBtn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = 'Menambahkan...';
+    btn.disabled = true;
+
+    try {
+        const API = window.FinansialKuAPI;
+        const { data, error } = await API.whatsapp.linkGroup(groupId, groupName);
+
+        if (error) throw error;
+
+        showToast('Grup WhatsApp berhasil ditambahkan!', 'success');
+        await loadWhatsAppGroups();
+
+        // Clear inputs
+        groupIdInput.value = '';
+        groupNameInput.value = '';
+    } catch (err) {
+        showToast('Gagal menambahkan grup: ' + err.message, 'error');
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
+
+async function unlinkWhatsAppGroup(groupId) {
+    if (!confirm('Hapus grup ini? Transaksi baru dari grup tidak akan tercatat.')) {
+        return;
+    }
+
+    try {
+        const API = window.FinansialKuAPI;
+        const { error } = await API.whatsapp.unlinkGroup(groupId);
+
+        if (error) throw error;
+
+        showToast('Grup dihapus', 'success');
+        await loadWhatsAppGroups();
+    } catch (err) {
+        showToast('Gagal menghapus grup: ' + err.message, 'error');
+    }
+}
+
 // Initialize settings on page load
 document.addEventListener('DOMContentLoaded', () => {
     initSettings();
+    initWhatsAppSettings();
     // NOTE: initFAB() and initNavigation() are already called from init() in the earlier DOMContentLoaded listener
     // Do not call them again here to avoid double event listeners
 });

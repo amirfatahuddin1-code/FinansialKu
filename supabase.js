@@ -537,6 +537,121 @@
         }
     };
 
+    // ========== WHATSAPP SYNC API ==========
+
+    const whatsappAPI = {
+        // Get pending (unsynced) transactions from WhatsApp
+        async getPending() {
+            const { data: { user } } = await authAPI.getUser();
+            if (!user) return { data: null, error: 'Not authenticated' };
+
+            const { data, error } = await supabaseClient
+                .from('whatsapp_transactions')
+                .select('*')
+                .eq('user_id', user.id)
+                .eq('synced', false)
+                .order('created_at', { ascending: true });
+            return { data, error };
+        },
+
+        // Mark transactions as synced
+        async markSynced(ids) {
+            const { data, error } = await supabaseClient
+                .from('whatsapp_transactions')
+                .update({ synced: true })
+                .in('id', ids);
+            return { data, error };
+        },
+
+        // Link WhatsApp phone number
+        async linkPhone(phoneNumber, displayName) {
+            const { data: { user } } = await authAPI.getUser();
+            if (!user) return { data: null, error: 'Not authenticated' };
+
+            // Normalize phone number (remove + and spaces)
+            const normalizedPhone = phoneNumber.replace(/[\s\-\+]/g, '');
+
+            const { data, error } = await supabaseClient
+                .from('whatsapp_user_links')
+                .upsert({
+                    user_id: user.id,
+                    phone_number: normalizedPhone,
+                    display_name: displayName || null
+                }, { onConflict: 'user_id' })
+                .select()
+                .single();
+            return { data, error };
+        },
+
+        // Get linked WhatsApp account
+        async getLinkedAccount() {
+            const { data: { user } } = await authAPI.getUser();
+            if (!user) return { data: null, error: 'Not authenticated' };
+
+            const { data, error } = await supabaseClient
+                .from('whatsapp_user_links')
+                .select('*')
+                .eq('user_id', user.id)
+                .maybeSingle();
+            return { data, error };
+        },
+
+        // Unlink WhatsApp account
+        async unlinkPhone() {
+            const { data: { user } } = await authAPI.getUser();
+            if (!user) return { data: null, error: 'Not authenticated' };
+
+            const { data, error } = await supabaseClient
+                .from('whatsapp_user_links')
+                .delete()
+                .eq('user_id', user.id);
+            return { data, error };
+        },
+
+        // Link a WhatsApp group to user account
+        async linkGroup(groupId, groupName) {
+            const { data: { user } } = await authAPI.getUser();
+            if (!user) return { data: null, error: 'Not authenticated' };
+
+            const { data, error } = await supabaseClient
+                .from('whatsapp_group_links')
+                .upsert({
+                    user_id: user.id,
+                    group_id: groupId,
+                    group_name: groupName || null
+                }, { onConflict: 'user_id,group_id' })
+                .select()
+                .single();
+            return { data, error };
+        },
+
+        // Get all linked WhatsApp groups for current user
+        async getLinkedGroups() {
+            const { data: { user } } = await authAPI.getUser();
+            if (!user) return { data: null, error: 'Not authenticated' };
+
+            const { data, error } = await supabaseClient
+                .from('whatsapp_group_links')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('linked_at', { ascending: false });
+            return { data, error };
+        },
+
+        // Unlink a WhatsApp group
+        async unlinkGroup(groupId) {
+            const { data: { user } } = await authAPI.getUser();
+            if (!user) return { data: null, error: 'Not authenticated' };
+
+            const { data, error } = await supabaseClient
+                .from('whatsapp_group_links')
+                .delete()
+                .eq('user_id', user.id)
+                .eq('group_id', groupId);
+            return { data, error };
+        }
+    };
+
 
     const debtsAPI = {
         async getAll() {
@@ -596,6 +711,7 @@
         eventItems: eventItemsAPI,
         telegram: telegramAPI,
         telegramGroup: telegramGroupAPI,
+        whatsapp: whatsappAPI,
         debts: debtsAPI
     };
 

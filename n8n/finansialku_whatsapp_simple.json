@@ -1,0 +1,381 @@
+{
+    "name": "FinansialKu WhatsApp Simple",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "whatsapp-fonnte",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "webhook",
+            "name": "Fonnte Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2,
+            "position": [
+                240,
+                400
+            ],
+            "webhookId": "whatsapp-fonnte"
+        },
+        {
+            "parameters": {
+                "jsCode": "// Extract dan Route sekaligus\nconst body = $input.first().json.body || $input.first().json;\n\nconst sender = body.sender || '';\nconst message = (body.pesan || body.message || '').trim();\nconst fileUrl = body.file || '';\nconst senderName = body.name || body.pushname || '';\nconst groupId = body.group || '';\n\n// Tentukan tipe routing\nlet route = 'transaction'; // default: input transaksi biasa\n\nif (fileUrl && fileUrl.startsWith('http')) {\n  route = 'receipt';\n} else if (message.toLowerCase() === '/help') {\n  route = 'help';\n} else if (message.toLowerCase() === '/info') {\n  route = 'info';\n}\n\nreturn {\n  json: {\n    sender,\n    message,\n    fileUrl,\n    senderName,\n    groupId,\n    route\n  }\n};"
+            },
+            "id": "extract",
+            "name": "Extract Data",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                480,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "rules": {
+                    "values": [
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict"
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.route }}",
+                                        "rightValue": "receipt",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputLabel": "Receipt"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict"
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.route }}",
+                                        "rightValue": "help",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputLabel": "Help"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict"
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.route }}",
+                                        "rightValue": "info",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputLabel": "Info"
+                        }
+                    ],
+                    "fallbackOutput": {
+                        "outputLabel": "Transaction"
+                    }
+                },
+                "options": {}
+            },
+            "id": "router",
+            "name": "Router",
+            "type": "n8n-nodes-base.switch",
+            "typeVersion": 3.2,
+            "position": [
+                720,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://api.deepseek.com/chat/completions",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer YOUR_DEEPSEEK_API_KEY"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"model\": \"deepseek-chat\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"Ekstrak info transaksi dari pesan Indonesia. Kembalikan HANYA JSON: {\\\"type\\\":\\\"expense\\\",\\\"amount\\\":50000,\\\"category\\\":\\\"food\\\",\\\"description\\\":\\\"Makan siang\\\"}. Aturan: 50rb=50000, 5jt=5000000. Kata gaji/bonus=income. Kategori: food,transport,shopping,entertainment,health,bills,salary,bonus,other\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"{{ $json.message }}\"\n    }\n  ],\n  \"temperature\": 0.2\n}",
+                "options": {}
+            },
+            "id": "deepseek",
+            "name": "DeepSeek",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                960,
+                600
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const r = $input.first().json;\nconst data = $('Extract Data').first().json;\n\nlet content = '';\nif (r.choices && r.choices[0]) {\n  content = r.choices[0].message?.content || '';\n}\n\ntry {\n  const match = content.match(/\\{[\\s\\S]*?\\}/);\n  if (match) {\n    const p = JSON.parse(match[0]);\n    if (p.amount) {\n      const emoji = p.type === 'income' ? '💰' : '💸';\n      const typeText = p.type === 'income' ? 'Pemasukan' : 'Pengeluaran';\n      return {\n        json: {\n          target: data.sender,\n          message: `✅ *Tercatat!*\\n\\n${emoji} ${typeText}\\n💵 Rp ${parseInt(p.amount).toLocaleString('id-ID')}\\n📁 ${p.category || 'other'}\\n📝 ${p.description || data.message}`\n        }\n      };\n    }\n  }\n} catch(e) {}\n\nreturn {\n  json: {\n    target: data.sender,\n    message: '❌ Tidak bisa memproses. Coba: Makan 50rb'\n  }\n};"
+            },
+            "id": "format-tx",
+            "name": "Format Response",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1200,
+                600
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const data = $('Extract Data').first().json;\nreturn {\n  json: {\n    target: data.sender,\n    message: `📖 *Panduan FinansialKu*\\n\\n💬 Input Transaksi:\\n• Makan 50rb\\n• Gaji 5jt\\n• Grab 25ribu\\n\\n📸 Upload struk untuk scan otomatis\\n\\n/info - Info akun\\n/help - Bantuan ini`\n  }\n};"
+            },
+            "id": "help-text",
+            "name": "Help Text",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                960,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const data = $('Extract Data').first().json;\nlet info = `ℹ️ *Info Akun*\\n\\n📱 Nomor: ${data.sender}`;\nif (data.groupId) {\n  info += `\\n👥 Group ID: ${data.groupId}`;\n}\nreturn { json: { target: data.sender, message: info } };"
+            },
+            "id": "info-text",
+            "name": "Info Text",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                960,
+                500
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const data = $('Extract Data').first().json;\nreturn {\n  json: {\n    target: data.sender,\n    message: '📸 Fitur scan struk coming soon!'\n  }\n};"
+            },
+            "id": "receipt-text",
+            "name": "Receipt Placeholder",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                960,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://api.fonnte.com/send",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "YOUR_FONNTE_TOKEN"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "contentType": "form-urlencoded",
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "target",
+                            "value": "={{ $json.target }}"
+                        },
+                        {
+                            "name": "message",
+                            "value": "={{ $json.message }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "send-reply",
+            "name": "Send Reply",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1440,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={\"status\":\"ok\"}"
+            },
+            "id": "respond",
+            "name": "Respond",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.1,
+            "position": [
+                1680,
+                400
+            ]
+        }
+    ],
+    "connections": {
+        "Fonnte Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Extract Data",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Extract Data": {
+            "main": [
+                [
+                    {
+                        "node": "Router",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Router": {
+            "main": [
+                [
+                    {
+                        "node": "Receipt Placeholder",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Help Text",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Info Text",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "DeepSeek",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "DeepSeek": {
+            "main": [
+                [
+                    {
+                        "node": "Format Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Format Response": {
+            "main": [
+                [
+                    {
+                        "node": "Send Reply",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Help Text": {
+            "main": [
+                [
+                    {
+                        "node": "Send Reply",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Info Text": {
+            "main": [
+                [
+                    {
+                        "node": "Send Reply",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Receipt Placeholder": {
+            "main": [
+                [
+                    {
+                        "node": "Send Reply",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Send Reply": {
+            "main": [
+                [
+                    {
+                        "node": "Respond",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1"
+    }
+}
