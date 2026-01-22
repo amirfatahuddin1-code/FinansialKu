@@ -11,12 +11,12 @@ Deno.serve(async (req) => {
     }
 
     try {
-        // Switch to GROQ_API_KEY
-        const apiKey = Deno.env.get('GROQ_API_KEY')
+        // Use DEEPSEEK_API_KEY
+        const apiKey = Deno.env.get('DEEPSEEK_API_KEY')
 
         if (!apiKey) {
-            console.error("CRITICAL: GROQ_API_KEY is missing in environment variables!");
-            throw new Error('Server Configuration Error: API Key not found. Please set GROQ_API_KEY in Supabase Secrets.')
+            console.error("CRITICAL: DEEPSEEK_API_KEY is missing in environment variables!");
+            throw new Error('Server Configuration Error: API Key not found. Please set DEEPSEEK_API_KEY in Supabase Secrets.')
         }
 
         // Parse Body
@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
             throw new Error("Message is required");
         }
 
-        // Construct Messages for Groq (OpenAI compatible)
+        // Construct Messages for DeepSeek (OpenAI compatible)
         const systemPrompt = `Peran: Kamu adalah Asisten Keuangan Pribadi untuk aplikasi "Karsafin".
 Konteks Keuangan User:
 ${context || 'Tidak ada data keuangan.'}
@@ -52,9 +52,6 @@ Instruksi:
         // Add history
         if (Array.isArray(history)) {
             history.slice(-10).forEach((h: any) => {
-                // Map app roles to API roles
-                // App uses: 'ai' or 'user'
-                // API uses: 'assistant' or 'user'
                 const role = (h.role === 'ai') ? 'assistant' : 'user';
                 messages.push({ role, content: h.text || '' });
             });
@@ -63,19 +60,19 @@ Instruksi:
         // Add current user message
         messages.push({ role: 'user', content: message });
 
-        // Call Groq API
-        const groqUrl = 'https://api.groq.com/openai/v1/chat/completions';
+        // Call DeepSeek API
+        const deepseekUrl = 'https://api.deepseek.com/chat/completions';
 
-        console.log(`Sending request to Groq (llama-3.3-70b-versatile)...`);
+        console.log(`Sending request to DeepSeek (deepseek-chat)...`);
 
-        const response = await fetch(groqUrl, {
+        const response = await fetch(deepseekUrl, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                model: 'llama-3.3-70b-versatile', // Menggunakan model Llama 3.3 70B yang cerdas dan cepat
+                model: 'deepseek-chat',
                 messages: messages,
                 temperature: 0.7,
                 max_tokens: 1000,
@@ -85,9 +82,9 @@ Instruksi:
         const data = await response.json()
 
         if (!response.ok) {
-            console.error("Groq API Error Response:", JSON.stringify(data));
-            const errorMessage = data.error?.message || `Groq API returned status ${response.status}`;
-            throw new Error(`Groq API Error: ${errorMessage}`);
+            console.error("DeepSeek API Error Response:", JSON.stringify(data));
+            const errorMessage = data.error?.message || `DeepSeek API returned status ${response.status}`;
+            throw new Error(`DeepSeek API Error: ${errorMessage}`);
         }
 
         const reply = data.choices?.[0]?.message?.content || "Maaf, saya tidak dapat memproses permintaan saat ini.";

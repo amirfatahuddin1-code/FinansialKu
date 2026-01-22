@@ -17,53 +17,109 @@ serve(async (req) => {
 
         const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-        const { chatId, type, period } = await req.json()
+        const { chatId, type, period, phone_number, group_id } = await req.json()
 
-        // Validasi input
-        if (!chatId || !type || !period) {
+        // Validasi input - support both Telegram (chatId) and WhatsApp (phone_number/group_id)
+        if (!type || !period) {
             return new Response(
-                JSON.stringify({ error: 'Missing required fields: chatId, type, period' }),
+                JSON.stringify({ error: 'Missing required fields: type, period' }),
                 { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             )
         }
 
-        // 1. Get user_id - Check if personal chat or group chat
-        const chatIdNum = parseInt(chatId.toString())
-        const isGroup = chatIdNum < 0 // Negative ID = group
+        if (!chatId && !phone_number && !group_id) {
+            return new Response(
+                JSON.stringify({ error: 'Missing identifier: chatId (Telegram) or phone_number/group_id (WhatsApp)' }),
+                { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            )
+        }
+
+        // Normalize phone number - convert 08xxx to 628xxx and vice versa
+        function normalizePhone(phone: string): string[] {
+            if (!phone) return []
+            const cleaned = phone.replace(/[\s\-\+]/g, '')
+            const variants = [cleaned]
+            if (cleaned.startsWith('62')) {
+                variants.push('0' + cleaned.slice(2))
+            }
+            if (cleaned.startsWith('0')) {
+                variants.push('62' + cleaned.slice(1))
+            }
+            return variants
+        }
 
         let userId: string | null = null
+        let source: 'telegram' | 'whatsapp' = 'telegram'
 
-        if (isGroup) {
-            // Query telegram_group_links for group
-            const { data: groupLink, error: groupError } = await supabase
-                .from('telegram_group_links')
-                .select('user_id')
-                .eq('telegram_group_id', chatId.toString())
-                .single()
+        // WhatsApp - check phone_number or group_id first
+        if (phone_number || group_id) {
+            source = 'whatsapp'
 
-            if (!groupError && groupLink) {
-                userId = groupLink.user_id
+            // Try group_id first if provided
+            if (group_id) {
+                const { data: groupLink } = await supabase
+                    .from('whatsapp_group_links')
+                    .select('user_id')
+                    .eq('group_id', group_id)
+                    .single()
+
+                if (groupLink) {
+                    userId = groupLink.user_id
+                }
             }
-        } else {
-            // Query telegram_user_links for personal chat
-            const { data: userLink, error: userError } = await supabase
-                .from('telegram_user_links')
-                .select('user_id')
-                .eq('telegram_user_id', chatId.toString())
-                .single()
 
-            if (!userError && userLink) {
-                userId = userLink.user_id
+            // Try phone_number if group not found
+            if (!userId && phone_number) {
+                const phoneVariants = normalizePhone(phone_number)
+                const { data: userLink } = await supabase
+                    .from('whatsapp_user_links')
+                    .select('user_id')
+                    .in('phone_number', phoneVariants)
+                    .limit(1)
+                    .single()
+
+                if (userLink) {
+                    userId = userLink.user_id
+                }
+            }
+        }
+        // Telegram - use chatId
+        else if (chatId) {
+            const chatIdNum = parseInt(chatId.toString())
+            const isGroup = chatIdNum < 0
+
+            if (isGroup) {
+                const { data: groupLink } = await supabase
+                    .from('telegram_group_links')
+                    .select('user_id')
+                    .eq('telegram_group_id', chatId.toString())
+                    .single()
+
+                if (groupLink) {
+                    userId = groupLink.user_id
+                }
+            } else {
+                const { data: userLink } = await supabase
+                    .from('telegram_user_links')
+                    .select('user_id')
+                    .eq('telegram_user_id', chatId.toString())
+                    .single()
+
+                if (userLink) {
+                    userId = userLink.user_id
+                }
             }
         }
 
-        // If no link found in either table
+        // If no link found
         if (!userId) {
+            const errorMsg = source === 'whatsapp'
+                ? 'Nomor WhatsApp atau grup belum terhubung dengan akun Karsafin.'
+                : 'User/grup Telegram belum terhubung. Ketik /start untuk connect.'
+
             return new Response(
                 JSON.stringify({
-                    error: isGroup
-                        ? 'Grup belum terhubung. Buka Web App → Pengaturan → Grup Telegram untuk connect grup ini.'
-                        : 'User belum terhubung. Ketik /start untuk connect Telegram ke akun Anda.',
+                    error: errorMsg,
                     needsLink: true
                 }),
                 { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -191,11 +247,18 @@ serve(async (req) => {
         } else {
             message = `❌ Tipe laporan tidak valid: ${type}`
         }
+        // Determine reply target for WhatsApp
+        const replyTarget = group_id || phone_number || chatId?.toString()
 
         return new Response(
             JSON.stringify({
                 success: true,
                 message: message,
+                replyTarget,
+                group_id: group_id || null,
+                phone_number: phone_number || null,
+                chatId: chatId || null,
+                source,
                 data: {
                     totalIncome,
                     totalExpense,
