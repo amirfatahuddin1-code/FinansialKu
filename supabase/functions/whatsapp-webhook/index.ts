@@ -58,15 +58,34 @@ serve(async (req) => {
             })
         }
 
+        // Normalize phone number - convert 08xxx to 628xxx and vice versa
+        function normalizePhone(phone: string): string[] {
+            const cleaned = phone.replace(/[\s\-\+]/g, '')
+            const variants = [cleaned]
+
+            // If starts with 62, also check 0 version
+            if (cleaned.startsWith('62')) {
+                variants.push('0' + cleaned.slice(2))
+            }
+            // If starts with 0, also check 62 version
+            if (cleaned.startsWith('0')) {
+                variants.push('62' + cleaned.slice(1))
+            }
+
+            return variants
+        }
+
         // Find linked user - check by phone number first, then by group
         let userId = null
         let linkType = null
 
-        // Check personal link
+        // Check personal link with normalized phone variants
+        const phoneVariants = normalizePhone(phone_number)
         const { data: userLink } = await supabase
             .from('whatsapp_user_links')
             .select('user_id')
-            .eq('phone_number', phone_number)
+            .in('phone_number', phoneVariants)
+            .limit(1)
             .single()
 
         if (userLink) {
@@ -108,21 +127,18 @@ serve(async (req) => {
 
         const matchedCategory = findCategory(category || description, categories || [], type)
 
-        // Insert transaction
+        // Insert transaction directly to main transactions table
         const { data, error } = await supabase
-            .from('whatsapp_transactions')
+            .from('transactions')
             .insert({
                 user_id: userId,
-                phone_number: phone_number,
-                sender_name: sender_name || null,
-                group_id: group_id || null,
-                group_name: group_name || null,
                 type: type,
                 amount: amount,
                 category_id: matchedCategory?.id || null,
-                description: description,
-                original_message: original_message,
-                synced: false
+                description: `${description || 'Transaksi'} (via WA)`,
+                date: new Date().toISOString().split('T')[0],
+                sender_name: sender_name || null,
+                source: 'whatsapp'
             })
             .select()
             .single()
