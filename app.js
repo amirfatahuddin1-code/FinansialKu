@@ -411,6 +411,11 @@ function closeModal(modalId) {
 
 function closeAllModals() {
     document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
+
+    // If user has no active subscription, ensure overlay is shown
+    if (state.subscription && !state.subscription.is_active) {
+        showUpgradeOverlay();
+    }
 }
 
 // ========== Navigation ==========
