@@ -50,7 +50,24 @@ let state = {
     aiApiKey: '',
     aiChatHistory: [],
     debts: [],
-    aiCache: {}
+    aiCache: {},
+    // Subscription State
+    subscription: {
+        status: 'expired',
+        plan_id: null,
+        plan_name: null,
+        expires_at: null,
+        days_remaining: 0,
+        is_active: false,
+        can_use_ai: false,
+        can_export: false,
+        can_message: true,
+        messaging: {
+            limit: null,
+            used: 0,
+            remaining: null
+        }
+    }
 };
 
 // ========== Utility Functions ==========
@@ -3938,6 +3955,210 @@ async function unlinkWhatsAppGroup(groupId) {
 document.addEventListener('DOMContentLoaded', () => {
     initSettings();
     initWhatsAppSettings();
+    initSubscription(); // Initialize subscription
     // NOTE: initFAB() and initNavigation() are already called from init() in the earlier DOMContentLoaded listener
     // Do not call them again here to avoid double event listeners
 });
+
+// ========== Subscription Management ==========
+
+async function initSubscription() {
+    await checkSubscription();
+}
+
+async function checkSubscription() {
+    try {
+        const API = window.FinansialKuAPI;
+        if (!API || !API.subscription) {
+            console.warn('Subscription API not available');
+            return;
+        }
+
+        const { data, error } = await API.subscription.checkStatus();
+
+        if (error) {
+            console.error('Error checking subscription:', error);
+            return;
+        }
+
+        if (data) {
+            state.subscription = {
+                status: data.status || 'expired',
+                plan_id: data.plan_id,
+                plan_name: data.plan_name || 'Tidak Aktif',
+                expires_at: data.expires_at,
+                days_remaining: data.days_remaining || 0,
+                is_active: data.is_active || false,
+                can_use_ai: data.can_use_ai || false,
+                can_export: data.can_export || false,
+                can_message: data.can_message !== false,
+                messaging: data.messaging || { limit: null, used: 0, remaining: null }
+            };
+
+            updateSubscriptionUI();
+            applyFeatureGating();
+        }
+    } catch (err) {
+        console.error('Failed to check subscription:', err);
+    }
+}
+
+function updateSubscriptionUI() {
+    const sub = state.subscription;
+
+    // Update subscription modal status if open
+    const currentPlanEl = document.getElementById('currentPlanName');
+    const expiryDateEl = document.getElementById('expiryDate');
+
+    if (currentPlanEl) {
+        let statusText = sub.plan_name || 'Tidak Aktif';
+        if (sub.status === 'trial') statusText = '🎁 Trial';
+        else if (sub.status === 'active' && sub.plan_id === 'basic') statusText = '📦 Basic';
+        else if (sub.status === 'active' && sub.plan_id === 'pro') statusText = '⭐ Pro';
+        else if (sub.status === 'expired') statusText = '❌ Tidak Aktif';
+
+        currentPlanEl.textContent = statusText;
+    }
+
+    if (expiryDateEl) {
+        if (sub.expires_at) {
+            const expiry = new Date(sub.expires_at);
+            expiryDateEl.textContent = `${expiry.toLocaleDateString('id-ID')} (${sub.days_remaining} hari lagi)`;
+        } else {
+            expiryDateEl.textContent = '-';
+        }
+    }
+
+    // Update badge in dropdown menu
+    const badgeMini = document.getElementById('subscriptionBadgeMini');
+    if (badgeMini) {
+        badgeMini.className = 'subscription-badge-mini';
+        if (sub.status === 'trial') {
+            badgeMini.textContent = 'Trial';
+            badgeMini.classList.add('trial');
+        } else if (sub.status === 'active' && sub.plan_id === 'basic') {
+            badgeMini.textContent = 'Basic';
+            badgeMini.classList.add('basic');
+        } else if (sub.status === 'active' && sub.plan_id === 'pro') {
+            badgeMini.textContent = 'Pro';
+            badgeMini.classList.add('pro');
+        } else {
+            badgeMini.textContent = 'Upgrade';
+            badgeMini.classList.add('expired');
+        }
+    }
+}
+
+function applyFeatureGating() {
+    const sub = state.subscription;
+
+    // Gate AI Assistant - show upgrade prompt if not Pro/Trial
+    if (!sub.can_use_ai && !sub.is_active) {
+        const aiTab = document.getElementById('aiAssistant');
+        if (aiTab) {
+            const existingPrompt = aiTab.querySelector('.upgrade-prompt');
+            if (!existingPrompt) {
+                const prompt = document.createElement('div');
+                prompt.className = 'upgrade-prompt';
+                prompt.innerHTML = `
+                    <h4>🔒 Fitur Pro</h4>
+                    <p>Asisten AI hanya tersedia untuk pengguna Pro. Upgrade sekarang untuk akses penuh!</p>
+                    <button class="btn-primary" onclick="openSubscriptionModal()">
+                        💎 Upgrade ke Pro
+                    </button>
+                `;
+                const aiLayout = aiTab.querySelector('.ai-layout');
+                if (aiLayout) {
+                    aiLayout.style.display = 'none';
+                    aiTab.insertBefore(prompt, aiLayout);
+                }
+            }
+        }
+    }
+}
+
+function openSubscriptionModal() {
+    updateSubscriptionUI();
+    openModal('subscriptionModal');
+}
+
+async function handleSelectPlan(planId) {
+    const processingEl = document.getElementById('paymentProcessing');
+    const pricingCards = document.querySelector('.pricing-cards');
+
+    try {
+        // Show loading
+        if (pricingCards) pricingCards.style.display = 'none';
+        if (processingEl) processingEl.style.display = 'flex';
+
+        const API = window.FinansialKuAPI;
+        const { data, error } = await API.subscription.createPayment(planId);
+
+        if (error) {
+            throw error;
+        }
+
+        if (data && data.token) {
+            // Hide processing, close modal
+            if (processingEl) processingEl.style.display = 'none';
+            if (pricingCards) pricingCards.style.display = 'grid';
+            closeModal('subscriptionModal');
+
+            // Open Midtrans Snap popup
+            if (window.snap) {
+                window.snap.pay(data.token, {
+                    onSuccess: function (result) {
+                        console.log('Payment success:', result);
+                        showToast('Pembayaran berhasil! Terima kasih 🎉', 'success');
+                        // Refresh subscription status
+                        setTimeout(() => checkSubscription(), 2000);
+                    },
+                    onPending: function (result) {
+                        console.log('Payment pending:', result);
+                        showToast('Menunggu pembayaran...', 'warning');
+                    },
+                    onError: function (result) {
+                        console.error('Payment error:', result);
+                        showToast('Pembayaran gagal', 'error');
+                    },
+                    onClose: function () {
+                        console.log('Snap popup closed');
+                        showToast('Pembayaran dibatalkan', 'warning');
+                    }
+                });
+            } else {
+                // Fallback: redirect to payment page
+                if (data.redirect_url) {
+                    window.open(data.redirect_url, '_blank');
+                } else {
+                    throw new Error('Midtrans Snap not loaded');
+                }
+            }
+        } else {
+            throw new Error('No payment token received');
+        }
+    } catch (err) {
+        console.error('Payment error:', err);
+        showToast('Gagal memproses pembayaran: ' + err.message, 'error');
+
+        // Reset UI
+        if (processingEl) processingEl.style.display = 'none';
+        if (pricingCards) pricingCards.style.display = 'grid';
+    }
+}
+
+// Check if user can use messaging (WA/Telegram)
+function canUseMessaging() {
+    const sub = state.subscription;
+    return sub.can_message && (sub.messaging.remaining === null || sub.messaging.remaining > 0);
+}
+
+// Check if user has Pro features
+function hasProFeatures() {
+    return state.subscription.can_use_ai && state.subscription.can_export;
+}
+
+// Get messaging usage info
+function getMessagingUsage() {
+    return state.subscription.messaging;
+}

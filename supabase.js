@@ -697,6 +697,145 @@
         }
     };
 
+    // ========== SUBSCRIPTION API ==========
+
+    const subscriptionAPI = {
+        // Get all subscription plans
+        async getPlans() {
+            const { data, error } = await supabaseClient
+                .from('subscription_plans')
+                .select('*')
+                .order('price', { ascending: true });
+            return { data, error };
+        },
+
+        // Check current subscription status
+        async checkStatus() {
+            try {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (!session) {
+                    return {
+                        data: null,
+                        error: new Error('Not authenticated')
+                    };
+                }
+
+                const response = await fetch(
+                    `${supabaseClient.supabaseUrl}/functions/v1/check-subscription`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${session.access_token}`,
+                            'Content-Type': 'application/json',
+                        },
+                    }
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    return { data: null, error: new Error(data.error || 'Failed to check subscription') };
+                }
+
+                return { data, error: null };
+            } catch (error) {
+                return { data: null, error };
+            }
+        },
+
+        // Create payment for a plan (returns Midtrans token)
+        async createPayment(planId) {
+            try {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (!session) {
+                    return { data: null, error: new Error('Not authenticated') };
+                }
+
+                const user = session.user;
+
+                const response = await fetch(
+                    `${supabaseClient.supabaseUrl}/functions/v1/create-payment`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${session.access_token}`,
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            plan_id: planId,
+                            user_id: user.id,
+                            user_email: user.email,
+                            user_name: user.user_metadata?.name || user.email?.split('@')[0],
+                        }),
+                    }
+                );
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    return { data: null, error: new Error(data.error || 'Failed to create payment') };
+                }
+
+                return { data, error: null };
+            } catch (error) {
+                return { data: null, error };
+            }
+        },
+
+        // Get messaging usage for current month
+        async getMessagingUsage() {
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (!user) return { data: null, error: new Error('Not authenticated') };
+
+            const { data, error } = await supabaseClient
+                .rpc('get_messaging_usage', { p_user_id: user.id });
+
+            return { data: data?.[0] || { wa_count: 0, telegram_count: 0, total_count: 0 }, error };
+        },
+
+        // Increment messaging count (called after WA/Telegram transaction)
+        async incrementMessagingCount(type) { // 'wa' or 'telegram'
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (!user) return { data: null, error: new Error('Not authenticated') };
+
+            const { data, error } = await supabaseClient
+                .rpc('increment_messaging_count', {
+                    p_user_id: user.id,
+                    p_type: type
+                });
+
+            return { data, error };
+        },
+
+        // Get payment history
+        async getPaymentHistory() {
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (!user) return { data: null, error: new Error('Not authenticated') };
+
+            const { data, error } = await supabaseClient
+                .from('payment_transactions')
+                .select('*, subscription_plans(name)')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false });
+
+            return { data, error };
+        },
+
+        // Get user's subscription history
+        async getSubscriptionHistory() {
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (!user) return { data: null, error: new Error('Not authenticated') };
+
+            const { data, error } = await supabaseClient
+                .from('subscriptions')
+                .select('*, subscription_plans(name, price)')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false });
+
+            return { data, error };
+        }
+    };
+
     // ========== EXPORT TO GLOBAL ==========
 
     window.FinansialKuAPI = {
@@ -712,7 +851,8 @@
         telegram: telegramAPI,
         telegramGroup: telegramGroupAPI,
         whatsapp: whatsappAPI,
-        debts: debtsAPI
+        debts: debtsAPI,
+        subscription: subscriptionAPI
     };
 
     console.log('FinansialKu Supabase API loaded');

@@ -14,6 +14,9 @@
     <script src="assets/lib/chart.min.js"></script>
     <script src="assets/lib/jspdf.umd.min.js"></script>
     <script src="assets/lib/supabase.min.js"></script>
+    <!-- Midtrans Snap.js - Sandbox Mode -->
+    <script type="text/javascript" src="https://app.sandbox.midtrans.com/snap/snap.js"
+        data-client-key="SB-Mid-client-oyEZCx5m9JggMLEk"></script>
     <link rel="stylesheet" href="styles.css">
 </head>
 
@@ -88,6 +91,15 @@
                                 </path>
                             </svg>
                             Pengaturan
+                        </div>
+                        <div class="dropdown-item upgrade" id="menuSubscription" onclick="openSubscriptionModal()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                                <path d="M2 17l10 5 10-5"></path>
+                                <path d="M2 12l10 5 10-5"></path>
+                            </svg>
+                            <span>💎 Langganan</span>
+                            <span class="subscription-badge-mini" id="subscriptionBadgeMini">-</span>
                         </div>
                         <div class="dropdown-divider"></div>
                         <div class="dropdown-item danger" id="menuLogout">
@@ -2126,6 +2138,97 @@
 
             <button class="btn-primary" id="saveProfileBtn" style="width: 100%; margin-top: var(--space-4);">Simpan
                 Perubahan</button>
+        </div>
+    </div>
+</div>
+
+<!-- Subscription Modal -->
+<div class="modal" id="subscriptionModal">
+    <div class="modal-overlay"></div>
+    <div class="modal-content modal-large">
+        <div class="modal-header">
+            <h3>💎 Pilih Paket Langganan</h3>
+            <button class="btn-close" onclick="closeModal('subscriptionModal')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <!-- Current Status Banner -->
+            <div class="subscription-status-banner" id="subscriptionStatusBanner">
+                <div class="status-info">
+                    <span class="status-label">Status Saat Ini:</span>
+                    <span class="status-value" id="currentPlanName">-</span>
+                </div>
+                <div class="status-expiry" id="statusExpiry">
+                    <span>Berlaku hingga: </span>
+                    <span id="expiryDate">-</span>
+                </div>
+            </div>
+
+            <!-- Pricing Cards -->
+            <div class="pricing-cards">
+                <!-- Basic Plan -->
+                <div class="pricing-card" data-plan="basic">
+                    <div class="pricing-header">
+                        <span class="plan-badge">📦 Basic</span>
+                        <div class="plan-price">
+                            <span class="currency">Rp</span>
+                            <span class="amount">15.000</span>
+                            <span class="period">/bulan</span>
+                        </div>
+                    </div>
+                    <div class="pricing-features">
+                        <div class="feature-item">✅ Transaksi Aplikasi Unlimited</div>
+                        <div class="feature-item">⚠️ Transaksi WA/Telegram Max 300/bulan</div>
+                        <div class="feature-item">✅ Fitur Anggaran</div>
+                        <div class="feature-item">✅ Target Tabungan</div>
+                        <div class="feature-item">✅ Laporan Keuangan</div>
+                        <div class="feature-item">✅ Hutang Piutang</div>
+                        <div class="feature-item">✅ Kalkulator Finansial</div>
+                        <div class="feature-item disabled">❌ Asisten AI</div>
+                        <div class="feature-item disabled">❌ Ekspor Laporan</div>
+                    </div>
+                    <button class="btn-primary btn-plan" onclick="handleSelectPlan('basic')">
+                        Pilih Basic
+                    </button>
+                </div>
+
+                <!-- Pro Plan -->
+                <div class="pricing-card featured" data-plan="pro">
+                    <div class="featured-badge">🔥 Paling Populer</div>
+                    <div class="pricing-header">
+                        <span class="plan-badge pro">⭐ Pro</span>
+                        <div class="plan-price">
+                            <span class="currency">Rp</span>
+                            <span class="amount">30.000</span>
+                            <span class="period">/bulan</span>
+                        </div>
+                    </div>
+                    <div class="pricing-features">
+                        <div class="feature-item">✅ Transaksi Aplikasi Unlimited</div>
+                        <div class="feature-item highlight">✅ Transaksi WA/Telegram Unlimited</div>
+                        <div class="feature-item">✅ Fitur Anggaran</div>
+                        <div class="feature-item">✅ Target Tabungan</div>
+                        <div class="feature-item">✅ Laporan Keuangan</div>
+                        <div class="feature-item">✅ Hutang Piutang</div>
+                        <div class="feature-item">✅ Kalkulator Finansial</div>
+                        <div class="feature-item highlight">✅ Asisten AI</div>
+                        <div class="feature-item highlight">✅ Ekspor Laporan PDF</div>
+                    </div>
+                    <button class="btn-primary btn-plan" onclick="handleSelectPlan('pro')">
+                        Pilih Pro
+                    </button>
+                </div>
+            </div>
+
+            <!-- Payment Processing Indicator -->
+            <div class="payment-processing" id="paymentProcessing" style="display: none;">
+                <div class="loading-spinner"></div>
+                <p>Memproses pembayaran...</p>
+            </div>
         </div>
     </div>
 </div>
