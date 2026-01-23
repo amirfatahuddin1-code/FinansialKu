@@ -4154,12 +4154,66 @@ function removeAIGating() {
     }
 }
 
+// Billing Cycle Logic
+const BILLING_PLANS = {
+    monthly: {
+        basic: { price: "15.000", period: "/bulan", id: "basic", btnText: "Pilih Basic" },
+        pro: { price: "30.000", period: "/bulan", id: "pro", btnText: "Pilih Pro" }
+    },
+    quarterly: {
+        basic: { price: "40.500", period: "/3 bulan", id: "basic_3m", btnText: "Pilih Basic (3 Bulan)" },
+        pro: { price: "81.000", period: "/3 bulan", id: "pro_3m", btnText: "Pilih Pro (3 Bulan)" }
+    },
+    yearly: {
+        basic: { price: "144.000", period: "/tahun", id: "basic_1y", btnText: "Pilih Basic (1 Tahun)" },
+        pro: { price: "288.000", period: "/tahun", id: "pro_1y", btnText: "Pilih Pro (1 Tahun)" }
+    }
+};
+
+state.billingCycle = 'monthly'; // Default
+
+function setBillingCycle(cycle) {
+    state.billingCycle = cycle;
+
+    // Update Toggle UI
+    document.querySelectorAll('.cycle-option').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.id === `cycle${cycle.charAt(0).toUpperCase() + cycle.slice(1)}`) {
+            btn.classList.add('active');
+        }
+    });
+
+    // Update Pricing Display
+    const plans = BILLING_PLANS[cycle];
+
+    // Basic
+    const basicCard = document.querySelector('.pricing-card[data-plan="basic"]');
+    if (basicCard) {
+        basicCard.querySelector('.amount').textContent = plans.basic.price;
+        basicCard.querySelector('.period').textContent = plans.basic.period;
+        basicCard.querySelector('.btn-plan').textContent = plans.basic.btnText;
+    }
+
+    // Pro
+    const proCard = document.querySelector('.pricing-card[data-plan="pro"]');
+    if (proCard) {
+        proCard.querySelector('.amount').textContent = plans.pro.price;
+        proCard.querySelector('.period').textContent = plans.pro.period;
+        proCard.querySelector('.btn-plan').textContent = plans.pro.btnText;
+    }
+}
+
 function openSubscriptionModal() {
     updateSubscriptionUI();
+    setBillingCycle('monthly'); // Reset to monthly on open
     openModal('subscriptionModal');
 }
 
-async function handleSelectPlan(planId) {
+async function handleSelectPlan(planType) {
+    // Determine actual plan ID based on cycle + base type
+    const cycle = state.billingCycle || 'monthly';
+    const planId = BILLING_PLANS[cycle][planType].id;
+
     const processingEl = document.getElementById('paymentProcessing');
     const pricingCards = document.querySelector('.pricing-cards');
 

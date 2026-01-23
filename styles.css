@@ -4880,3 +4880,59 @@ details[open] summary {
     z-index: 100;
     border-radius: var(--radius-xl);
 }
+
+/* Billing Cycle Toggle */
+.billing-cycle-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: var(--space-4);
+}
+
+.billing-cycle-toggle {
+    display: flex;
+    background: var(--bg-secondary);
+    padding: 4px;
+    border-radius: var(--radius-xl);
+    gap: 4px;
+    width: 100%;
+}
+
+.cycle-option {
+    flex: 1;
+    padding: 8px 4px;
+    text-align: center;
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--text-secondary);
+    border-radius: var(--radius-lg);
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.cycle-option:hover {
+    color: var(--text-primary);
+}
+
+.cycle-option.active {
+    background: var(--bg-card);
+    color: var(--accent-primary);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    font-weight: 600;
+}
+
+.discount-badge {
+    font-size: 0.65rem;
+    background: var(--success);
+    color: white;
+    padding: 1px 4px;
+    border-radius: 4px;
+    font-weight: 700;
+    line-height: 1.2;
+}
