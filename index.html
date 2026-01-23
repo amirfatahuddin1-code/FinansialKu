@@ -2232,3 +2232,54 @@
         </div>
     </div>
 </div>
+
+<!-- Upgrade Overlay (blocks app when no subscription) -->
+<div class="upgrade-overlay" id="upgradeOverlay" style="display: none;">
+    <div class="upgrade-overlay-content">
+        <div class="upgrade-overlay-icon">🔒</div>
+        <h2>Langganan Diperlukan</h2>
+        <p>Untuk mengakses semua fitur Karsafin, silakan berlangganan terlebih dahulu.</p>
+
+        <div class="upgrade-overlay-features">
+            <div class="feature-row">
+                <span class="feature-icon">📊</span>
+                <span>Dasbor Keuangan</span>
+            </div>
+            <div class="feature-row">
+                <span class="feature-icon">📝</span>
+                <span>Catat Transaksi</span>
+            </div>
+            <div class="feature-row">
+                <span class="feature-icon">💰</span>
+                <span>Anggaran & Tabungan</span>
+            </div>
+            <div class="feature-row">
+                <span class="feature-icon">📱</span>
+                <span>Integrasi WA/Telegram</span>
+            </div>
+            <div class="feature-row">
+                <span class="feature-icon">🤖</span>
+                <span>Asisten AI (Pro)</span>
+            </div>
+        </div>
+
+        <div class="upgrade-overlay-pricing">
+            <div class="pricing-mini basic">
+                <span class="plan-name">Basic</span>
+                <span class="plan-price">Rp 15.000/bln</span>
+            </div>
+            <div class="pricing-mini pro">
+                <span class="plan-name">Pro</span>
+                <span class="plan-price">Rp 30.000/bln</span>
+            </div>
+        </div>
+
+        <button class="btn-primary btn-large" onclick="openSubscriptionModal(); hideUpgradeOverlay();">
+            💎 Pilih Paket Langganan
+        </button>
+
+        <button class="btn-text" onclick="handleLogoutFromOverlay()">
+            Keluar dari Akun
+        </button>
+    </div>
+</div>

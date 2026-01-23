@@ -4747,3 +4747,136 @@ details[open] summary {
 .dropdown-item.upgrade:hover {
     background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(6, 182, 212, 0.1));
 }
+
+/* ========== Upgrade Overlay (Full Screen Block) ========== */
+.upgrade-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--bg-modal);
+    backdrop-filter: blur(10px);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-4);
+}
+
+.upgrade-overlay-content {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-2xl);
+    padding: var(--space-10);
+    max-width: 480px;
+    width: 100%;
+    text-align: center;
+    animation: slideUp 0.4s ease;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.upgrade-overlay-icon {
+    font-size: 64px;
+    margin-bottom: var(--space-4);
+}
+
+.upgrade-overlay-content h2 {
+    font-size: var(--font-size-2xl);
+    margin-bottom: var(--space-2);
+    background: var(--accent-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.upgrade-overlay-content>p {
+    color: var(--text-secondary);
+    margin-bottom: var(--space-6);
+}
+
+.upgrade-overlay-features {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    margin-bottom: var(--space-6);
+}
+
+.upgrade-overlay-features .feature-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2) 0;
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+.upgrade-overlay-features .feature-icon {
+    font-size: 1.2rem;
+}
+
+.upgrade-overlay-pricing {
+    display: flex;
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+}
+
+.pricing-mini {
+    flex: 1;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: var(--space-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.pricing-mini.pro {
+    border-color: var(--accent-primary);
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(6, 182, 212, 0.1));
+}
+
+.pricing-mini .plan-name {
+    font-weight: 600;
+    font-size: var(--font-size-sm);
+    color: var(--text-primary);
+}
+
+.pricing-mini .plan-price {
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+}
+
+.btn-large {
+    width: 100%;
+    padding: var(--space-4) var(--space-6);
+    font-size: var(--font-size-lg);
+    margin-bottom: var(--space-4);
+}
+
+/* AI Assistant Gate Overlay */
+.ai-gate-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--bg-modal);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    border-radius: var(--radius-xl);
+}

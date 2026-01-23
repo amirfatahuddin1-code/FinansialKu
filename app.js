@@ -4052,28 +4052,95 @@ function updateSubscriptionUI() {
 function applyFeatureGating() {
     const sub = state.subscription;
 
-    // Gate AI Assistant - show upgrade prompt if not Pro/Trial
-    if (!sub.can_use_ai && !sub.is_active) {
-        const aiTab = document.getElementById('aiAssistant');
-        if (aiTab) {
-            const existingPrompt = aiTab.querySelector('.upgrade-prompt');
-            if (!existingPrompt) {
-                const prompt = document.createElement('div');
-                prompt.className = 'upgrade-prompt';
-                prompt.innerHTML = `
-                    <h4>🔒 Fitur Pro</h4>
-                    <p>Asisten AI hanya tersedia untuk pengguna Pro. Upgrade sekarang untuk akses penuh!</p>
-                    <button class="btn-primary" onclick="openSubscriptionModal()">
-                        💎 Upgrade ke Pro
-                    </button>
-                `;
-                const aiLayout = aiTab.querySelector('.ai-layout');
-                if (aiLayout) {
-                    aiLayout.style.display = 'none';
-                    aiTab.insertBefore(prompt, aiLayout);
-                }
-            }
+    // SCENARIO 1: No active subscription - Block ALL features with overlay
+    if (!sub.is_active) {
+        showUpgradeOverlay();
+        return;
+    }
+
+    // If subscription is active, hide overlay
+    hideUpgradeOverlay();
+
+    // SCENARIO 2: Basic subscription - Gate AI Assistant + Export
+    if (sub.plan_id === 'basic' || (sub.status === 'trial')) {
+        // Trial gets all features, skip gating
+        if (sub.status === 'trial') {
+            removeAIGating();
+            return;
         }
+
+        // Basic: Gate AI Assistant
+        gateAIAssistant();
+    }
+
+    // SCENARIO 3: Pro subscription - Remove all gating
+    if (sub.plan_id === 'pro') {
+        removeAIGating();
+    }
+}
+
+// Show full-screen upgrade overlay for non-subscribers
+function showUpgradeOverlay() {
+    const overlay = document.getElementById('upgradeOverlay');
+    if (overlay) {
+        overlay.style.display = 'flex';
+    }
+}
+
+// Hide upgrade overlay
+function hideUpgradeOverlay() {
+    const overlay = document.getElementById('upgradeOverlay');
+    if (overlay) {
+        overlay.style.display = 'none';
+    }
+}
+
+// Handle logout from overlay
+function handleLogoutFromOverlay() {
+    hideUpgradeOverlay();
+    if (window.FinansialKuAPI && window.FinansialKuAPI.auth) {
+        window.FinansialKuAPI.auth.logout();
+    }
+}
+
+// Gate AI Assistant tab
+function gateAIAssistant() {
+    const aiTab = document.getElementById('aiAssistant');
+    if (!aiTab) return;
+
+    const existingPrompt = aiTab.querySelector('.upgrade-prompt');
+    if (!existingPrompt) {
+        const prompt = document.createElement('div');
+        prompt.className = 'upgrade-prompt';
+        prompt.id = 'aiUpgradePrompt';
+        prompt.innerHTML = `
+            <h4>🔒 Fitur Pro</h4>
+            <p>Asisten AI hanya tersedia untuk pengguna Pro. Upgrade sekarang untuk akses penuh!</p>
+            <button class="btn-primary" onclick="openSubscriptionModal()">
+                💎 Upgrade ke Pro
+            </button>
+        `;
+        const aiLayout = aiTab.querySelector('.ai-layout');
+        if (aiLayout) {
+            aiLayout.style.display = 'none';
+            aiTab.insertBefore(prompt, aiTab.firstChild);
+        }
+    }
+}
+
+// Remove AI gating (for Pro/Trial users)
+function removeAIGating() {
+    const aiTab = document.getElementById('aiAssistant');
+    if (!aiTab) return;
+
+    const existingPrompt = aiTab.querySelector('.upgrade-prompt');
+    if (existingPrompt) {
+        existingPrompt.remove();
+    }
+
+    const aiLayout = aiTab.querySelector('.ai-layout');
+    if (aiLayout) {
+        aiLayout.style.display = 'flex';
     }
 }
 
