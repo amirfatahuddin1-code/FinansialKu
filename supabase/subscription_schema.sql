@@ -46,6 +46,52 @@ INSERT INTO subscription_plans (id, name, price, duration_days, features) VALUES
     "calculator": true,
     "ai_assistant": true,
     "export_reports": true
+  }'::jsonb),
+  -- NEW: Quarterly Plans (10% Discount)
+  ('basic_3m', 'Basic (3 Bulan)', 40500, 90, '{
+    "app_transactions": "unlimited",
+    "messaging_transactions": 900,
+    "budget": true,
+    "savings": true,
+    "reports": true,
+    "debts": true,
+    "calculator": true,
+    "ai_assistant": false,
+    "export_reports": false
+  }'::jsonb),
+  ('pro_3m', 'Pro (3 Bulan)', 81000, 90, '{
+    "app_transactions": "unlimited",
+    "messaging_transactions": "unlimited",
+    "budget": true,
+    "savings": true,
+    "reports": true,
+    "debts": true,
+    "calculator": true,
+    "ai_assistant": true,
+    "export_reports": true
+  }'::jsonb),
+  -- NEW: Yearly Plans (20% Discount)
+  ('basic_1y', 'Basic (1 Tahun)', 144000, 365, '{
+    "app_transactions": "unlimited",
+    "messaging_transactions": 3600,
+    "budget": true,
+    "savings": true,
+    "reports": true,
+    "debts": true,
+    "calculator": true,
+    "ai_assistant": false,
+    "export_reports": false
+  }'::jsonb),
+  ('pro_1y', 'Pro (1 Tahun)', 288000, 365, '{
+    "app_transactions": "unlimited",
+    "messaging_transactions": "unlimited",
+    "budget": true,
+    "savings": true,
+    "reports": true,
+    "debts": true,
+    "calculator": true,
+    "ai_assistant": true,
+    "export_reports": true
   }'::jsonb)
 ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name,
