@@ -4210,14 +4210,26 @@ function openSubscriptionModal() {
 }
 
 async function handleSelectPlan(planType) {
+    // Prevent double clicks if processing
+    if (state.isProcessingPayment) return;
+
     // Determine actual plan ID based on cycle + base type
     const cycle = state.billingCycle || 'monthly';
     const planId = BILLING_PLANS[cycle][planType].id;
 
     const processingEl = document.getElementById('paymentProcessing');
     const pricingCards = document.querySelector('.pricing-cards');
+    const planButtons = document.querySelectorAll('.btn-plan');
 
     try {
+        state.isProcessingPayment = true;
+
+        // Disable buttons
+        planButtons.forEach(btn => {
+            btn.disabled = true;
+            btn.textContent = 'Memproses...';
+        });
+
         // Show loading
         if (pricingCards) pricingCards.style.display = 'none';
         if (processingEl) processingEl.style.display = 'flex';
@@ -4231,8 +4243,10 @@ async function handleSelectPlan(planType) {
 
         if (data && data.token) {
             // Hide processing, close modal
-            if (processingEl) processingEl.style.display = 'none';
-            if (pricingCards) pricingCards.style.display = 'grid';
+            // processingEl and pricingCards reset happens in closeModal or when re-opening
+
+            // NOTE: Do not close modal immediately if we want to keep context, 
+            // but for Snap popup it's better to verify after payment.
             closeModal('subscriptionModal');
 
             // Open Midtrans Snap popup
@@ -4243,40 +4257,49 @@ async function handleSelectPlan(planType) {
                         showToast('Pembayaran berhasil! Terima kasih 🎉', 'success');
                         // Refresh subscription status
                         setTimeout(() => checkSubscription(), 2000);
+                        state.isProcessingPayment = false;
                     },
                     onPending: function (result) {
                         console.log('Payment pending:', result);
                         showToast('Menunggu pembayaran...', 'warning');
+                        state.isProcessingPayment = false;
                     },
                     onError: function (result) {
                         console.error('Payment error:', result);
-                        showToast('Pembayaran gagal', 'error');
+                        showToast('Pembayaran gagal. Silakan coba lagi.', 'error');
+                        state.isProcessingPayment = false;
+                        openSubscriptionModal(); // Re-open modal on error
                     },
                     onClose: function () {
-                        console.log('Snap popup closed');
-                        showToast('Pembayaran dibatalkan', 'warning');
+                        console.log('Payment popup closed');
+                        state.isProcessingPayment = false;
+                        // If payment not finished (no success callback), re-open modal potentially?
+                        // For now just let user decide to click Upgrade again
                     }
                 });
             } else {
-                // Fallback: redirect to payment page
-                if (data.redirect_url) {
-                    window.open(data.redirect_url, '_blank');
-                } else {
-                    throw new Error('Midtrans Snap not loaded');
-                }
+                throw new Error('Midtrans Snap tidak dimuat. Silakan refresh halaman.');
             }
-        } else {
-            throw new Error('No payment token received');
         }
     } catch (err) {
-        console.error('Payment error:', err);
-        showToast('Gagal memproses pembayaran: ' + err.message, 'error');
+        console.error('Payment Error:', err);
+        showToast(err.message || 'Gagal memproses pembayaran', 'error');
 
-        // Reset UI
+        // Reset UI on error
+        state.isProcessingPayment = false;
         if (processingEl) processingEl.style.display = 'none';
         if (pricingCards) pricingCards.style.display = 'grid';
+
+        planButtons.forEach(btn => {
+            btn.disabled = false;
+            // Restore text based on current cycle
+            const plans = BILLING_PLANS[state.billingCycle || 'monthly'];
+            const type = btn.closest('.pricing-card').dataset.plan;
+            btn.textContent = plans[type].btnText;
+        });
     }
 }
+
 
 // Check if user can use messaging (WA/Telegram)
 function canUseMessaging() {
