@@ -4249,36 +4249,65 @@ async function handleSelectPlan(planType) {
             // but for Snap popup it's better to verify after payment.
             closeModal('subscriptionModal');
 
+            // --- REDIRECT FALLBACK FOR MOBILE/CORS ISSUES ---
+            const fallbackToRedirect = () => {
+                if (data.redirect_url) {
+                    showToast('Mengalihkan ke halaman pembayaran...', 'info');
+                    setTimeout(() => {
+                        window.location.href = data.redirect_url;
+                    }, 1500);
+                } else {
+                    throw new Error('Gagal memuat halaman pembayaran.');
+                }
+            };
+
             // Open Midtrans Snap popup
             if (window.snap) {
-                window.snap.pay(data.token, {
-                    onSuccess: function (result) {
-                        console.log('Payment success:', result);
-                        showToast('Pembayaran berhasil! Terima kasih 🎉', 'success');
-                        // Refresh subscription status
-                        setTimeout(() => checkSubscription(), 2000);
-                        state.isProcessingPayment = false;
-                    },
-                    onPending: function (result) {
-                        console.log('Payment pending:', result);
-                        showToast('Menunggu pembayaran...', 'warning');
-                        state.isProcessingPayment = false;
-                    },
-                    onError: function (result) {
-                        console.error('Payment error:', result);
-                        showToast('Pembayaran gagal. Silakan coba lagi.', 'error');
-                        state.isProcessingPayment = false;
-                        openSubscriptionModal(); // Re-open modal on error
-                    },
-                    onClose: function () {
-                        console.log('Payment popup closed');
-                        state.isProcessingPayment = false;
-                        // If payment not finished (no success callback), re-open modal potentially?
-                        // For now just let user decide to click Upgrade again
-                    }
-                });
+                try {
+                    // Set timeout to detect if snap fails to open (e.g. CORS block)
+                    const snapTimeout = setTimeout(() => {
+                        console.warn('Snap popup timeout, falling back to redirect');
+                        fallbackToRedirect();
+                    }, 5000); // 5 seconds timeout
+
+                    window.snap.pay(data.token, {
+                        onSuccess: function (result) {
+                            clearTimeout(snapTimeout);
+                            console.log('Payment success:', result);
+                            showToast('Pembayaran berhasil! Terima kasih 🎉', 'success');
+                            setTimeout(() => checkSubscription(), 2000);
+                            state.isProcessingPayment = false;
+                        },
+                        onPending: function (result) {
+                            clearTimeout(snapTimeout);
+                            console.log('Payment pending:', result);
+                            showToast('Menunggu pembayaran...', 'warning');
+                            state.isProcessingPayment = false;
+                        },
+                        onError: function (result) {
+                            clearTimeout(snapTimeout);
+                            console.error('Payment error:', result);
+
+                            // If error is related to popup blocking, try redirect
+                            // Otherwise just show error
+                            showToast('Mencoba metode alternatif...', 'warning');
+                            fallbackToRedirect();
+
+                            state.isProcessingPayment = false;
+                        },
+                        onClose: function () {
+                            clearTimeout(snapTimeout);
+                            console.log('Payment popup closed');
+                            state.isProcessingPayment = false;
+                        }
+                    });
+                } catch (snapErr) {
+                    console.error('Snap execution error:', snapErr);
+                    fallbackToRedirect();
+                }
             } else {
-                throw new Error('Midtrans Snap tidak dimuat. Silakan refresh halaman.');
+                console.warn('Snap.js not found, using redirect');
+                fallbackToRedirect();
             }
         }
     } catch (err) {
