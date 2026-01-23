@@ -77,7 +77,7 @@ Deno.serve(async (req) => {
                 first_name: user_name || 'Pengguna Karsafin',
             },
             callbacks: {
-                finish: `${Deno.env.get('APP_URL') || 'https://karsafin.vercel.app'}/payment-success`,
+                finish: `${Deno.env.get('APP_URL') || 'https://karsafin.vercel.app'}/?payment_success=true`,
             },
         }
 

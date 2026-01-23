@@ -3966,6 +3966,20 @@ document.addEventListener('DOMContentLoaded', () => {
     initSettings();
     initWhatsAppSettings();
     initSubscription(); // Initialize subscription
+
+    // Check for payment success from redirect
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('payment_success') === 'true') {
+        showToast('Pembayaran berhasil! Terima kasih 🎉', 'success');
+
+        // Clean URL
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+
+        // Refresh subscription after a short delay
+        setTimeout(() => checkSubscription(), 1000);
+    }
+
     // NOTE: initFAB() and initNavigation() are already called from init() in the earlier DOMContentLoaded listener
     // Do not call them again here to avoid double event listeners
 });
