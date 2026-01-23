@@ -402,6 +402,11 @@ function openModal(modalId) {
 
 function closeModal(modalId) {
     document.getElementById(modalId).classList.remove('active');
+
+    // If closing subscription modal and user has no active subscription, show overlay again
+    if (modalId === 'subscriptionModal' && state.subscription && !state.subscription.is_active) {
+        showUpgradeOverlay();
+    }
 }
 
 function closeAllModals() {
