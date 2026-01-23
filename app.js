@@ -4060,10 +4060,10 @@ function updateSubscriptionUI() {
         if (sub.status === 'trial') {
             badgeMini.textContent = 'Trial';
             badgeMini.classList.add('trial');
-        } else if (sub.status === 'active' && sub.plan_id === 'basic') {
+        } else if (sub.status === 'active' && sub.plan_id && sub.plan_id.startsWith('basic')) {
             badgeMini.textContent = 'Basic';
             badgeMini.classList.add('basic');
-        } else if (sub.status === 'active' && sub.plan_id === 'pro') {
+        } else if (sub.status === 'active' && sub.plan_id && sub.plan_id.startsWith('pro')) {
             badgeMini.textContent = 'Pro';
             badgeMini.classList.add('pro');
         } else {
@@ -4086,7 +4086,10 @@ function applyFeatureGating() {
     hideUpgradeOverlay();
 
     // SCENARIO 2: Basic subscription - Gate AI Assistant + Export
-    if (sub.plan_id === 'basic' || (sub.status === 'trial')) {
+    // Check if plan is basic (any duration) or trial
+    const isBasic = sub.plan_id && sub.plan_id.startsWith('basic');
+
+    if (isBasic || sub.status === 'trial') {
         // Trial gets all features, skip gating
         if (sub.status === 'trial') {
             removeAIGating();
@@ -4098,7 +4101,7 @@ function applyFeatureGating() {
     }
 
     // SCENARIO 3: Pro subscription - Remove all gating
-    if (sub.plan_id === 'pro') {
+    if (sub.plan_id && sub.plan_id.startsWith('pro')) {
         removeAIGating();
     }
 }
