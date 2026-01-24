@@ -58,6 +58,17 @@ serve(async (req) => {
             })
         }
 
+        if (Number(amount) <= 0) {
+            return new Response(JSON.stringify({
+                success: false,
+                error: 'Invalid amount',
+                message: 'Jumlah transaksi harus lebih besar dari 0.'
+            }), {
+                status: 400,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            })
+        }
+
         // Normalize phone number - convert 08xxx to 628xxx and vice versa
         function normalizePhone(phone: string): string[] {
             const cleaned = phone.replace(/[\s\-\+]/g, '')
@@ -125,6 +136,46 @@ serve(async (req) => {
             .select('id, name, type')
             .eq('user_id', userId)
 
+        // --- FEATURE GATING & LIMIT CHECK ---
+
+        // Create debug info object
+        const debugInfo: any = {}
+
+        // 1. Get subscription status
+        // FIX: Use correct RPC name 'get_active_subscription'
+        const { data: sub } = await supabase.rpc('get_active_subscription', { p_user_id: userId })
+        const subscription = sub && sub.length > 0 ? sub[0] : null
+
+        debugInfo.plan_id = subscription?.plan_id || 'none'
+        debugInfo.status = subscription?.status || 'none'
+
+        // 2. Check if user can transact
+        if (!subscription || (subscription.status !== 'active' && subscription.status !== 'trial')) {
+            return new Response(JSON.stringify({
+                success: false,
+                error: 'subscription_required',
+                message: 'Langganan Anda tidak aktif. Silakan upgrade untuk mencatat transaksi via WhatsApp.'
+            }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+
+        // 3. Check Usage Limit for Basic Plans
+        // Limit is 300/month for all Basic plans (monthly, quarterly, yearly)
+        if (subscription.plan_id && subscription.plan_id.startsWith('basic') && subscription.status !== 'trial') {
+            const { data: usage } = await supabase.rpc('get_messaging_usage', { p_user_id: userId })
+            const currentUsage = usage && usage.length > 0 ? usage[0].total_count : 0
+
+            debugInfo.usage = currentUsage
+
+            if (currentUsage >= 300) {
+                return new Response(JSON.stringify({
+                    success: false,
+                    error: 'limit_exceeded',
+                    message: 'Kuota transaksi bulanan terlampaui (300 transaksi). Upgrade ke Pro untuk transaksi unlimited!'
+                }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+            }
+        }
+        // ------------------------------------
+
         const matchedCategory = findCategory(category || description, categories || [], type)
 
         // Insert transaction directly to main transactions table
@@ -148,11 +199,19 @@ serve(async (req) => {
             throw error
         }
 
+        // --- INCREMENT USAGE COUNT ---
+        await supabase.rpc('increment_messaging_count', {
+            p_user_id: userId,
+            p_type: 'wa'
+        })
+        // -----------------------------
+
         return new Response(JSON.stringify({
             success: true,
             transaction: data,
             category_name: matchedCategory?.name || 'Lainnya',
-            link_type: linkType
+            link_type: linkType,
+            debug: debugInfo
         }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })

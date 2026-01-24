@@ -58,20 +58,56 @@ serve(async (req) => {
             })
         }
 
-        // Find linked user
-        const { data: link } = await supabase
-            .from('telegram_user_links')
-            .select('user_id')
-            .eq('telegram_user_id', telegramUserId)
-            .single()
-
-        if (!link) {
-            // User not linked, send instruction message via Telegram Bot API
-            console.log('User not linked:', telegramUserId)
+        if (parsed.amount <= 0) {
             return new Response(JSON.stringify({
                 method: 'sendMessage',
                 chat_id: message.chat.id,
-                text: `⚠️ Akun belum terhubung.\n\nID Telegram Anda: \`${telegramUserId}\`\n\nSilakan hubungkan akun Anda di aplikasi FinansialKu terlebih dahulu.`,
+                text: '⚠️ Jumlah transaksi harus lebih besar dari 0.',
+                parse_mode: 'Markdown'
+            }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+
+        const senderName = [message.from.first_name, message.from.last_name].filter(Boolean).join(' ') || message.from.username || telegramUserId
+
+        // Determine Target User ID
+        // Priority:
+        // 1. Group Link (if in group) -> User who owns the group link
+        // 2. Personal Link -> User who owns the Telegram account
+
+        let link = null;
+        let isGroupChat = message.chat.type === 'group' || message.chat.type === 'supergroup';
+
+        if (isGroupChat) {
+            const { data: groupLink } = await supabase
+                .from('telegram_group_links')
+                .select('user_id')
+                .eq('telegram_group_id', String(message.chat.id))
+                .maybeSingle()
+
+            if (groupLink) {
+                link = groupLink; // Use group owner
+                console.log('Using Group Link:', groupLink.user_id)
+            }
+        }
+
+        // Fallback to Personal Link
+        if (!link) {
+            const { data: userLink } = await supabase
+                .from('telegram_user_links')
+                .select('user_id')
+                .eq('telegram_user_id', telegramUserId)
+                .maybeSingle()
+
+            link = userLink;
+        }
+
+        if (!link) {
+            // User not linked, send instruction message via Telegram Bot API
+            console.log('User/Group not linked:', telegramUserId)
+            return new Response(JSON.stringify({
+                method: 'sendMessage',
+                chat_id: message.chat.id,
+                text: `⚠️ Akun belum terhubung.\n\nID Telegram Anda: \`${telegramUserId}\`\n${isGroupChat ? `ID Grup: \`${message.chat.id}\`\n` : ''}\nSilakan hubungkan akun Anda di aplikasi FinansialKu terlebih dahulu.`,
                 parse_mode: 'Markdown'
             }), {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -84,20 +120,54 @@ serve(async (req) => {
             .select('id, name, type')
             .eq('user_id', link.user_id)
 
-        const category = findCategory(parsed.keyword, categories || [], parsed.type)
+        // --- FEATURE GATING & LIMIT CHECK ---
+        const userId = link.user_id;
 
-        // Insert transaction
+        // 1. Get subscription status
+        const { data: sub } = await supabase.rpc('get_active_subscription', { p_user_id: userId })
+        const subscription = sub && sub.length > 0 ? sub[0] : null
+
+        // 2. Check if user can transact
+        if (!subscription || (subscription.status !== 'active' && subscription.status !== 'trial')) {
+            return new Response(JSON.stringify({
+                method: 'sendMessage',
+                chat_id: message.chat.id,
+                text: '❌ Langganan Anda tidak aktif.\nSilakan upgrade di aplikasi untuk mencatat transaksi via Telegram.',
+                parse_mode: 'Markdown'
+            }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+
+        // 3. Check Usage Limit for Basic Plans
+        let currentUsage = -1;
+        if (subscription.plan_id && subscription.plan_id.startsWith('basic') && subscription.status !== 'trial') {
+            const { data: usage } = await supabase.rpc('get_messaging_usage', { p_user_id: userId })
+            currentUsage = usage && usage.length > 0 ? usage[0].total_count : 0
+
+            if (currentUsage >= 300) {
+                return new Response(JSON.stringify({
+                    method: 'sendMessage',
+                    chat_id: message.chat.id,
+                    text: `⛔ Kuota transaksi bulanan terlampaui (${currentUsage}/300).\nUpgrade ke Pro untuk transaksi unlimited!`,
+                    parse_mode: 'Markdown'
+                }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+            }
+        }
+        // ------------------------------------
+
+        const category = findCategory(parsed.description, categories || [], parsed.type)
+
+        // Insert transaction directly to main transactions table (so it shows in app)
         const { data, error } = await supabase
-            .from('telegram_transactions')
+            .from('transactions')
             .insert({
                 user_id: link.user_id,
-                telegram_user_id: telegramUserId,
                 type: parsed.type,
                 amount: parsed.amount,
                 category_id: category?.id || null,
                 description: parsed.description,
-                original_message: text,
-                synced: false
+                date: new Date().toISOString().split('T')[0],
+                source: 'telegram',
+                sender_name: isGroupChat ? senderName : null // Only add sender name in groups
             })
             .select()
             .single()
@@ -107,9 +177,25 @@ serve(async (req) => {
             throw error
         }
 
+        // --- INCREMENT USAGE COUNT ---
+        await supabase.rpc('increment_messaging_count', {
+            p_user_id: userId,
+            p_type: 'telegram'
+        })
+        // -----------------------------
+
+        const categoryName = category?.name || 'Lainnya'
+        const typeEmoji = parsed.type === 'income' ? '💰' : '💸'
+
         return new Response(JSON.stringify({
-            ok: true,
-            transaction: data
+            method: 'sendMessage',
+            chat_id: message.chat.id,
+            text: `✅ *Tercatat!*
+${typeEmoji} ${parsed.type === 'income' ? 'Pemasukan' : 'Pengeluaran'}
+💵 Rp ${parsed.amount.toLocaleString('id-ID')}
+📂 ${categoryName}
+📝 ${parsed.description}`,
+            parse_mode: 'Markdown'
         }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
@@ -124,89 +210,110 @@ serve(async (req) => {
 })
 
 function parseTransaction(text: string) {
-    // Pattern: keyword amount [description]
-    // Examples: 
-    //   "makan 50000"
-    //   "gaji +5000000 bonus akhir tahun"
-    //   "transport -25000 grab"
+    // 1. Clean the text
+    const cleanText = text.trim()
 
-    const patterns = [
-        // With + or - prefix
-        /^(\w+)\s+([+-]?)(\d+(?:[.,]\d+)?)\s*(.*)$/i,
-        // Amount first
-        /^([+-]?)(\d+(?:[.,]\d+)?)\s+(\w+)\s*(.*)$/i,
-    ]
+    // 2. Regex to find amount with common suffixes (rb, k, jt, juta, ribu)
+    // Matches:
+    // - 50000
+    // - 50.000
+    // - 50k / 50rb / 50ribu
+    // - 5jt / 5juta
+    const amountRegex = /([+-]?)\s*(\d+(?:[.,]\d+)?)\s*(rb|ribu|k|jt|juta)?\b/i
 
-    for (const pattern of patterns) {
-        const match = text.match(pattern)
-        if (match) {
-            let keyword, sign, amountStr, description
+    const match = cleanText.match(amountRegex)
 
-            if (match[2] && (match[2] === '+' || match[2] === '-')) {
-                // Pattern 1
-                keyword = match[1].toLowerCase()
-                sign = match[2]
-                amountStr = match[3]
-                description = match[4] || keyword
-            } else if (match[1] === '+' || match[1] === '-' || !isNaN(parseInt(match[2]))) {
-                // Pattern 2
-                sign = match[1] || ''
-                amountStr = match[2]
-                keyword = match[3].toLowerCase()
-                description = match[4] || keyword
-            } else {
-                keyword = match[1].toLowerCase()
-                sign = match[2] || ''
-                amountStr = match[3]
-                description = match[4] || keyword
-            }
+    if (!match) return null
 
-            const amount = parseFloat(amountStr.replace(',', '.'))
-            if (isNaN(amount) || amount <= 0) continue
+    const sign = match[1] || ''
+    const numberStr = match[2].replace(',', '.')
+    const suffix = match[3]?.toLowerCase()
 
-            const type = sign === '+' ? 'income' : 'expense'
+    let amount = parseFloat(numberStr)
 
-            return {
-                keyword,
-                amount,
-                type,
-                description: description || keyword
-            }
+    // Handle Suffixes
+    if (suffix === 'rb' || suffix === 'ribu' || suffix === 'k') {
+        amount *= 1000
+    } else if (suffix === 'jt' || suffix === 'juta') {
+        amount *= 1000000
+    }
+
+    if (isNaN(amount) || amount <= 0) return null
+
+    // Remove the found amount from text to get description
+    // distinct from the amount part
+    let description = cleanText.replace(match[0], '').trim()
+
+    // If description becomes empty (e.g. just sent "50rb"), use "Transaksi" or infer category later
+    if (!description) {
+        description = 'Transaksi'
+    }
+
+    // Cleanup description (remove extra spaces, punctuation)
+    description = description.replace(/\s+/g, ' ')
+
+    // Determine type (expense/income)
+    // Default to expense, unless specified '+' or keyword 'gaji', 'terima', 'masuk'
+    let type = 'expense'
+    if (sign === '+') {
+        type = 'income'
+    } else {
+        const incomeKeywords = ['gaji', 'terima', 'dapat', 'income', 'pemasukan', 'deposit', 'transfer masuk']
+        if (incomeKeywords.some(k => description.toLowerCase().includes(k))) {
+            type = 'income'
         }
     }
 
-    return null
+    // Extract potential keyword for category matching (first word of description)
+    const keyword = description.split(' ')[0].toLowerCase()
+
+    return {
+        keyword,
+        amount,
+        type,
+        description
+    }
 }
 
-function findCategory(keyword: string, categories: any[], type: string) {
-    const keywordMap: { [key: string]: string[] } = {
-        'makanan': ['makan', 'food', 'makanan', 'resto', 'restaurant', 'cafe', 'kopi', 'coffee'],
-        'transportasi': ['transport', 'transportasi', 'grab', 'gojek', 'uber', 'taxi', 'bensin', 'fuel', 'parkir'],
-        'belanja': ['belanja', 'shop', 'shopping', 'beli', 'buy'],
-        'hiburan': ['hiburan', 'entertainment', 'movie', 'film', 'game', 'nonton'],
-        'kesehatan': ['kesehatan', 'health', 'dokter', 'doctor', 'obat', 'medicine', 'apotek'],
-        'tagihan': ['tagihan', 'bill', 'listrik', 'electric', 'air', 'water', 'internet', 'pulsa'],
-        'gaji': ['gaji', 'salary', 'income', 'penghasilan'],
-        'bonus': ['bonus', 'reward', 'hadiah'],
+function findCategory(description: string, categories: any[], type: string) {
+    const lowerDesc = description.toLowerCase()
+
+    // 1. Direct Match: Check if any category name appears in the description
+    // Sort by length desc so "makanan ringan" matches before "makanan"
+    const sortedCats = [...categories].sort((a, b) => b.name.length - a.name.length)
+    for (const cat of sortedCats) {
+        if (lowerDesc.includes(cat.name.toLowerCase())) {
+            return cat
+        }
     }
 
-    // Find matching category by keyword
+    // 2. Keyword Map
+    // Key = Fragment of Category Name (e.g. 'makan' matches 'Makanan', 'Makan Siang')
+    const keywordMap: { [key: string]: string[] } = {
+        'makan': ['makan', 'food', 'resto', 'warung', 'cafe', 'kopi', 'coffee', 'snack', 'jajan', 'lunch', 'dinner'],
+        'transport': ['transport', 'grab', 'gojek', 'uber', 'taxi', 'bensin', 'fuel', 'parkir', 'tol', 'ojek', 'driver'],
+        'belanja': ['belanja', 'shop', 'mart', 'market', 'beli', 'buy', 'tisu', 'sabun', 'shampoo'],
+        'hiburan': ['hibur', 'nonton', 'game', 'film', 'movie', 'wisata', 'jalan', 'vacation'],
+        'sehat': ['sakit', 'sehat', 'dokter', 'obat', 'medis', 'periksa', 'klinik', 'rs', 'hospital'],
+        'tagihan': ['tagih', 'listrik', 'air', 'internet', 'wifi', 'pln', 'pdam', 'pulsa', 'data', 'token'],
+        'pendidikan': ['sekolah', 'kursus', 'buku', 'kuliah', 'spp', 'edukasi'],
+        'gaji': ['gaji', 'salary', 'honor', 'upah'],
+    }
+
     for (const cat of categories) {
         const catName = cat.name.toLowerCase()
 
-        // Direct match
-        if (catName.includes(keyword) || keyword.includes(catName)) {
-            return cat
-        }
-
-        // Check keyword mappings
-        for (const [catKey, keywords] of Object.entries(keywordMap)) {
-            if (catName.includes(catKey) && keywords.some(k => keyword.includes(k) || k.includes(keyword))) {
-                return cat
+        // Check if category matches any concept key
+        for (const [key, keywords] of Object.entries(keywordMap)) {
+            if (catName.includes(key)) {
+                // If category is relevant to this concept (e.g. "Transportasi"), checks keywords
+                if (keywords.some(k => lowerDesc.includes(k))) {
+                    return cat
+                }
             }
         }
     }
 
-    // Return first category of matching type
+    // 3. Fallback: Return first category of matching type
     return categories.find(c => c.type === type)
 }

@@ -155,7 +155,8 @@
             let query = supabaseClient
                 .from('transactions')
                 .select(`*, category:categories(id, name, icon, color)`)
-                .order('date', { ascending: false });
+                .order('date', { ascending: false })
+                .order('created_at', { ascending: false });
 
             if (filters.startDate) query = query.gte('date', filters.startDate);
             if (filters.endDate) query = query.lte('date', filters.endDate);

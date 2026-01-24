@@ -570,7 +570,7 @@ async function saveTransaction(e) {
         const API = window.FinansialKuAPI;
 
         // Check if editing existing transaction
-        const editId = form.dataset.editId;
+        const editId = form.dataset.editId || document.getElementById('transactionId').value;
         // Kalau create, biarkan ID kosong biar DB/Supabase yg generate (UUID) 
         // ATAU kita generate UUID valid. generateId() kita cuma random string pendek, bisa konflik atau ditolak UUID.
         // Sebaiknya biarkan Supabase generate ID untuk create baru, kecuali kita pakai UUID generator.
@@ -592,8 +592,8 @@ async function saveTransaction(e) {
             amount: amount,
             category_id: state.selectedCategory,
             description: descVal,
-            date: dateVal,
-            created_at: new Date().toISOString()
+            date: dateVal
+            // created_at: new Date().toISOString() // REMOVED: Let DB handle default, don't overwrite on update
         };
 
         // Jangan kirim ID buatan sendiri karena bukan UUID valid
