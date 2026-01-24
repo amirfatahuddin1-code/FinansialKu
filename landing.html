@@ -10,11 +10,46 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <style>
-        /* Landing Page Specific Styles */
+        /* Landing Page Modern Styles */
+        :root {
+            --primary-gradient: linear-gradient(135deg, #EFF6FF 0%, #F5F3FF 100%);
+            --hero-gradient: linear-gradient(135deg, #E0E7FF 0%, #F3E8FF 50%, #FAE8FF 100%);
+            --text-gradient: linear-gradient(135deg, #1e40af 0%, #7c3aed 100%);
+            --card-hover-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.1), 0 10px 20px -5px rgba(0, 0, 0, 0.04);
+            --icon-bg-soft: #EEF2FF;
+            --icon-color: #4F46E5;
+        }
+
         .landing-page {
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            font-family: 'Inter', sans-serif;
+            background-color: #FAFAFA;
+            scroll-behavior: smooth;
+        }
+
+        /* Animations */
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-up {
+            opacity: 0;
+            animation: none;
+            /* Controlled by JS */
+        }
+
+        .fade-up.visible {
+            animation: fadeUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
         }
 
         .landing-header {
@@ -27,230 +62,341 @@
             left: 0;
             right: 0;
             z-index: 100;
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(20px);
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
         }
 
         .landing-logo {
             display: flex;
             align-items: center;
-            gap: var(--space-2);
-            font-size: var(--font-size-xl);
-            font-weight: 700;
-            color: var(--text-primary);
-        }
-
-        .landing-logo-icon {
-            width: 40px;
-            height: 40px;
-            /* background: var(--accent-gradient); */
-            border-radius: var(--radius-lg);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
+            gap: var(--space-3);
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: #1e293b;
+            letter-spacing: -0.025em;
         }
 
         .landing-nav a {
-            color: var(--text-secondary);
+            color: #64748b;
             text-decoration: none;
-            margin-left: var(--space-6);
-            transition: color var(--transition-fast);
+            margin-left: var(--space-8);
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: color 0.2s;
         }
 
         .landing-nav a:hover {
-            color: var(--text-primary);
+            color: #4F46E5;
         }
 
         .hero-section {
-            flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             text-align: center;
-            padding: var(--space-12) var(--space-6);
-            padding-top: 120px;
-            background-color: var(--bg-primary);
-            background-image:
-                radial-gradient(ellipse at 50% 0%, rgba(124, 58, 237, 0.15) 0%, transparent 50%),
-                radial-gradient(ellipse at 80% 50%, rgba(6, 182, 212, 0.1) 0%, transparent 40%),
-                radial-gradient(ellipse at 20% 80%, rgba(124, 58, 237, 0.1) 0%, transparent 40%);
+            padding: 160px 24px 100px;
+            background: var(--hero-gradient);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Abstract blobs for background */
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, rgba(99, 102, 241, 0) 70%);
+            top: -200px;
+            left: -200px;
+            border-radius: 50%;
+            z-index: 0;
+        }
+
+        .hero-section::after {
+            content: '';
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, rgba(168, 85, 247, 0) 70%);
+            bottom: -100px;
+            right: -100px;
+            border-radius: 50%;
+            z-index: 0;
+        }
+
+        .hero-content {
+            z-index: 1;
+            max-width: 800px;
+            margin-bottom: var(--space-12);
         }
 
         .hero-badge {
             display: inline-flex;
             align-items: center;
-            gap: var(--space-2);
-            padding: var(--space-2) var(--space-4);
-            background: var(--accent-gradient-soft);
-            border: 1px solid var(--accent-primary);
-            border-radius: var(--radius-full);
-            font-size: var(--font-size-sm);
-            color: var(--accent-primary-light);
+            padding: 6px 16px;
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid #E2E8F0;
+            border-radius: 100px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #4F46E5;
             margin-bottom: var(--space-6);
+            backdrop-filter: blur(4px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         }
 
         .hero-title {
-            font-size: clamp(2.5rem, 6vw, 4rem);
+            font-size: clamp(3rem, 5vw, 4.5rem);
             font-weight: 800;
             line-height: 1.1;
-            margin-bottom: var(--space-4);
-            background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-primary-light) 50%, var(--accent-secondary) 100%);
+            margin-bottom: var(--space-6);
+            letter-spacing: -0.04em;
+            background: var(--text-gradient);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
 
         .hero-subtitle {
-            font-size: var(--font-size-xl);
-            color: var(--text-secondary);
-            max-width: 600px;
-            margin: 0 auto var(--space-8);
+            font-size: 1.25rem;
+            color: #475569;
+            margin: 0 auto var(--space-10);
             line-height: 1.6;
+            max-width: 600px;
         }
 
         .hero-cta {
             display: flex;
             gap: var(--space-4);
-            flex-wrap: wrap;
             justify-content: center;
         }
 
         .btn-hero {
-            padding: var(--space-4) var(--space-8);
-            font-size: var(--font-size-lg);
+            padding: 14px 32px;
+            font-size: 1rem;
             font-weight: 600;
-            border-radius: var(--radius-xl);
+            border-radius: 100px;
             text-decoration: none;
-            transition: all var(--transition-base);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .btn-hero-primary {
-            background: var(--accent-gradient);
+            background: #4F46E5;
             color: white;
-            box-shadow: var(--shadow-glow);
+            box-shadow: 0 10px 20px -10px rgba(79, 70, 229, 0.5);
         }
 
         .btn-hero-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 0 30px rgba(124, 58, 237, 0.5);
+            box-shadow: 0 20px 30px -10px rgba(79, 70, 229, 0.6);
+            background: #4338ca;
         }
 
         .btn-hero-secondary {
-            background: var(--bg-card);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
+            background: white;
+            color: #1e293b;
+            border: 1px solid #e2e8f0;
         }
 
         .btn-hero-secondary:hover {
-            background: var(--bg-card-hover);
-            border-color: var(--accent-primary);
+            background: #f8fafc;
+            border-color: #cbd5e1;
+            transform: translateY(-2px);
+        }
+
+        .hero-mockup-container {
+            width: 100%;
+            max-width: 1000px;
+            margin-top: -60px;
+            /* Overlap effect */
+            z-index: 2;
+            position: relative;
+            padding: 0 var(--space-6);
+        }
+
+        .hero-mockup-img {
+            width: 100%;
+            height: auto;
+            border-radius: 20px;
+            /* box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); */
+            /* Using the mockup image itself for shadow/frame */
         }
 
         .features-section {
-            padding: var(--space-12) var(--space-6);
-            background: var(--bg-secondary);
+            padding: 120px 24px;
+            background: white;
+            position: relative;
+            z-index: 5;
+        }
+
+        .features-header {
+            text-align: center;
+            max-width: 700px;
+            margin: 0 auto 80px;
+        }
+
+        .section-tag {
+            text-transform: uppercase;
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: #4F46E5;
+            letter-spacing: 0.1em;
+            margin-bottom: var(--space-3);
+            display: block;
         }
 
         .features-title {
-            text-align: center;
-            font-size: var(--font-size-2xl);
-            font-weight: 700;
-            margin-bottom: var(--space-8);
-            color: var(--text-primary);
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: var(--space-4);
+            letter-spacing: -0.025em;
+        }
+
+        .features-subtitle {
+            font-size: 1.125rem;
+            color: #64748b;
         }
 
         .features-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: var(--space-6);
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 40px;
             max-width: 1200px;
             margin: 0 auto;
         }
 
         .feature-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-xl);
-            padding: var(--space-6);
-            text-align: center;
-            transition: all var(--transition-base);
+            background: white;
+            border-radius: 24px;
+            padding: 32px;
+            transition: all 0.3s ease;
+            border: 1px solid #f1f5f9;
         }
 
         .feature-card:hover {
-            transform: translateY(-4px);
-            border-color: var(--accent-primary);
-            box-shadow: var(--shadow-lg);
+            transform: translateY(-8px);
+            box-shadow: var(--card-hover-shadow);
+            border-color: transparent;
         }
 
-        .feature-icon {
-            width: 64px;
-            height: 64px;
-            background: var(--accent-gradient-soft);
-            border-radius: var(--radius-xl);
+        .feature-icon-wrapper {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            background: var(--icon-bg-soft);
+            color: var(--icon-color);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2rem;
-            margin: 0 auto var(--space-4);
+            margin-bottom: 24px;
+        }
+
+        .feature-icon-wrapper svg {
+            width: 28px;
+            height: 28px;
+            stroke-width: 2;
         }
 
         .feature-title {
-            font-size: var(--font-size-lg);
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: var(--space-2);
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 12px;
         }
 
         .feature-desc {
-            color: var(--text-secondary);
-            font-size: var(--font-size-sm);
+            color: #64748b;
+            font-size: 0.95rem;
             line-height: 1.6;
         }
 
         .cta-section {
-            padding: var(--space-12) var(--space-6);
+            padding: 120px 24px;
+            background: var(--primary-gradient);
             text-align: center;
-            background-color: var(--bg-primary);
-            background-image:
-                radial-gradient(ellipse at 50% 100%, rgba(124, 58, 237, 0.2) 0%, transparent 50%);
-        }
-
-        .cta-title {
-            font-size: var(--font-size-2xl);
-            font-weight: 700;
-            margin-bottom: var(--space-4);
-            color: var(--text-primary);
-        }
-
-        .cta-subtitle {
-            color: var(--text-secondary);
-            margin-bottom: var(--space-6);
         }
 
         .landing-footer {
-            padding: var(--space-6);
-            text-align: center;
-            color: var(--text-muted);
-            font-size: var(--font-size-sm);
-            border-top: 1px solid var(--border-color);
+            padding: 80px 24px 40px;
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
         }
 
-        @media (max-width: 640px) {
-            .landing-nav {
-                display: none;
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            gap: 40px;
+            text-align: left;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+
+        .footer-brand h4 {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 16px;
+        }
+
+        .footer-brand p {
+            color: #64748b;
+            line-height: 1.6;
+        }
+
+        .footer-links h5 {
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 20px;
+        }
+
+        .footer-links ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .footer-links li {
+            margin-bottom: 12px;
+        }
+
+        .footer-links a {
+            color: #64748b;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .footer-links a:hover {
+            color: #4F46E5;
+        }
+
+        .footer-bottom {
+            max-width: 1200px;
+            margin: 60px auto 0;
+            padding-top: 32px;
+            border-top: 1px solid #e2e8f0;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 0.875rem;
+        }
+
+        @media (max-width: 768px) {
+            .hero-section {
+                padding-top: 120px;
             }
 
-            .hero-cta {
-                flex-direction: column;
-                width: 100%;
-                padding: 0 var(--space-4);
+            .hero-title {
+                font-size: 2.5rem;
             }
 
-            .btn-hero {
-                width: 100%;
+            .footer-content {
                 text-align: center;
+            }
+
+            .hero-mockup-container {
+                margin-top: 20px;
             }
         }
     </style>
@@ -271,82 +417,195 @@
     </header>
 
     <section class="hero-section">
-        <div class="hero-badge">
-            ✨ Coba Gratis 3 Hari
+        <div class="hero-content fade-up">
+            <div class="hero-badge">
+                ✨ Coba Gratis 3 Hari
+            </div>
+            <h1 class="hero-title">Atur Keuangan,<br>Wujudkan Mimpi</h1>
+            <p class="hero-subtitle">
+                Satu aplikasi untuk kendali penuh atas masa depan finansial Anda. Kelola pemasukan, pengeluaran,
+                tabungan, dan investasi dengan lebih cerdas.
+            </p>
+            <div class="hero-cta">
+                <a href="login.html" class="btn-hero btn-hero-primary">Mulai Sekarang →</a>
+                <a href="#features" class="btn-hero btn-hero-secondary">Pelajari Fitur</a>
+            </div>
         </div>
-        <h1 class="hero-title">Atur Keuangan,<br>Wujudkan Mimpi</h1>
-        <p class="hero-subtitle">
-            Kelola pemasukan, pengeluaran, tabungan, dan acara spesial Anda dalam satu aplikasi yang simpel dan
-            powerful.
-        </p>
-        <div class="hero-cta">
-            <a href="login.html" class="btn-hero btn-hero-primary">Mulai Sekarang →</a>
-            <a href="#features" class="btn-hero btn-hero-secondary">Lihat Fitur</a>
+
+        <div class="hero-mockup-container fade-up">
+            <img src="assets/img/app-mockup.png" alt="Aplikasi Karsafin Dashboard" class="hero-mockup-img">
         </div>
     </section>
 
     <section class="features-section" id="features">
-        <h2 class="features-title">Fitur Unggulan</h2>
+        <div class="features-header fade-up">
+            <span class="section-tag">Fitur Unggulan</span>
+            <h2 class="features-title">Semua yang Anda Butuhkan</h2>
+            <p class="features-subtitle">Tools lengkap untuk membantu Anda mencapai kebebasan finansial lebih cepat.</p>
+        </div>
+
         <div class="features-grid">
-            <div class="feature-card">
-                <div class="feature-icon">📊</div>
+            <!-- Dashboard -->
+            <div class="feature-card fade-up">
+                <div class="feature-icon-wrapper">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="3" y1="9" x2="21" y2="9"></line>
+                        <line x1="9" y1="21" x2="9" y2="9"></line>
+                    </svg>
+                </div>
                 <h3 class="feature-title">Dashboard Lengkap</h3>
-                <p class="feature-desc">Pantau kondisi keuangan Anda secara real-time dengan visualisasi data yang mudah
-                    dipahami.</p>
+                <p class="feature-desc">Visualisasi data real-time untuk memantau arus kas harian, mingguan, dan bulanan
+                    Anda.</p>
             </div>
-            <div class="feature-card">
-                <div class="feature-icon">💰</div>
+
+            <!-- Anggaran -->
+            <div class="feature-card fade-up">
+                <div class="feature-icon-wrapper">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                    </svg>
+                </div>
                 <h3 class="feature-title">Anggaran Pintar</h3>
-                <p class="feature-desc">Atur batasan pengeluaran bulanan Anda agar keuangan tetap sehat dan terkendali.
-                </p>
+                <p class="feature-desc">Buat pos anggaran (50/30/20) dan dapatkan notifikasi saat pengeluaran mendekati
+                    batas.</p>
             </div>
-            <div class="feature-card">
-                <div class="feature-icon">🎯</div>
+
+            <!-- Tabungan -->
+            <div class="feature-card fade-up">
+                <div class="feature-icon-wrapper">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <circle cx="12" cy="12" r="6"></circle>
+                        <circle cx="12" cy="12" r="2"></circle>
+                    </svg>
+                </div>
                 <h3 class="feature-title">Target Tabungan</h3>
-                <p class="feature-desc">Wujudkan impian Anda dengan fitur tracking tabungan yang memotivasi.</p>
+                <p class="feature-desc">Tetapkan goal impian Anda dan pantau progress pencapaiannya setiap bulan.</p>
             </div>
-            <div class="feature-card">
-                <div class="feature-icon">📅</div>
+
+            <!-- Events -->
+            <div class="feature-card fade-up">
+                <div class="feature-icon-wrapper">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                </div>
                 <h3 class="feature-title">Perencanaan Acara</h3>
-                <p class="feature-desc">Kelola budget untuk momen spesial seperti pernikahan, liburan, atau ulang tahun.
-                </p>
+                <p class="feature-desc">Kelola budget khusus untuk pernikahan, liburan, atau acara spesial lainnya.</p>
             </div>
-            <div class="feature-card">
-                <div class="feature-icon">📖</div>
+
+            <!-- Debt -->
+            <div class="feature-card fade-up">
+                <div class="feature-icon-wrapper">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                </div>
                 <h3 class="feature-title">Hutang & Piutang</h3>
-                <p class="feature-desc">Catat dan pantau hutang piutang agar tidak ada tagihan yang terlewat.</p>
+                <p class="feature-desc">Catat pinjaman teman atau hutang Anda agar tidak terlupa dan tercatat rapi.</p>
             </div>
-            <div class="feature-card">
-                <div class="feature-icon">📈</div>
-                <h3 class="feature-title">Laporan Analisis</h3>
-                <p class="feature-desc">Dapatkan wawasan mendalam tentang pola pengeluaran Anda dengan laporan detail.
-                </p>
+
+            <!-- Analisis -->
+            <div class="feature-card fade-up">
+                <div class="feature-icon-wrapper">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                        <polyline points="17 6 23 6 23 12"></polyline>
+                    </svg>
+                </div>
+                <h3 class="feature-title">Laporan & Analisis</h3>
+                <p class="feature-desc">Grafik mendalam tentang kemana perginya uang Anda dalam berbagai kategori.</p>
             </div>
-            <div class="feature-card">
-                <div class="feature-icon">🧮</div>
+
+            <!-- Calculator -->
+            <div class="feature-card fade-up">
+                <div class="feature-icon-wrapper">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <rect x="4" y="2" width="16" height="20" rx="2"></rect>
+                        <line x1="8" y1="6" x2="16" y2="6"></line>
+                        <line x1="16" y1="14" x2="16" y2="14"></line>
+                        <line x1="8" y1="14" x2="8" y2="14"></line>
+                        <line x1="12" y1="14" x2="12" y2="14"></line>
+                        <line x1="16" y1="18" x2="16" y2="18"></line>
+                        <line x1="8" y1="18" x2="8" y2="18"></line>
+                        <line x1="12" y1="18" x2="12" y2="18"></line>
+                    </svg>
+                </div>
                 <h3 class="feature-title">Kalkulator Finansial</h3>
-                <p class="feature-desc">Hitung dana pensiun, dana darurat, dan kebutuhan finansial lainnya dengan mudah.
-                </p>
+                <p class="feature-desc">Hitung dana pensiun, dana darurat, dan simulasi investasi dengan mudah.</p>
             </div>
-            <div class="feature-card">
-                <div class="feature-icon">🤖</div>
+
+            <!-- AI -->
+            <div class="feature-card fade-up">
+                <div class="feature-icon-wrapper">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M12 2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2 2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"></path>
+                        <path d="M12 8v14"></path>
+                        <path d="M4.93 19.07 7.76 16.24"></path>
+                        <path d="M19.07 4.93 16.24 7.76"></path>
+                    </svg>
+                </div>
                 <h3 class="feature-title">Asisten AI</h3>
-                <p class="feature-desc">Konsultasi keuangan pribadi dengan AI cerdas yang siap membantu 24/7.</p>
+                <p class="feature-desc">Tanya jawab seputar keuangan, minta tips hemat, atau analisis cepat dari AI.</p>
             </div>
-            <div class="feature-card">
-                <div class="feature-icon">✈️</div>
+
+            <!-- Telegram -->
+            <div class="feature-card fade-up">
+                <div class="feature-icon-wrapper">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                </div>
                 <h3 class="feature-title">Telegram Integration</h3>
-                <p class="feature-desc">Catat transaksi semudah chatting! Kirim pesan ke bot Telegram kami.</p>
+                <p class="feature-desc">Bot Telegram pintar untuk mencatat pengeluaran secepat mengirim chat.</p>
             </div>
-            <div class="feature-card">
-                <div class="feature-icon">💬</div>
+
+            <!-- WA -->
+            <div class="feature-card fade-up">
+                <div class="feature-icon-wrapper">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path
+                            d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z">
+                        </path>
+                    </svg>
+                </div>
                 <h3 class="feature-title">WhatsApp Integration</h3>
-                <p class="feature-desc">Sinkronisasi transaksi via WhatsApp untuk kemudahan pencatatan sehari-hari.</p>
+                <p class="feature-desc">Alternatif pencatatan lewat WhatsApp yang familiar dan mudah digunakan.</p>
             </div>
-            <div class="feature-card">
-                <div class="feature-icon">❤️</div>
+
+            <!-- Couple -->
+            <div class="feature-card fade-up">
+                <div class="feature-icon-wrapper">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                </div>
                 <h3 class="feature-title">Catat Bareng Pasangan</h3>
-                <p class="feature-desc">Kelola keuangan rumah tangga bersama pasangan dalam satu akun terintegrasi.</p>
+                <p class="feature-desc">Sinkronisasi data real-time dengan pasangan untuk transparansi keuangan
+                    keluarga.</p>
             </div>
         </div>
     </section>
@@ -355,166 +614,194 @@
     <section class="pricing-section" id="pricing">
         <style>
             .pricing-section {
-                padding: var(--space-12) var(--space-6);
-                background: var(--bg-primary);
+                padding: 120px 24px;
+                background: #f8fafc;
+                position: relative;
+                z-index: 4;
             }
 
             .pricing-header {
                 text-align: center;
-                margin-bottom: var(--space-10);
+                margin-bottom: 60px;
+                max-width: 700px;
+                margin-left: auto;
+                margin-right: auto;
             }
 
             .pricing-title {
-                font-size: var(--font-size-2xl);
-                font-weight: 700;
-                margin-bottom: var(--space-4);
-                color: var(--text-primary);
+                font-size: 2.5rem;
+                font-weight: 800;
+                margin-bottom: 16px;
+                color: #0f172a;
+                letter-spacing: -0.025em;
             }
 
             .pricing-subtitle {
-                color: var(--text-secondary);
+                color: #64748b;
+                font-size: 1.125rem;
             }
 
             .pricing-grid {
                 display: grid;
                 grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-                gap: var(--space-8);
+                gap: 40px;
                 max-width: 900px;
                 margin: 0 auto;
             }
 
             .pricing-card {
-                background: var(--bg-card);
-                border: 1px solid var(--border-color);
-                border-radius: var(--radius-2xl);
-                padding: var(--space-8);
+                background: white;
+                border: 1px solid #e2e8f0;
+                border-radius: 24px;
+                padding: 40px;
                 position: relative;
-                transition: all var(--transition-base);
+                transition: all 0.3s ease;
                 display: flex;
                 flex-direction: column;
             }
 
             .pricing-card:hover {
                 transform: translateY(-8px);
-                box-shadow: var(--shadow-xl);
-                border-color: var(--accent-primary);
+                box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.1);
+                border-color: #4F46E5;
             }
 
             .pricing-card.featured {
-                background: var(--bg-secondary);
-                border: 2px solid var(--accent-primary);
+                background: white;
+                border: 2px solid #4F46E5;
                 transform: scale(1.05);
                 z-index: 10;
-                box-shadow: var(--shadow-xl);
+                box-shadow: 0 25px 50px -12px rgba(79, 70, 229, 0.25);
             }
 
             .pricing-card.featured:hover {
                 transform: scale(1.05) translateY(-8px);
+                box-shadow: 0 35px 60px -15px rgba(79, 70, 229, 0.3);
             }
 
             .popular-badge {
                 position: absolute;
-                top: -12px;
+                top: -16px;
                 left: 50%;
                 transform: translateX(-50%);
-                background: var(--accent-gradient);
+                background: linear-gradient(135deg, #4F46E5 0%, #7c3aed 100%);
                 color: white;
-                padding: 4px 16px;
-                border-radius: var(--radius-full);
-                font-size: var(--font-size-xs);
-                font-weight: 600;
+                padding: 6px 20px;
+                border-radius: 100px;
+                font-size: 0.875rem;
+                font-weight: 700;
                 text-transform: uppercase;
-                letter-spacing: 1px;
+                letter-spacing: 0.05em;
+                box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.3);
             }
 
             .plan-name {
-                font-size: var(--font-size-xl);
+                font-size: 1.5rem;
                 font-weight: 700;
-                color: var(--text-primary);
-                margin-bottom: var(--space-2);
+                color: #0f172a;
+                margin-bottom: 8px;
             }
 
             .plan-price {
-                font-size: 3rem;
+                font-size: 3.5rem;
                 font-weight: 800;
-                color: var(--text-primary);
-                margin-bottom: var(--space-2);
+                color: #0f172a;
+                margin-bottom: 8px;
                 display: flex;
                 align-items: baseline;
                 gap: 4px;
+                letter-spacing: -0.025em;
             }
 
             .plan-price span {
-                font-size: var(--font-size-base);
-                font-weight: 400;
-                color: var(--text-secondary);
+                font-size: 1rem;
+                font-weight: 500;
+                color: #64748b;
             }
 
             .plan-desc {
-                color: var(--text-secondary);
-                margin-bottom: var(--space-6);
-                padding-bottom: var(--space-6);
-                border-bottom: 1px solid var(--border-color);
+                color: #64748b;
+                margin-bottom: 32px;
+                padding-bottom: 32px;
+                border-bottom: 1px solid #e2e8f0;
+                line-height: 1.6;
             }
 
             .plan-features {
                 list-style: none;
-                margin-bottom: var(--space-8);
+                margin-bottom: 40px;
                 flex: 1;
+                padding: 0;
             }
 
             .plan-features li {
                 display: flex;
                 align-items: center;
-                gap: var(--space-3);
-                margin-bottom: var(--space-4);
-                color: var(--text-primary);
+                gap: 12px;
+                margin-bottom: 16px;
+                color: #334155;
+                font-size: 0.95rem;
             }
 
             .check-icon {
-                color: var(--success);
+                color: #10b981;
+                background: #ecfdf5;
+                border-radius: 50%;
+                width: 20px;
+                height: 20px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 0.75rem;
                 flex-shrink: 0;
             }
 
             .cross-icon {
-                color: var(--text-muted);
+                color: #94a3b8;
+                width: 20px;
                 flex-shrink: 0;
-                opacity: 0.5;
+                text-align: center;
+                font-size: 0.75rem;
             }
 
             .text-muted {
-                color: var(--text-muted);
+                color: #94a3b8;
                 text-decoration: line-through;
             }
 
             .btn-plan {
                 width: 100%;
-                padding: var(--space-3);
-                border-radius: var(--radius-xl);
+                padding: 14px;
+                border-radius: 12px;
                 font-weight: 600;
                 text-align: center;
                 text-decoration: none;
-                transition: all var(--transition-base);
+                transition: all 0.2s;
             }
 
             .btn-plan-outline {
-                border: 2px solid var(--border-color);
-                color: var(--text-primary);
+                border: 2px solid #e2e8f0;
+                color: #0f172a;
+                background: transparent;
             }
 
             .btn-plan-outline:hover {
-                border-color: var(--text-primary);
-                background: var(--bg-secondary);
+                border-color: #0f172a;
+                background: #0f172a;
+                color: white;
             }
 
             .btn-plan-primary {
-                background: var(--accent-gradient);
+                background: #4F46E5;
                 color: white;
-                box-shadow: var(--shadow-glow);
+                border: 2px solid #4F46E5;
+                box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
             }
 
             .btn-plan-primary:hover {
-                box-shadow: 0 0 20px rgba(124, 58, 237, 0.4);
+                background: #4338ca;
+                border-color: #4338ca;
+                box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
                 transform: translateY(-2px);
             }
 
@@ -529,16 +816,16 @@
             }
         </style>
 
-        <div class="pricing-header">
+        <div class="pricing-header fade-up">
             <h2 class="pricing-title">Pilih Paket Sesuai Kebutuhan</h2>
             <p class="pricing-subtitle">Investasi kecil untuk masa depan finansial yang lebih cerah</p>
         </div>
 
         <div class="pricing-grid">
             <!-- Basic Plan -->
-            <div class="pricing-card">
+            <div class="pricing-card fade-up">
                 <h3 class="plan-name">Basic</h3>
-                <div class="plan-price">Rp 15.000<span>/bulan</span></div>
+                <div class="plan-price">Rp 15k<span>/bulan</span></div>
                 <p class="plan-desc">Fitur lengkap untuk pencatatan keuangan pribadi sehari-hari.</p>
                 <ul class="plan-features">
                     <li><span class="check-icon">✓</span> Transaksi Aplikasi Unlimited</li>
@@ -552,10 +839,10 @@
             </div>
 
             <!-- Pro Plan -->
-            <div class="pricing-card featured">
+            <div class="pricing-card featured fade-up">
                 <div class="popular-badge">Paling Populer</div>
                 <h3 class="plan-name">Pro</h3>
-                <div class="plan-price">Rp 30.000<span>/bulan</span></div>
+                <div class="plan-price">Rp 30k<span>/bulan</span></div>
                 <p class="plan-desc">Solusi tanpa batas untuk analisis dan otomatisasi maksimal.</p>
                 <ul class="plan-features">
                     <li><span class="check-icon">✓</span> Transaksi Aplikasi Unlimited</li>
@@ -570,15 +857,70 @@
         </div>
     </section>
 
-    <section class="cta-section">
+    <!-- CTA Section -->
+    <section class="cta-section fade-up">
         <h2 class="cta-title">Siap Mengatur Keuangan Anda?</h2>
         <p class="cta-subtitle">Bergabung sekarang dan mulai perjalanan finansial yang lebih baik.</p>
         <a href="login.html" class="btn-hero btn-hero-primary">Daftar Gratis →</a>
     </section>
 
-    <footer class="landing-footer">
-        <p>© 2026 Karsafin. Dibuat dengan ❤️ untuk Indonesia.</p>
+    <!-- Footer -->
+    <footer class="landing-footer fade-up">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <h4>Karsafin</h4>
+                <p>Aplikasi pencatatan keuangan modern untuk membantu Anda mencapai kebebasan finansial.</p>
+            </div>
+            <div class="footer-links">
+                <h5>Produk</h5>
+                <ul>
+                    <li><a href="#features">Fitur</a></li>
+                    <li><a href="#pricing">Harga</a></li>
+                    <li><a href="login.html">Masuk/Daftar</a></li>
+                </ul>
+            </div>
+            <div class="footer-links">
+                <h5>Legal</h5>
+                <ul>
+                    <li><a href="#">Privasi</a></li>
+                    <li><a href="#">Syarat & Ketentuan</a></li>
+                </ul>
+            </div>
+            <div class="footer-links">
+                <h5>Hubungi Kami</h5>
+                <ul>
+                    <li><a href="mailto:support@karsafin.com">support@karsafin.com</a></li>
+                    <li>Telegram: <a href="https://t.me/karsafin_bot" target="_blank">@karsafin_bot</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 Karsafin. Dibuat dengan ❤️ untuk Indonesia.</p>
+        </div>
     </footer>
+
+    <script>
+        // Scroll Animation Observer
+        document.addEventListener('DOMContentLoaded', () => {
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px',
+                threshold: 0.1
+            };
+
+            const observer = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, observerOptions);
+
+            const fadeElements = document.querySelectorAll('.fade-up');
+            fadeElements.forEach(el => observer.observe(el));
+        });
+    </script>
 </body>
 
 </html>
