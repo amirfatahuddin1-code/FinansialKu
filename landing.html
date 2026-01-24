@@ -270,29 +270,31 @@
         }
 
         .feature-card {
-            background: white;
+            background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
             border-radius: 24px;
             padding: 32px;
             transition: all 0.3s ease;
-            border: 1px solid #f1f5f9;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
         }
 
         .feature-card:hover {
             transform: translateY(-8px);
-            box-shadow: var(--card-hover-shadow);
-            border-color: transparent;
+            box-shadow: 0 20px 40px -5px rgba(37, 99, 235, 0.3);
+            border-color: rgba(255, 255, 255, 0.2);
         }
 
         .feature-icon-wrapper {
             width: 56px;
             height: 56px;
             border-radius: 16px;
-            background: var(--icon-bg-soft);
-            color: var(--icon-color);
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
             display: flex;
             align-items: center;
             justify-content: center;
             margin-bottom: 24px;
+            backdrop-filter: blur(4px);
         }
 
         .feature-icon-wrapper svg {
@@ -304,12 +306,12 @@
         .feature-title {
             font-size: 1.25rem;
             font-weight: 700;
-            color: #1e293b;
+            color: white;
             margin-bottom: 12px;
         }
 
         .feature-desc {
-            color: #64748b;
+            color: rgba(255, 255, 255, 0.9);
             font-size: 0.95rem;
             line-height: 1.6;
         }
@@ -432,9 +434,6 @@
             </div>
         </div>
 
-        <div class="hero-mockup-container fade-up">
-            <img src="assets/img/app-mockup.png" alt="Aplikasi Karsafin Dashboard" class="hero-mockup-img">
-        </div>
     </section>
 
     <section class="features-section" id="features">
