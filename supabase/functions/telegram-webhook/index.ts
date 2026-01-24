@@ -287,30 +287,29 @@ function findCategory(description: string, categories: any[], type: string) {
         }
     }
 
-    // 2. Keyword Map
-    // Key = Fragment of Category Name (e.g. 'makan' matches 'Makanan', 'Makan Siang')
+    // 2. Keyword Map (Ordered by Priority)
+    // Specific categories first, Generic (like 'Belanja' with 'beli') last
     const keywordMap: { [key: string]: string[] } = {
-        'makan': ['makan', 'food', 'resto', 'warung', 'cafe', 'kopi', 'coffee', 'snack', 'jajan', 'lunch', 'dinner'],
-        'transport': ['transport', 'grab', 'gojek', 'uber', 'taxi', 'bensin', 'fuel', 'parkir', 'tol', 'ojek', 'driver'],
-        'belanja': ['belanja', 'shop', 'mart', 'market', 'beli', 'buy', 'tisu', 'sabun', 'shampoo'],
-        'hiburan': ['hibur', 'nonton', 'game', 'film', 'movie', 'wisata', 'jalan', 'vacation'],
-        'sehat': ['sakit', 'sehat', 'dokter', 'obat', 'medis', 'periksa', 'klinik', 'rs', 'hospital'],
-        'tagihan': ['tagih', 'listrik', 'air', 'internet', 'wifi', 'pln', 'pdam', 'pulsa', 'data', 'token'],
-        'pendidikan': ['sekolah', 'kursus', 'buku', 'kuliah', 'spp', 'edukasi'],
-        'gaji': ['gaji', 'salary', 'honor', 'upah'],
+        'kesehatan': ['sakit', 'sehat', 'dokter', 'doctor', 'obat', 'medis', 'periksa', 'klinik', 'rs', 'hospital', 'apotek'],
+        'transport': ['transport', 'grab', 'gojek', 'uber', 'taxi', 'bensin', 'fuel', 'parkir', 'tol', 'ojek', 'driver', 'bengkel', 'service'],
+        'tagihan': ['tagih', 'listrik', 'air', 'internet', 'wifi', 'pln', 'pdam', 'pulsa', 'data', 'token', 'pajak', 'ipl'],
+        'pendidikan': ['sekolah', 'kursus', 'buku', 'kuliah', 'spp', 'edukasi', 'les', 'uang sekolah'],
+        'makan': ['makan', 'food', 'resto', 'warung', 'cafe', 'kopi', 'coffee', 'snack', 'jajan', 'lunch', 'dinner', 'sarapan', 'breakfast', 'bubur', 'nasi', 'lontong', 'mie', 'bakso', 'soto', 'kue', 'roti', 'minum', 'haus', 'lapar', 'ayam', 'bebek', 'sate', 'gorengan'],
+        'hiburan': ['hibur', 'nonton', 'game', 'film', 'movie', 'wisata', 'jalan', 'vacation', 'spotify', 'netflix', 'youtube'],
+        'gaji': ['gaji', 'salary', 'honor', 'upah', 'tunjangan', 'thr'],
+        'bonus': ['bonus', 'reward', 'hadiah', 'cashback'],
+        // Generic last
+        'belanja': ['belanja', 'shop', 'mart', 'market', 'beli', 'buy', 'tisu', 'sabun', 'shampoo', 'odol', 'pasta gigi', 'indomaret', 'alfamart', 'superindo', 'hypermart'],
     }
 
-    for (const cat of categories) {
-        const catName = cat.name.toLowerCase()
-
-        // Check if category matches any concept key
-        for (const [key, keywords] of Object.entries(keywordMap)) {
-            if (catName.includes(key)) {
-                // If category is relevant to this concept (e.g. "Transportasi"), checks keywords
-                if (keywords.some(k => lowerDesc.includes(k))) {
-                    return cat
-                }
-            }
+    // Iterate through PRIORITY MAP first
+    for (const [key, keywords] of Object.entries(keywordMap)) {
+        // Check if description contains any keyword for this concept
+        if (keywords.some(k => lowerDesc.includes(k))) {
+            // Find a matching category in the user's categories
+            // e.g. if key is 'makan', look for category with name containing 'makan' (or 'Food')
+            const match = categories.find(c => c.name.toLowerCase().includes(key) || (key === 'makan' && c.name.toLowerCase().includes('food')))
+            if (match) return match
         }
     }
 
