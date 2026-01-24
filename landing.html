@@ -265,13 +265,14 @@
         </div>
         <nav class="landing-nav">
             <a href="#features">Fitur</a>
+            <a href="#pricing">Harga</a>
             <a href="login.html">Masuk</a>
         </nav>
     </header>
 
     <section class="hero-section">
         <div class="hero-badge">
-            ✨ Gratis Selamanya
+            ✨ Coba Gratis 3 Hari
         </div>
         <h1 class="hero-title">Atur Keuangan,<br>Wujudkan Mimpi</h1>
         <p class="hero-subtitle">
@@ -290,37 +291,281 @@
             <div class="feature-card">
                 <div class="feature-icon">📊</div>
                 <h3 class="feature-title">Dashboard Lengkap</h3>
-                <p class="feature-desc">Pantau semua transaksi harian, mingguan, dan bulanan dengan visualisasi yang
-                    menarik.</p>
+                <p class="feature-desc">Pantau kondisi keuangan Anda secara real-time dengan visualisasi data yang mudah
+                    dipahami.</p>
             </div>
             <div class="feature-card">
                 <div class="feature-icon">💰</div>
+                <h3 class="feature-title">Anggaran Pintar</h3>
+                <p class="feature-desc">Atur batasan pengeluaran bulanan Anda agar keuangan tetap sehat dan terkendali.
+                </p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🎯</div>
                 <h3 class="feature-title">Target Tabungan</h3>
-                <p class="feature-desc">Buat target tabungan dengan progress tracking untuk mencapai impian finansial
-                    Anda.</p>
+                <p class="feature-desc">Wujudkan impian Anda dengan fitur tracking tabungan yang memotivasi.</p>
             </div>
             <div class="feature-card">
                 <div class="feature-icon">📅</div>
                 <h3 class="feature-title">Perencanaan Acara</h3>
-                <p class="feature-desc">Rencanakan budget untuk acara penting seperti pernikahan, liburan, atau ulang
-                    tahun.</p>
+                <p class="feature-desc">Kelola budget untuk momen spesial seperti pernikahan, liburan, atau ulang tahun.
+                </p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📖</div>
+                <h3 class="feature-title">Hutang & Piutang</h3>
+                <p class="feature-desc">Catat dan pantau hutang piutang agar tidak ada tagihan yang terlewat.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📈</div>
+                <h3 class="feature-title">Laporan Analisis</h3>
+                <p class="feature-desc">Dapatkan wawasan mendalam tentang pola pengeluaran Anda dengan laporan detail.
+                </p>
             </div>
             <div class="feature-card">
                 <div class="feature-icon">🧮</div>
                 <h3 class="feature-title">Kalkulator Finansial</h3>
-                <p class="feature-desc">5 kalkulator untuk anggaran, tabungan, pensiun, dana darurat, dan pendidikan.
+                <p class="feature-desc">Hitung dana pensiun, dana darurat, dan kebutuhan finansial lainnya dengan mudah.
                 </p>
             </div>
             <div class="feature-card">
                 <div class="feature-icon">🤖</div>
-                <h3 class="feature-title">AI Assistant</h3>
-                <p class="feature-desc">Dapatkan saran keuangan cerdas dari AI untuk membantu keputusan finansial Anda.
-                </p>
+                <h3 class="feature-title">Asisten AI</h3>
+                <p class="feature-desc">Konsultasi keuangan pribadi dengan AI cerdas yang siap membantu 24/7.</p>
             </div>
             <div class="feature-card">
-                <div class="feature-icon">📱</div>
-                <h3 class="feature-title">Telegram Sync</h3>
-                <p class="feature-desc">Catat transaksi langsung dari Telegram dengan parsing struk otomatis.</p>
+                <div class="feature-icon">✈️</div>
+                <h3 class="feature-title">Telegram Integration</h3>
+                <p class="feature-desc">Catat transaksi semudah chatting! Kirim pesan ke bot Telegram kami.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">💬</div>
+                <h3 class="feature-title">WhatsApp Integration</h3>
+                <p class="feature-desc">Sinkronisasi transaksi via WhatsApp untuk kemudahan pencatatan sehari-hari.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">❤️</div>
+                <h3 class="feature-title">Catat Bareng Pasangan</h3>
+                <p class="feature-desc">Kelola keuangan rumah tangga bersama pasangan dalam satu akun terintegrasi.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="pricing-section" id="pricing">
+        <style>
+            .pricing-section {
+                padding: var(--space-12) var(--space-6);
+                background: var(--bg-primary);
+            }
+
+            .pricing-header {
+                text-align: center;
+                margin-bottom: var(--space-10);
+            }
+
+            .pricing-title {
+                font-size: var(--font-size-2xl);
+                font-weight: 700;
+                margin-bottom: var(--space-4);
+                color: var(--text-primary);
+            }
+
+            .pricing-subtitle {
+                color: var(--text-secondary);
+            }
+
+            .pricing-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: var(--space-8);
+                max-width: 900px;
+                margin: 0 auto;
+            }
+
+            .pricing-card {
+                background: var(--bg-card);
+                border: 1px solid var(--border-color);
+                border-radius: var(--radius-2xl);
+                padding: var(--space-8);
+                position: relative;
+                transition: all var(--transition-base);
+                display: flex;
+                flex-direction: column;
+            }
+
+            .pricing-card:hover {
+                transform: translateY(-8px);
+                box-shadow: var(--shadow-xl);
+                border-color: var(--accent-primary);
+            }
+
+            .pricing-card.featured {
+                background: var(--bg-secondary);
+                border: 2px solid var(--accent-primary);
+                transform: scale(1.05);
+                z-index: 10;
+                box-shadow: var(--shadow-xl);
+            }
+
+            .pricing-card.featured:hover {
+                transform: scale(1.05) translateY(-8px);
+            }
+
+            .popular-badge {
+                position: absolute;
+                top: -12px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: var(--accent-gradient);
+                color: white;
+                padding: 4px 16px;
+                border-radius: var(--radius-full);
+                font-size: var(--font-size-xs);
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+            }
+
+            .plan-name {
+                font-size: var(--font-size-xl);
+                font-weight: 700;
+                color: var(--text-primary);
+                margin-bottom: var(--space-2);
+            }
+
+            .plan-price {
+                font-size: 3rem;
+                font-weight: 800;
+                color: var(--text-primary);
+                margin-bottom: var(--space-2);
+                display: flex;
+                align-items: baseline;
+                gap: 4px;
+            }
+
+            .plan-price span {
+                font-size: var(--font-size-base);
+                font-weight: 400;
+                color: var(--text-secondary);
+            }
+
+            .plan-desc {
+                color: var(--text-secondary);
+                margin-bottom: var(--space-6);
+                padding-bottom: var(--space-6);
+                border-bottom: 1px solid var(--border-color);
+            }
+
+            .plan-features {
+                list-style: none;
+                margin-bottom: var(--space-8);
+                flex: 1;
+            }
+
+            .plan-features li {
+                display: flex;
+                align-items: center;
+                gap: var(--space-3);
+                margin-bottom: var(--space-4);
+                color: var(--text-primary);
+            }
+
+            .check-icon {
+                color: var(--success);
+                flex-shrink: 0;
+            }
+
+            .cross-icon {
+                color: var(--text-muted);
+                flex-shrink: 0;
+                opacity: 0.5;
+            }
+
+            .text-muted {
+                color: var(--text-muted);
+                text-decoration: line-through;
+            }
+
+            .btn-plan {
+                width: 100%;
+                padding: var(--space-3);
+                border-radius: var(--radius-xl);
+                font-weight: 600;
+                text-align: center;
+                text-decoration: none;
+                transition: all var(--transition-base);
+            }
+
+            .btn-plan-outline {
+                border: 2px solid var(--border-color);
+                color: var(--text-primary);
+            }
+
+            .btn-plan-outline:hover {
+                border-color: var(--text-primary);
+                background: var(--bg-secondary);
+            }
+
+            .btn-plan-primary {
+                background: var(--accent-gradient);
+                color: white;
+                box-shadow: var(--shadow-glow);
+            }
+
+            .btn-plan-primary:hover {
+                box-shadow: 0 0 20px rgba(124, 58, 237, 0.4);
+                transform: translateY(-2px);
+            }
+
+            @media (max-width: 768px) {
+                .pricing-card.featured {
+                    transform: scale(1);
+                }
+
+                .pricing-card.featured:hover {
+                    transform: translateY(-8px);
+                }
+            }
+        </style>
+
+        <div class="pricing-header">
+            <h2 class="pricing-title">Pilih Paket Sesuai Kebutuhan</h2>
+            <p class="pricing-subtitle">Investasi kecil untuk masa depan finansial yang lebih cerah</p>
+        </div>
+
+        <div class="pricing-grid">
+            <!-- Basic Plan -->
+            <div class="pricing-card">
+                <h3 class="plan-name">Basic</h3>
+                <div class="plan-price">Rp 15.000<span>/bulan</span></div>
+                <p class="plan-desc">Fitur lengkap untuk pencatatan keuangan pribadi sehari-hari.</p>
+                <ul class="plan-features">
+                    <li><span class="check-icon">✓</span> Transaksi Aplikasi Unlimited</li>
+                    <li><span class="check-icon">✓</span> Transaksi WA/Telegram Max 300/bln</li>
+                    <li><span class="check-icon">✓</span> Fitur Anggaran</li>
+                    <li><span class="check-icon">✓</span> Target Tabungan</li>
+                    <li><span class="cross-icon">✕</span> <span class="text-muted">Mode Pasangan</span></li>
+                    <li><span class="cross-icon">✕</span> <span class="text-muted">Asisten AI Personal</span></li>
+                </ul>
+                <a href="login.html" class="btn-plan btn-plan-outline">Mulai Sekarang</a>
+            </div>
+
+            <!-- Pro Plan -->
+            <div class="pricing-card featured">
+                <div class="popular-badge">Paling Populer</div>
+                <h3 class="plan-name">Pro</h3>
+                <div class="plan-price">Rp 30.000<span>/bulan</span></div>
+                <p class="plan-desc">Solusi tanpa batas untuk analisis dan otomatisasi maksimal.</p>
+                <ul class="plan-features">
+                    <li><span class="check-icon">✓</span> Transaksi Aplikasi Unlimited</li>
+                    <li><span class="check-icon">✓</span> <strong>Transaksi WA/Telegram Unlimited</strong></li>
+                    <li><span class="check-icon">✓</span> Fitur Anggaran</li>
+                    <li><span class="check-icon">✓</span> Target Tabungan</li>
+                    <li><span class="check-icon">✓</span> Catat Bareng Pasangan/Grup</li>
+                    <li><span class="check-icon">✓</span> Asisten AI Personal</li>
+                </ul>
+                <a href="login.html" class="btn-plan btn-plan-primary">Pilih Pro</a>
             </div>
         </div>
     </section>
