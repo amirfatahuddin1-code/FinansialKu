@@ -2,2275 +2,855 @@
 <html lang="id">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Karsafin - Atur Keuangan, Wujudkan Mimpi</title>
-    <meta name="description"
-        content="Aplikasi keuangan pribadi yang intuitif untuk mencatat, merencanakan, dan mencapai tujuan keuangan Anda.">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
-        rel="stylesheet">
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Karsafin - Dashboard Keuangan</title>
+
+    <!-- Dependencies -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+
     <script src="assets/lib/chart.min.js"></script>
     <script src="assets/lib/jspdf.umd.min.js"></script>
-    <script src="assets/lib/supabase.min.js"></script>
-    <!-- Midtrans Snap.js - Sandbox Mode -->
-    <script type="text/javascript" src="https://app.sandbox.midtrans.com/snap/snap.js"
+    <script src="https://app.sandbox.midtrans.com/snap/snap.js"
         data-client-key="SB-Mid-client-oyEZCx5m9JggMLEk"></script>
-    <link rel="stylesheet" href="styles.css">
+
+    <style type="text/tailwindcss">
+        :root {
+            --primary: #6366f1;
+            --primary-light: #818cf8;
+            --primary-dark: #4f46e5;
+            --secondary: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --bg-body: #f8fafc;
+            --card-bg: rgba(255, 255, 255, 0.75);
+            --card-border: rgba(255, 255, 255, 0.4);
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+            --radius-xl: 24px;
+            --radius-lg: 16px;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+        h1, h2, h3, .brand-name, .nav-text {
+            font-family: 'Poppins', sans-serif;
+        }
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            padding: 40px;
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+        .container-custom {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 32px;
+        }
+        .brand-section {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .logo-box {
+            width: 52px;
+            height: 52px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.25);
+        }
+        .brand-info h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary-dark);
+            line-height: 1;
+        }
+        .brand-info p {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        .search-bar {
+            flex: 1;
+            max-width: 500px;
+            margin: 0 40px;
+            position: relative;
+        }
+        .search-bar input {
+            width: 100%;
+            padding: 14px 20px 14px 50px;
+            border-radius: 16px;
+            border: 1px solid transparent;
+            background: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        .search-bar input:focus {
+            border-color: var(--primary-light);
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.1);
+        }
+        .search-bar .material-icons-round {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+        }
+        .user-controls {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .icon-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: none;
+            background: white;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+            transition: transform 0.2s ease;
+        }
+        .icon-btn:hover {
+            transform: translateY(-2px);
+        }
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding-left: 20px;
+            border-left: 1px solid #e2e8f0;
+            cursor: pointer; /* Clickable */
+        }
+        .user-profile img {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        nav.glass-nav {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-xl);
+            padding: 8px;
+            display: flex;
+            justify-content: space-between;
+            box-shadow: var(--glass-shadow);
+            margin-bottom: 32px;
+            overflow-x: auto; /* Responsive */
+        }
+        .nav-item {
+            text-decoration: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding: 12px 24px;
+            border-radius: 18px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: var(--text-muted);
+            border: none; /* Reset button styles */
+            background: transparent;
+            cursor: pointer;
+        }
+        .nav-item.active {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.25);
+            transform: scale(1.05);
+        }
+        .nav-item:not(.active):hover {
+            background: rgba(255, 255, 255, 0.5);
+            color: var(--primary);
+        }
+        .nav-text {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        /* Functional Styles */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Carousel */
+        .carousel-container {
+            width: 100%;
+            height: 420px;
+            border-radius: 32px;
+            overflow: hidden;
+            position: relative;
+            margin-bottom: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .carousel-track {
+            display: flex;
+            height: 100%;
+            transition: transform 0.6s cubic-bezier(0.65, 0, 0.35, 1);
+        }
+        .carousel-slide {
+            min-width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            padding: 0 80px;
+            position: relative;
+        }
+        .slide-1 { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); }
+        .slide-2 { background: linear-gradient(135deg, #3730a3 0%, #6366f1 100%); }
+        .slide-3 { background: linear-gradient(135deg, #5b21b6 0%, #8b5cf6 100%); }
+        .slide-content {
+            flex: 1;
+            color: white;
+            z-index: 2;
+        }
+        .slide-content h2 {
+            font-size: 48px;
+            font-weight: 800;
+            margin-bottom: 20px;
+            line-height: 1.1;
+        }
+        .slide-content p {
+            font-size: 18px;
+            opacity: 0.9;
+            max-width: 500px;
+            line-height: 1.6;
+        }
+        .slide-image {
+            flex: 1;
+            display: flex;
+            justify-content: flex-end;
+            z-index: 1;
+        }
+        .slide-image img {
+            width: 400px;
+            height: 400px;
+            object-fit: cover;
+            border-radius: 30px;
+            transform: rotate(3deg);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            border: 4px solid rgba(255, 255, 255, 0.2);
+        }
+        .img-placeholder {
+            width: 400px; height: 400px; background: rgba(255,255,255,0.2); border-radius: 30px; backdrop-filter: blur(10px);
+            display: flex; align-items: center; justify-content: center; font-size: 64px; color: white;
+        }
+        .carousel-dots {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 12px;
+            z-index: 3;
+        }
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            cursor: pointer;
+        }
+        .dot.active {
+            width: 30px;
+            border-radius: 5px;
+            background: white;
+        }
+
+        /* Dashboard Widgets */
+        .summary-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        .period-filter {
+            background: white;
+            padding: 6px;
+            border-radius: 14px;
+            display: flex;
+            gap: 4px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            border: 1px solid #f1f5f9;
+        }
+        .filter-btn {
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            color: var(--text-muted);
+            background: transparent;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .filter-btn.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+        }
+        .filter-btn:not(.active):hover {
+            background: #f8fafc;
+            color: var(--primary);
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+        .summary-card {
+            background: white;
+            padding: 24px;
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.02);
+            border: 1px solid #f1f5f9;
+            transition: transform 0.3s ease;
+        }
+        .summary-card:hover { transform: translateY(-5px); }
+        .icon-box {
+            width: 60px;
+            height: 60px;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .icon-box.income { background: #ecfdf5; color: var(--secondary); }
+        .icon-box.expense { background: #fff1f2; color: var(--danger); }
+        .icon-box.balance { background: #eff6ff; color: var(--primary); }
+        .summary-info p { font-size: 13px; color: var(--text-muted); margin-bottom: 4px; }
+        .summary-info h3 { font-size: 20px; font-weight: 700; color: var(--text-main); }
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+        .bottom-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+        .widget-card {
+            background: white;
+            border-radius: 28px;
+            padding: 28px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.02);
+            border: 1px solid #f1f5f9;
+            height: 100%;
+        }
+        .widget-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        .widget-title h3 { font-size: 18px; font-weight: 700; }
+
+        /* Legacy App Styles Restored */
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; align-items: center; justify-content: center; z-index: 1000;
+        }
+        .modal.active { display: flex; }
+        .modal-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
+        }
+        .modal-content {
+            position: relative; background: white; border-radius: 20px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); max-width: 500px; width: 90%;
+            max-height: 90vh; overflow-y: auto; z-index: 1001; padding: 24px;
+        }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .modal-header h3 { font-size: 18px; font-weight: 700; }
+        .btn-close { background: none; border: none; cursor: pointer; color: var(--text-muted); }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+        .form-group input, .form-group select {
+            width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0;
+            background: #f8fafc; outline: none; transition: all 0.2s;
+        }
+        .form-group input:focus { border-color: var(--primary); background: white; }
+        .category-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 12px; }
+        .category-item {
+            display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer;
+            padding: 12px; border-radius: 12px; border: 1px solid transparent; transition: all 0.2s;
+        }
+        .category-item:hover { background: #f1f5f9; }
+        .category-item.selected { background: #eff6ff; border-color: var(--primary); }
+        .category-item .icon { font-size: 24px; background: #e0e7ff; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 12px; }
+        
+        .toast-container { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 2000; display: flex; flex-direction: column; gap: 10px; }
+        .toast { background: #1e293b; color: white; padding: 12px 20px; border-radius: 50px; display: flex; align-items: center; gap: 10px; font-size: 13px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); animation: slideUp 0.3s ease; }
+        @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .btn-primary { 
+            width: 100%; padding: 14px; background: var(--primary); color: white; border: none;
+            border-radius: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); }
+
+        .transaction-list { display: flex; flex-direction: column; gap: 16px; }
+        .transaction-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px; border-radius: 16px; transition: background 0.2s ease; cursor: pointer;
+        }
+        .transaction-item:hover { background: #f8fafc; }
+        .tx-left { display: flex; align-items: center; gap: 12px; }
+        .tx-icon {
+            width: 48px; height: 48px; border-radius: 12px; background: #f1f5f9;
+            display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 20px;
+        }
+        .tx-info p { font-weight: 600; font-size: 14px; }
+        .tx-info span { font-size: 12px; color: var(--text-muted); }
+        .tx-amount { font-weight: 700; font-size: 14px; }
+        .tx-amount.income { color: var(--secondary); }
+        .tx-amount.expense { color: var(--danger); }
+        .tx-actions { opacity: 0; transition: opacity 0.2s; }
+        .transaction-item:hover .tx-actions { opacity: 1; }
+
+        .fab {
+            position: fixed; bottom: 40px; right: 40px; width: 64px; height: 64px;
+            border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 12px 30px rgba(99, 102, 241, 0.4); cursor: pointer; border: none; z-index: 100;
+            transition: all 0.3s ease;
+        }
+        .fab:hover { transform: scale(1.1) rotate(90deg); }
+        /* FAB Menu */
+        #fabMenu { display: none; position: fixed; bottom: 120px; right: 50px; flex-direction: column; gap: 10px; z-index: 99; }
+        #fabMenu.active { display: flex; }
+        
+        @media (max-width: 1200px) {
+            .dashboard-grid { grid-template-columns: 1fr 1fr; }
+            .bottom-grid { grid-template-columns: 1fr; }
+            .summary-grid { grid-template-columns: repeat(2, 1fr); }
+            body { padding: 20px; }
+        }
+    </style>
 </head>
 
 <body>
-    <div class="app-container">
+    <div class="container-custom">
         <!-- Header -->
-        <header class="app-header">
-            <div class="logo">
-                <div class="logo-icon">
-                    <img src="assets/img/logo.png" alt="Logo Karsafin"
-                        style="width: 100%; height: 100%; object-fit: contain;">
+        <header>
+            <div class="brand-section">
+                <div class="logo-box">
+                    <span class="material-icons-round">account_balance_wallet</span>
                 </div>
-                <div class="logo-text">
+                <div class="brand-info">
                     <h1>Karsafin</h1>
-                    <span class="tagline">Atur Keuangan, Wujudkan Mimpi</span>
+                    <p>Atur Keuangan, Wujudkan Mimpi</p>
                 </div>
             </div>
-            <div class="header-actions">
-
-                <!-- Telegram button removed -->
-                <button class="btn-icon" id="themeToggle" title="Toggle Theme">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="5" />
-                        <path
-                            d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
-                    </svg>
-                </button>
-                <div class="profile-menu-container">
-                    <button class="profile-trigger" id="profileTrigger">
-                        <div class="header-avatar">
-                            <img id="headerAvatarImg" src="" alt="Avatar" style="display: none;">
-                            <div id="headerAvatarSvg">
-                                <svg viewBox="0 0 24 24" fill="currentColor">
-                                    <path
-                                        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" />
-                                </svg>
-                            </div>
-                        </div>
-                        <div class="header-user-info">
-                            <span class="header-name" id="headerProfileName">Loading...</span>
-                            <span class="header-role" id="headerProfileEmail">User</span>
-                        </div>
-                        <svg class="chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <polyline points="6 9 12 15 18 9"></polyline>
-                        </svg>
-                    </button>
-
-                    <div class="profile-dropdown" id="profileDropdown">
-                        <div class="dropdown-item" id="menuAccount">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg>
-                            Informasi Akun
-                        </div>
-                        <div class="dropdown-item" id="menuSettings">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="3"></circle>
-                                <path
-                                    d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
-                                </path>
-                            </svg>
-                            Pengaturan
-                        </div>
-                        <div class="dropdown-item upgrade" id="menuSubscription" onclick="openSubscriptionModal()">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-                                <path d="M2 17l10 5 10-5"></path>
-                                <path d="M2 12l10 5 10-5"></path>
-                            </svg>
-                            <span>💎 Langganan</span>
-                            <span class="subscription-badge-mini" id="subscriptionBadgeMini">-</span>
-                        </div>
-                        <div class="dropdown-divider"></div>
-                        <div class="dropdown-item danger" id="menuLogout">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                                <polyline points="16 17 21 12 16 7"></polyline>
-                                <line x1="21" y1="12" x2="9" y2="12"></line>
-                            </svg>
-                            Keluar
-                        </div>
+            <div class="search-bar hidden md:block">
+                <span class="material-icons-round">search</span>
+                <input placeholder="Cari data finansial..." type="text" />
+            </div>
+            <div class="user-controls">
+                <button class="icon-btn"><span class="material-icons-round">notifications</span></button>
+                <button class="icon-btn" onclick="document.documentElement.classList.toggle('dark')"><span
+                        class="material-icons-round">dark_mode</span></button>
+                <div class="user-profile" id="profileTrigger" onclick="openModal('editProfileModal')">
+                    <div style="text-align: right; margin-right: 12px;" class="hidden md:block">
+                        <p style="font-weight: 600; font-size: 14px;" id="headerProfileName">User</p>
+                        <p style="font-size: 12px; color: var(--text-muted);" id="headerProfileEmail">...</p>
                     </div>
+                    <img id="headerAvatarImg" alt="Profile"
+                        src="https://ui-avatars.com/api/?name=User&background=6366f1&color=fff" />
                 </div>
             </div>
         </header>
 
         <!-- Navigation -->
-        <nav class="main-nav">
+        <nav class="glass-nav">
             <button class="nav-item active" data-tab="dashboard">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="3" width="7" height="9" />
-                    <rect x="14" y="3" width="7" height="5" />
-                    <rect x="14" y="12" width="7" height="9" />
-                    <rect x="3" y="16" width="7" height="5" />
-                </svg>
-                <span>Dasbor</span>
+                <span class="material-icons-round">grid_view</span>
+                <span class="nav-text">Dashboard</span>
             </button>
             <button class="nav-item" data-tab="planning">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                    <polyline points="22 4 12 14.01 9 11.01" />
-                </svg>
-                <span>Rencana</span>
+                <span class="material-icons-round" style="color: #10b981;">account_balance</span>
+                <span class="nav-text">Anggaran</span>
             </button>
             <button class="nav-item" data-tab="events">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                    <line x1="16" y1="2" x2="16" y2="6" />
-                    <line x1="8" y1="2" x2="8" y2="6" />
-                    <line x1="3" y1="10" x2="21" y2="10" />
-                </svg>
-                <span>Acara</span>
-            </button>
-            <button class="nav-item" data-tab="reports">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="20" x2="18" y2="10" />
-                    <line x1="12" y1="20" x2="12" y2="4" />
-                    <line x1="6" y1="20" x2="6" y2="14" />
-                </svg>
-                <span>Laporan</span>
+                <span class="material-icons-round" style="color: #f59e0b;">event</span>
+                <span class="nav-text">Acara</span>
             </button>
             <button class="nav-item" data-tab="debts">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2" />
-                    <path d="M9 19h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm0 0v-2" />
-                </svg>
-                <span>Hutang</span>
+                <span class="material-icons-round" style="color: #ef4444;">link_off</span>
+                <span class="nav-text">Hutang</span>
             </button>
             <button class="nav-item" data-tab="aiAssistant">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="3" />
-                    <path
-                        d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" />
-                </svg>
-                <span>AI</span>
+                <span class="material-icons-round" style="color: #6366f1;">psychology</span>
+                <span class="nav-text">Asisten AI</span>
             </button>
             <button class="nav-item" data-tab="calculator">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="4" y="2" width="16" height="20" rx="2" />
-                    <line x1="8" y1="6" x2="16" y2="6" />
-                    <line x1="8" y1="10" x2="10" y2="10" />
-                    <line x1="14" y1="10" x2="16" y2="10" />
-                    <line x1="8" y1="14" x2="10" y2="14" />
-                    <line x1="14" y1="14" x2="16" y2="14" />
-                    <line x1="8" y1="18" x2="10" y2="18" />
-                    <line x1="14" y1="18" x2="16" y2="18" />
-                </svg>
-                <span>Kalkulator</span>
+                <span class="material-icons-round" style="color: #3b82f6;">calculate</span>
+                <span class="nav-text">Kalkulator</span>
+            </button>
+            <button class="nav-item" data-tab="reports">
+                <span class="material-icons-round" style="color: #8b5cf6;">bar_chart</span>
+                <span class="nav-text">Laporan</span>
             </button>
         </nav>
 
-        <!-- Main Content -->
-        <main class="main-content">
-            <!-- Dashboard Tab -->
-            <section class="tab-content active" id="dashboard">
-                <div class="section-header">
-                    <h2>Dasbor Keuangan</h2>
-                    <div class="period-selector">
-                        <button class="period-btn active" data-period="daily">Hari Ini</button>
-                        <button class="period-btn" data-period="weekly">Minggu Ini</button>
-                        <button class="period-btn" data-period="monthly">Bulan Ini</button>
-                    </div>
-                </div>
-
-                <!-- Summary Cards -->
-                <div class="summary-cards">
-                    <div class="summary-card income">
-                        <div class="card-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="12" y1="19" x2="12" y2="5" />
-                                <polyline points="5 12 12 5 19 12" />
-                            </svg>
+        <!-- DASHBOARD TAB -->
+        <section class="tab-content active" id="dashboard">
+            <!-- Carousel -->
+            <section class="carousel-container">
+                <div class="carousel-track">
+                    <div class="carousel-slide slide-1">
+                        <div class="slide-content">
+                            <h2>Atur Keuangan,<br />Wujudkan Mimpi</h2>
+                            <p>Satu aplikasi untuk kendali penuh atas masa depan finansial Anda.</p>
                         </div>
-                        <div class="card-content">
-                            <span class="card-label">Pemasukan</span>
-                            <span class="card-value" id="totalIncome">Rp 0</span>
-                        </div>
-                    </div>
-                    <div class="summary-card expense">
-                        <div class="card-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="12" y1="5" x2="12" y2="19" />
-                                <polyline points="19 12 12 19 5 12" />
-                            </svg>
-                        </div>
-                        <div class="card-content">
-                            <span class="card-label">Pengeluaran</span>
-                            <span class="card-value" id="totalExpense">Rp 0</span>
-                        </div>
-                    </div>
-                    <div class="summary-card balance">
-                        <div class="card-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="10" />
-                                <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" />
-                                <path d="M12 18V6" />
-                            </svg>
-                        </div>
-                        <div class="card-content">
-                            <span class="card-label">Saldo</span>
-                            <span class="card-value" id="totalBalance">Rp 0</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Telegram Notification Cards -->
-                <div class="telegram-notifications">
-                    <div class="notification-card">
-                        <div class="notification-icon">
-                            <svg viewBox="0 0 24 24" fill="currentColor">
-                                <path
-                                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.12.03-1.99 1.27-5.62 3.72-.53.36-1.01.54-1.44.52-.47-.01-1.38-.27-2.06-.49-.83-.27-1.49-.42-1.43-.88.03-.24.37-.48 1.02-.73 3.99-1.74 6.66-2.89 8-3.44 3.82-1.59 4.61-1.87 5.13-1.88.11 0 .37.03.54.17.14.12.18.27.2.39.01.08.03.29.01.45z" />
-                            </svg>
-                        </div>
-                        <div class="notification-content">
-                            <h4>Catat dari Telegram</h4>
-                            <p>Catat transaksi langsung dari chat pribadi</p>
-                        </div>
-                        <button class="btn-notification" data-navigate="telegram-personal">
-                            Cek Disini
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M5 12h14M12 5l7 7-7 7" />
-                            </svg>
-                        </button>
-                    </div>
-
-                    <div class="notification-card">
-                        <div class="notification-icon">
-                            <svg viewBox="0 0 24 24" fill="currentColor">
-                                <path
-                                    d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
-                            </svg>
-                        </div>
-                        <div class="notification-content">
-                            <h4>Catat Bareng Pasangan</h4>
-                            <p>Kelola keuangan bersama melalui grup</p>
-                        </div>
-                        <button class="btn-notification" data-navigate="telegram-group">
-                            Cek Disini
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M5 12h14M12 5l7 7-7 7" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Chart Section -->
-                <div class="chart-container glass-card">
-                    <h3>Tren 7 Hari Terakhir</h3>
-                    <canvas id="weeklyChart"></canvas>
-                </div>
-
-                <!-- Recent Transactions -->
-                <div class="transactions-section glass-card">
-                    <div class="section-title">
-                        <h3>Transaksi Terakhir</h3>
-                        <button class="btn-text" id="viewAllTransactions">Lihat Semua</button>
-                    </div>
-                    <div class="transactions-list" id="transactionsList">
-                        <div class="empty-state">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                <path
-                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                            </svg>
-                            <p>Belum ada transaksi</p>
-                            <span>Tekan tombol + untuk menambah transaksi</span>
+                        <div class="slide-image">
+                            <!-- Using icon placeholder as image might break or be CORS blocked -->
+                            <div class="img-placeholder"><span class="material-icons-round"
+                                    style="font-size:120px">savings</span></div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <!-- Planning Tab -->
-            <section class="tab-content" id="planning">
-                <div class="section-header">
-                    <h2>Rencana & Target</h2>
+            <!-- Summary -->
+            <div class="summary-header">
+                <h2 style="font-size: 20px; font-weight: 700;">Ringkasan Finansial</h2>
+                <div class="period-filter">
+                    <button class="filter-btn period-btn active" data-period="daily">Hari Ini</button>
+                    <button class="filter-btn period-btn" data-period="weekly">Minggu Ini</button>
+                    <button class="filter-btn period-btn" data-period="monthly">Bulan Ini</button>
                 </div>
-
-                <!-- Budget Section -->
-                <div class="budget-section">
-                    <div class="section-title">
-                        <h3>Anggaran Bulanan</h3>
-                        <button class="btn-primary btn-small" id="setBudgetBtn">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                            </svg>
-                            Atur Anggaran
-                        </button>
-                    </div>
-                    <div class="budget-overview glass-card">
-                        <div class="budget-chart-container">
-                            <canvas id="budgetDonutChart"></canvas>
-                            <div class="budget-center-text">
-                                <span class="budget-used" id="budgetUsedPercent">0%</span>
-                                <span class="budget-label">Terpakai</span>
-                            </div>
-                        </div>
-                        <div class="budget-categories" id="budgetCategoriesList">
-                            <div class="empty-state small">
-                                <p>Belum ada anggaran</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Savings Goals Section -->
-                <div class="savings-section">
-                    <div class="section-title">
-                        <h3>Target Tabungan</h3>
-                        <button class="btn-primary btn-small" id="addSavingsBtn">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="12" y1="5" x2="12" y2="19" />
-                                <line x1="5" y1="12" x2="19" y2="12" />
-                            </svg>
-                            Tambah Target
-                        </button>
-                    </div>
-                    <div class="savings-grid" id="savingsGoalsList">
-                        <div class="empty-state">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-                            </svg>
-                            <p>Belum ada target tabungan</p>
-                            <span>Buat target pertama Anda!</span>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Events Tab -->
-            <section class="tab-content" id="events">
-                <div class="section-header">
-                    <h2>Perencanaan Acara</h2>
-                    <button class="btn-primary" id="addEventBtn">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="12" y1="5" x2="12" y2="19" />
-                            <line x1="5" y1="12" x2="19" y2="12" />
-                        </svg>
-                        Buat Acara Baru
-                    </button>
-                </div>
-
-                <!-- Active Events -->
-                <div class="events-grid" id="eventsList">
-                    <div class="empty-state">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                            <line x1="16" y1="2" x2="16" y2="6" />
-                            <line x1="8" y1="2" x2="8" y2="6" />
-                            <line x1="3" y1="10" x2="21" y2="10" />
-                            <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01" />
-                        </svg>
-                        <p>Belum ada acara</p>
-                        <span>Rencanakan acara spesial Anda!</span>
-                    </div>
-                </div>
-
-                <!-- Archived Events -->
-                <div class="archived-section" id="archivedSection" style="display: none;">
-                    <div class="section-title">
-                        <h3>Acara Selesai</h3>
-                        <button class="btn-text" id="toggleArchived">
-                            <span>Tampilkan</span>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="6 9 12 15 18 9" />
-                            </svg>
-                        </button>
-                    </div>
-                    <div class="archived-grid" id="archivedEventsList"></div>
-                </div>
-            </section>
-
-            <!-- Reports Tab -->
-            <section class="tab-content" id="reports">
-                <div class="section-header">
-                    <h2>Analisis & Laporan</h2>
-                </div>
-
-                <!-- Monthly Comparison Chart -->
-                <div class="chart-container glass-card">
-                    <h3>Perbandingan Bulanan</h3>
-                    <canvas id="monthlyComparisonChart"></canvas>
-                </div>
-
-                <!-- Category Breakdown -->
-                <div class="chart-container glass-card">
-                    <h3>Pengeluaran per Kategori</h3>
-                    <div class="pie-chart-wrapper">
-                        <div class="pie-chart-container">
-                            <canvas id="categoryPieChart"></canvas>
-                        </div>
-                        <div class="category-legend" id="categoryLegend"></div>
-                    </div>
-                </div>
-
-                <!-- Timeline -->
-                <div class="timeline-section glass-card">
-                    <h3>Timeline Target & Acara</h3>
-                    <div class="timeline-container" id="timelineContainer">
-                        <div class="empty-state small">
-                            <p>Belum ada target atau acara</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Debts Tab -->
-            <section class="tab-content" id="debts">
-                <div class="section-header">
-                    <h2>Hutang Piutang</h2>
-                    <button class="btn-primary" id="addDebtBtn">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="12" y1="5" x2="12" y2="19" />
-                            <line x1="5" y1="12" x2="19" y2="12" />
-                        </svg>
-                        Catat Baru
-                    </button>
-                </div>
-
-                <!-- Type Tabs (Payable vs Receivable) -->
-                <div class="calc-tabs">
-                    <button class="calc-tab active" data-debt-type="payable">🔴 Hutang Saya</button>
-                    <button class="calc-tab" data-debt-type="receivable">🟢 Piutang (Orang)</button>
-                </div>
-
-                <!-- Filter Tabs -->
-                <div class="period-selector" style="margin-bottom: var(--space-4);">
-                    <button class="period-btn active" data-debt-status="all">Semua</button>
-                    <button class="period-btn" data-debt-status="unpaid">Belum Lunas</button>
-                    <button class="period-btn" data-debt-status="paid">Lunas</button>
-                </div>
-
-                <!-- Summary Cards -->
-                <div class="summary-cards">
-                    <div class="summary-card expense" id="debtSummaryCard">
-                        <div class="card-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2" />
-                                <path d="M9 19h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm0 0v-2" />
-                            </svg>
-                        </div>
-                        <div class="card-content">
-                            <span class="card-label">Total Hutang</span>
-                            <span class="card-value" id="totalDebts">Rp 0</span>
-                        </div>
-                    </div>
-                    <div class="summary-card income" id="receivableSummaryCard" style="display: none;">
-                        <div class="card-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                            </svg>
-                        </div>
-                        <div class="card-content">
-                            <span class="card-label">Total Piutang</span>
-                            <span class="card-value" id="totalReceivables">Rp 0</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Debts List -->
-                <div class="transactions-list" id="debtsList">
-                    <div class="empty-state">
-                        <p>Belum ada data hutang/piutang</p>
-                    </div>
-                </div>
-            </section>
-
-            <!-- AI Assistant Tab -->
-            <section class="tab-content" id="aiAssistant">
-                <div class="section-header">
-                    <h2>Asisten AI Keuangan</h2>
-                </div>
-
-                <!-- AI Chat Layout with Sidebar -->
-                <div class="ai-layout">
-                    <!-- Backdrop Overlay for Mobile -->
-                    <div class="ai-sidebar-backdrop" id="aiSidebarBackdrop"></div>
-
-                    <!-- Sidebar -->
-                    <aside class="ai-sidebar" id="aiSidebar">
-                        <div class="ai-sidebar-header">
-                            <button class="btn-primary btn-small" id="newChatBtn" style="width: 100%;">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M12 5v14M5 12h14" />
-                                </svg>
-                                Percakapan Baru
-                            </button>
-                        </div>
-                        <div class="ai-conversations-list" id="aiConversationsList">
-                            <!-- Conversation items will be added here -->
-                            <div class="empty-state small">
-                                <p>Belum ada percakapan</p>
-                            </div>
-                        </div>
-                    </aside>
-
-                    <!-- Main Chat Area -->
-                    <div class="ai-chat-wrapper">
-                        <div class="ai-chat-container glass-card">
-                            <div class="ai-chat-messages" id="aiChatMessages">
-                                <div class="ai-message ai">
-                                    <div class="ai-avatar">
-                                        <svg viewBox="0 0 24 24" fill="currentColor">
-                                            <path
-                                                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
-                                        </svg>
-                                    </div>
-                                    <div class="ai-message-content">
-                                        <p>Halo! Saya asisten keuangan AI Anda. 👋</p>
-                                        <p>Saya bisa membantu Anda:</p>
-                                        <ul>
-                                            <li>📊 Menganalisis pola pengeluaran</li>
-                                            <li>💡 Memberikan saran budget</li>
-                                            <li>💰 Tips menghemat uang</li>
-                                        </ul>
-                                        <p>Pilih aksi cepat di bawah atau ketik pertanyaan Anda!</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Quick Actions -->
-                            <div class="ai-quick-actions">
-                                <button class="ai-action-btn" data-action="add_transaction">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                    </svg>
-                                    Catat Transaksi
-                                </button>
-                                <button class="ai-action-btn" data-action="history">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M12 20v-6M6 20V10M18 20V4" />
-                                    </svg>
-                                    Cek Riwayat
-                                </button>
-                                <button class="ai-action-btn" data-action="analyze">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <line x1="18" y1="20" x2="18" y2="10" />
-                                        <line x1="12" y1="20" x2="12" y2="4" />
-                                        <line x1="6" y1="20" x2="6" y2="14" />
-                                    </svg>
-                                    Analisis
-                                </button>
-                                <button class="ai-action-btn" data-action="plan">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <circle cx="12" cy="12" r="10" />
-                                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-                                        <line x1="12" y1="17" x2="12.01" y2="17" />
-                                    </svg>
-                                    Simulasi Rencana
-                                </button>
-                                <button class="ai-action-btn" data-action="budget">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <circle cx="12" cy="12" r="10" />
-                                        <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" />
-                                        <path d="M12 6v2m0 8v2" />
-                                    </svg>
-                                    Saran Budget
-                                </button>
-                                <button class="ai-action-btn" data-action="tips">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M9 18V5l12-2v13" />
-                                        <circle cx="6" cy="18" r="3" />
-                                        <circle cx="18" cy="16" r="3" />
-                                    </svg>
-                                    Tips Hemat
-                                </button>
-                            </div>
-
-                            <!-- Chat Input -->
-                            <div class="ai-chat-input">
-                                <!-- Toggle Sidebar Button (Mobile) -->
-                                <button class="ai-sidebar-toggle" id="aiSidebarToggle">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M3 12h18M3 6h18M3 18h18" />
-                                    </svg>
-                                </button>
-                                <input type="text" id="aiChatInput" placeholder="Tanya tentang keuangan Anda..." />
-                                <button class="btn-primary" id="aiSendBtn">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <line x1="22" y1="2" x2="11" y2="13" />
-                                        <polygon points="22 2 15 22 11 13 2 9 22 2" />
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- AI Status removed (always connected via server) -->
-            </section>
-
-            <!-- Calculator Tab -->
-            <section class="tab-content" id="calculator">
-                <div class="section-header">
-                    <h2>🧮 Kalkulator Finansial</h2>
-                </div>
-
-                <!-- Calculator Tabs -->
-                <div class="calc-tabs">
-                    <button class="calc-tab active" data-calc="budget">📊 Anggaran</button>
-                    <button class="calc-tab" data-calc="savings">💰 Tabungan</button>
-                    <button class="calc-tab" data-calc="retirement">🏖️ Pensiun</button>
-                    <button class="calc-tab" data-calc="emergency">🚨 Dana Darurat</button>
-                    <button class="calc-tab" data-calc="education">🎓 Pendidikan</button>
-                </div>
-
-                <!-- Budget Calculator -->
-                <div class="calc-content active" id="calc-budget">
-                    <div class="calc-card glass-card">
-                        <h3>📊 Kalkulator Anggaran</h3>
-                        <p class="calc-desc">Hitung alokasi anggaran ideal berdasarkan pendapatan Anda</p>
-
-                        <div class="form-group">
-                            <label>Pendapatan Bulanan</label>
-                            <div class="amount-input">
-                                <span class="currency">Rp</span>
-                                <input type="text" id="calcBudgetIncome" placeholder="10.000.000">
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Pilih Metode Anggaran</label>
-                            <div class="budget-rules">
-                                <label class="rule-option">
-                                    <input type="radio" name="budgetRule" value="50-30-20" checked>
-                                    <div class="rule-card">
-                                        <strong>50/30/20</strong>
-                                        <span>Kebutuhan 50% • Keinginan 30% • Tabungan 20%</span>
-                                    </div>
-                                </label>
-                                <label class="rule-option">
-                                    <input type="radio" name="budgetRule" value="70-20-10">
-                                    <div class="rule-card">
-                                        <strong>70/20/10</strong>
-                                        <span>Kebutuhan 70% • Tabungan 20% • Investasi 10%</span>
-                                    </div>
-                                </label>
-                                <label class="rule-option">
-                                    <input type="radio" name="budgetRule" value="80-20">
-                                    <div class="rule-card">
-                                        <strong>80/20</strong>
-                                        <span>Pengeluaran 80% • Tabungan 20%</span>
-                                    </div>
-                                </label>
-                                <label class="rule-option">
-                                    <input type="radio" name="budgetRule" value="custom">
-                                    <div class="rule-card">
-                                        <strong>Custom</strong>
-                                        <span>Tentukan sendiri persentase Anda</span>
-                                    </div>
-                                </label>
-                            </div>
-                        </div>
-
-                        <div class="form-group custom-rule-inputs" id="customRuleInputs" style="display: none;">
-                            <label>Persentase Custom (%)</label>
-                            <div class="custom-percent-grid">
-                                <div><label>Kebutuhan</label><input type="number" id="customNeeds" value="50" min="0"
-                                        max="100">%</div>
-                                <div><label>Keinginan</label><input type="number" id="customWants" value="30" min="0"
-                                        max="100">%</div>
-                                <div><label>Tabungan</label><input type="number" id="customSavings" value="20" min="0"
-                                        max="100">%</div>
-                            </div>
-                        </div>
-
-                        <button class="btn-primary" onclick="calculateBudget()">Hitung Anggaran</button>
-
-                        <div class="calc-result" id="budgetResult" style="display: none;">
-                            <h4>📋 Alokasi Anggaran Anda</h4>
-                            <div class="result-items" id="budgetResultItems"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Savings Calculator -->
-                <div class="calc-content" id="calc-savings">
-                    <div class="calc-card glass-card">
-                        <h3>💰 Kalkulator Tabungan</h3>
-                        <p class="calc-desc">Hitung berapa lama waktu yang dibutuhkan untuk mencapai target</p>
-
-                        <div class="form-group">
-                            <label>Target Tabungan</label>
-                            <div class="amount-input">
-                                <span class="currency">Rp</span>
-                                <input type="text" id="calcSavingsTarget" placeholder="50.000.000">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label>Saldo Saat Ini</label>
-                            <div class="amount-input">
-                                <span class="currency">Rp</span>
-                                <input type="text" id="calcSavingsCurrent" placeholder="5.000.000">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label>Tabungan per Bulan</label>
-                            <div class="amount-input">
-                                <span class="currency">Rp</span>
-                                <input type="text" id="calcSavingsMonthly" placeholder="2.000.000">
-                            </div>
-                        </div>
-
-                        <button class="btn-primary" onclick="calculateSavings()">Hitung Waktu</button>
-
-                        <div class="calc-result" id="savingsResult" style="display: none;"></div>
-                    </div>
-                </div>
-
-                <!-- Retirement Calculator -->
-                <div class="calc-content" id="calc-retirement">
-                    <div class="calc-card glass-card">
-                        <h3>🏖️ Kalkulator Dana Pensiun</h3>
-                        <p class="calc-desc">Hitung kebutuhan dana untuk masa pensiun</p>
-
-                        <div class="form-group">
-                            <label>Usia Saat Ini</label>
-                            <input type="number" id="calcRetirementAge" placeholder="30" min="18" max="60">
-                        </div>
-                        <div class="form-group">
-                            <label>Target Usia Pensiun</label>
-                            <input type="number" id="calcRetirementTarget" placeholder="55" min="40" max="70">
-                        </div>
-                        <div class="form-group">
-                            <label>Harapan Hidup</label>
-                            <input type="number" id="calcLifeExpectancy" placeholder="75" min="60" max="100">
-                        </div>
-                        <div class="form-group">
-                            <label>Pengeluaran Bulanan saat Ini</label>
-                            <div class="amount-input">
-                                <span class="currency">Rp</span>
-                                <input type="text" id="calcRetirementExpense" placeholder="10.000.000">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label>Estimasi Inflasi (%/tahun)</label>
-                            <input type="number" id="calcRetirementInflation" placeholder="5" min="0" max="20"
-                                value="5">
-                        </div>
-                        <div class="form-group">
-                            <label class="checkbox-label">
-                                <input type="checkbox" id="calcHasInvestment">
-                                <span>Saya memiliki tabungan dalam bentuk investasi</span>
-                            </label>
-                        </div>
-                        <div class="form-group investment-fields" id="investmentFields" style="display: none;">
-                            <label>Return Investasi (%/tahun)</label>
-                            <input type="number" id="calcInvestmentReturn" placeholder="8" min="0" max="30" value="8">
-                            <small class="input-hint">Rata-rata return reksadana/saham: 8-12%/tahun</small>
-                        </div>
-
-                        <button class="btn-primary" onclick="calculateRetirement()">Hitung Dana Pensiun</button>
-
-                        <div class="calc-result" id="retirementResult" style="display: none;"></div>
-                    </div>
-                </div>
-
-                <!-- Emergency Fund Calculator -->
-                <div class="calc-content" id="calc-emergency">
-                    <div class="calc-card glass-card">
-                        <h3>🚨 Kalkulator Dana Darurat</h3>
-                        <p class="calc-desc">Hitung kebutuhan dana darurat ideal</p>
-
-                        <div class="form-group">
-                            <label>Pengeluaran Bulanan</label>
-                            <div class="amount-input">
-                                <span class="currency">Rp</span>
-                                <input type="text" id="calcEmergencyExpense" placeholder="8.000.000">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label>Jumlah Bulan (3-12)</label>
-                            <input type="range" id="calcEmergencyMonths" min="3" max="12" value="6">
-                            <div class="range-value"><span id="emergencyMonthsDisplay">6</span> bulan</div>
-                        </div>
-                        <div class="form-group">
-                            <label>Dana Darurat Saat Ini</label>
-                            <div class="amount-input">
-                                <span class="currency">Rp</span>
-                                <input type="text" id="calcEmergencyCurrent" placeholder="0">
-                            </div>
-                        </div>
-
-                        <button class="btn-primary" onclick="calculateEmergency()">Hitung Dana Darurat</button>
-
-                        <div class="calc-result" id="emergencyResult" style="display: none;"></div>
-                    </div>
-                </div>
-
-                <!-- Education Fund Calculator -->
-                <div class="calc-content" id="calc-education">
-                    <div class="calc-card glass-card">
-                        <h3>🎓 Kalkulator Dana Pendidikan</h3>
-                        <p class="calc-desc">Hitung kebutuhan dana pendidikan anak</p>
-
-                        <div class="form-group">
-                            <label>Usia Anak Saat Ini</label>
-                            <input type="number" id="calcChildAge" placeholder="5" min="0" max="17">
-                        </div>
-                        <div class="form-group">
-                            <label>Target Usia Masuk Kuliah</label>
-                            <input type="number" id="calcCollegeAge" placeholder="18" min="17" max="22">
-                        </div>
-                        <div class="form-group">
-                            <label>Biaya Pendidikan Saat Ini (per tahun)</label>
-                            <div class="amount-input">
-                                <span class="currency">Rp</span>
-                                <input type="text" id="calcEducationCost" placeholder="50.000.000">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label>Durasi Kuliah (tahun)</label>
-                            <input type="number" id="calcEducationYears" placeholder="4" min="1" max="8">
-                        </div>
-                        <div class="form-group">
-                            <label>Estimasi Inflasi Pendidikan (%/tahun)</label>
-                            <input type="number" id="calcEducationInflation" placeholder="10" min="0" max="20">
-                        </div>
-
-                        <button class="btn-primary" onclick="calculateEducation()">Hitung Dana Pendidikan</button>
-
-                        <div class="calc-result" id="educationResult" style="display: none;"></div>
-                    </div>
-                </div>
-            </section>
-        </main>
-
-        <!-- Floating Action Button -->
-        <div class="fab-container">
-            <button class="fab" id="mainFab">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="12" y1="5" x2="12" y2="19" />
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                </svg>
-            </button>
-            <div class="fab-menu" id="fabMenu">
-                <button class="fab-option income" id="fabIncome">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="12" y1="19" x2="12" y2="5" />
-                        <polyline points="5 12 12 5 19 12" />
-                    </svg>
-                    <span>Pemasukan</span>
-                </button>
-                <button class="fab-option expense" id="fabExpense">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="12" y1="5" x2="12" y2="19" />
-                        <polyline points="19 12 12 19 5 12" />
-                    </svg>
-                    <span>Pengeluaran</span>
-                </button>
             </div>
-        </div>
+
+            <div class="summary-grid">
+                <div class="summary-card" onclick="openTransactionModal('income')">
+                    <div class="icon-box income"><span class="material-icons-round">arrow_upward</span></div>
+                    <div class="summary-info">
+                        <p>Total Pendapatan</p>
+                        <h3 id="totalIncome">Rp 0</h3>
+                    </div>
+                </div>
+                <div class="summary-card" onclick="openTransactionModal('expense')">
+                    <div class="icon-box expense"><span class="material-icons-round">arrow_downward</span></div>
+                    <div class="summary-info">
+                        <p>Total Pengeluaran</p>
+                        <h3 id="totalExpense">Rp 0</h3>
+                    </div>
+                </div>
+                <div class="summary-card">
+                    <div class="icon-box balance"><span class="material-icons-round">account_balance</span></div>
+                    <div class="summary-info">
+                        <p>Saldo Bersih</p>
+                        <h3 id="totalBalance">Rp 0</h3>
+                    </div>
+                </div>
+                <div class="summary-card">
+                    <div class="icon-box" style="background: #fdf2f8; color: #db2777;">
+                        <span class="material-symbols-outlined">analytics</span>
+                    </div>
+                    <div class="summary-info">
+                        <p>Kesehatan</p>
+                        <h3>Baik</h3>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <!-- Budget (Donut) -->
+                <div class="widget-card">
+                    <div class="widget-title">
+                        <h3>Alokasi Anggaran</h3>
+                        <button class="btn-text" onclick="openModal('budgetModal')">Atur</button>
+                    </div>
+                    <div class="budget-detailed">
+                        <div class="donut-container">
+                            <canvas id="budgetDonutChart" width="160" height="160"></canvas>
+                            <div class="donut-center">
+                                <div class="label">Terpakai</div>
+                                <div class="total" id="budgetUsedPercent">0%</div>
+                            </div>
+                        </div>
+                        <div id="budgetCategoriesList" style="max-height: 200px; overflow-y: auto;"></div>
+                    </div>
+                </div>
+
+                <!-- Events (Static/Placeholder or Linked) -->
+                <div class="widget-card">
+                    <div class="widget-title">
+                        <h3>Acara Mendatang</h3>
+                        <button class="btn-text"
+                            onclick="document.querySelector('[data-tab=events]').click()">Lihat</button>
+                    </div>
+                    <div class="event-list" id="dashboardEventsList">
+                        <!-- Injected by JS or empty state -->
+                        <div class="empty-state small">
+                            <p>Tidak ada acara dekat</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transactions -->
+                <div class="widget-card">
+                    <div class="widget-title">
+                        <h3>Transaksi Terakhir</h3>
+                        <button class="btn-text" id="viewAllTransactions">Semua</button>
+                    </div>
+                    <div class="transaction-list" id="transactionsList">
+                        <!-- Injected by JS -->
+                        <p style="text-align:center; padding: 20px;">Memuat...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Grid (Savings & Debts) -->
+            <div class="bottom-grid">
+                <div class="widget-card">
+                    <div class="widget-title">
+                        <h3>Progres Tabungan</h3>
+                    </div>
+                    <div class="savings-progress-list" id="savingsGoalsList">
+                        <!-- Injected by JS -->
+                    </div>
+                </div>
+                <!-- Debt Summary handled by Debts tab usually, but we can put summary here -->
+                <div class="widget-card">
+                    <div class="widget-title">
+                        <h3>Hutang & Piutang</h3>
+                    </div>
+                    <div class="debt-summary">
+                        <div class="debt-box owed">
+                            <span class="label">Total Hutang</span>
+                            <span class="amount" id="totalDebts">Rp 0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- OTHER TABS (Wrapped in containers for new theme) -->
+        <section class="tab-content" id="planning">
+            <div class="widget-card">
+                <h2 style="margin-bottom: 20px;">Perencanaan Anggaran</h2>
+                <!-- Reuse existing logic injection points -->
+                <div id="planningContentPlaceholder">
+                    <p>Silakan gunakan dashboard untuk ringkasan. Fitur detail anggaran ada di sini.</p>
+                </div>
+                <!-- Budget Inputs Container for JS to target if needed, though modal is primary -->
+            </div>
+        </section>
+
+        <section class="tab-content" id="events">
+            <div class="widget-card">
+                <div class="widget-title">
+                    <h3>Daftar Acara</h3>
+                    <button class="btn-primary" style="width: auto;" id="addEventBtn">+ Buat Acara</button>
+                </div>
+                <div id="eventsList" class="grid grid-cols-1 gap-4"></div>
+            </div>
+        </section>
+
+        <section class="tab-content" id="debts">
+            <div class="widget-card">
+                <div class="widget-title">
+                    <h3>Catatan Hutang</h3>
+                    <button class="btn-primary" style="width: auto;" id="addDebtBtn">+ Catat</button>
+                </div>
+                <div id="debtsList"></div>
+            </div>
+        </section>
+
+        <section class="tab-content" id="aiAssistant">
+            <div class="widget-card" style="height: 600px; display: flex;">
+                <div class="ai-layout" style="width: 100%; height: 100%;">
+                    <!-- Chat injected here -->
+                    <div id="aiChatMessages" style="flex:1; overflow-y:auto;"></div>
+                    <div class="ai-chat-input" style="padding-top: 20px; display: flex; gap: 10px;">
+                        <input id="aiChatInput" type="text"
+                            style="flex:1; padding: 12px; border-radius: 12px; border: 1px solid #ddd;"
+                            placeholder="Tanya AI...">
+                        <button id="aiSendBtn" class="btn-primary" style="width: auto;">Kirim</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="tab-content" id="calculator">
+            <div class="widget-card">
+                <h3>Kalkulator Finansial</h3>
+                <!-- Calculator HTML form structure needed for app.js -->
+                <div class="flex gap-2 mb-6 overflow-x-auto pb-2 calc-tabs"
+                    style="display:flex; gap:10px; margin-bottom:20px;">
+                    <button class="filter-btn calc-tab active" data-calc="budget">Anggaran</button>
+                    <button class="filter-btn calc-tab" data-calc="savings">Tabungan</button>
+                </div>
+
+                <div class="calc-content active" id="calc-budget">
+                    <div class="form-group">
+                        <label>Pendapatan</label>
+                        <input type="text" id="calcBudgetIncome" placeholder="10.000.000">
+                    </div>
+                    <button class="btn-primary" onclick="calculateBudget()">Hitung</button>
+                    <div id="budgetResult" style="margin-top: 20px;"></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="tab-content" id="reports">
+            <div class="widget-card">
+                <h3>Laporan</h3>
+                <canvas id="monthlyComparisonChart"></canvas>
+            </div>
+        </section>
+
     </div>
 
-    <!-- Transaction Modal -->
+    <!-- Floating Action Button -->
+    <button class="fab" id="mainFab">
+        <span class="material-icons-round" style="font-size: 32px;">add</span>
+    </button>
+    <div id="fabMenu">
+        <button class="fab"
+            style="width: 50px; height: 50px; background: #10b981; bottom: auto; right: auto; position: relative;"
+            id="fabIncome" title="Pemasukan">
+            <span class="material-icons-round">arrow_upward</span>
+        </button>
+        <button class="fab"
+            style="width: 50px; height: 50px; background: #ef4444; bottom: auto; right: auto; position: relative;"
+            id="fabExpense" title="Pengeluaran">
+            <span class="material-icons-round">arrow_downward</span>
+        </button>
+    </div>
+
+    <!-- Modals -->
     <div class="modal" id="transactionModal">
-        <div class="modal-overlay"></div>
+        <div class="modal-overlay" onclick="closeModal('transactionModal')"></div>
         <div class="modal-content">
             <div class="modal-header">
                 <h3 id="transactionModalTitle">Tambah Transaksi</h3>
-                <button class="btn-close" id="closeTransactionModal">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                        <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                </button>
+                <button class="btn-close" onclick="closeModal('transactionModal')"><span
+                        class="material-icons-round">close</span></button>
             </div>
-            <form id="transactionForm">
+            <form id="transactionForm" onsubmit="handleTransactionFormSubmit(event)">
+                <input type="hidden" id="transactionId">
                 <input type="hidden" id="transactionType" value="expense">
-                <input type="hidden" id="transactionId" value="">
-
                 <div class="form-group">
                     <label>Nominal</label>
-                    <div class="amount-input">
-                        <span class="currency">Rp</span>
-                        <input type="text" id="transactionAmount" placeholder="0" required>
-                    </div>
+                    <input type="text" id="transactionAmount" placeholder="0" oninput="formatAmountInput(this)" required
+                        autofocus>
                 </div>
-
                 <div class="form-group">
                     <label>Kategori</label>
                     <div class="category-grid" id="categoryGrid"></div>
-                    <button type="button" class="btn-text" id="addCategoryBtn">+ Kategori Baru</button>
                 </div>
-
-                <div class="form-group">
-                    <label>Deskripsi (Opsional)</label>
-                    <input type="text" id="transactionDescription" placeholder="Contoh: Makan siang di warung">
-                </div>
-
                 <div class="form-group">
                     <label>Tanggal</label>
                     <input type="date" id="transactionDate" required>
                 </div>
-
-                <div class="form-actions">
-                    <button type="button" class="btn-secondary" id="cancelTransaction">Batal</button>
-                    <button type="submit" class="btn-primary">Simpan</button>
+                <div class="form-group">
+                    <label>Catatan</label>
+                    <input type="text" id="transactionDescription" placeholder="Opsional">
                 </div>
+                <button type="submit" class="btn-primary">Simpan</button>
             </form>
         </div>
     </div>
 
-    <!-- Budget Modal -->
     <div class="modal" id="budgetModal">
-        <div class="modal-overlay"></div>
-        <div class="modal-content modal-large">
-            <div class="modal-header">
-                <h3>Atur Anggaran Bulanan</h3>
-                <button class="btn-close" id="closeBudgetModal">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                        <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                </button>
-            </div>
-            <form id="budgetForm">
-                <div class="budget-inputs" id="budgetInputs"></div>
-                <div class="form-actions">
-                    <button type="button" class="btn-secondary" id="cancelBudget">Batal</button>
-                    <button type="submit" class="btn-primary">Simpan Anggaran</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Savings Goal Modal -->
-    <div class="modal" id="savingsModal">
-        <div class="modal-overlay"></div>
+        <div class="modal-overlay" onclick="closeModal('budgetModal')"></div>
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="savingsModalTitle">Tambah Target Tabungan</h3>
-                <button class="btn-close" id="closeSavingsModal">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                        <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                </button>
+                <h3>Atur Anggaran</h3>
+                <button class="btn-close" onclick="closeModal('budgetModal')">close</button>
             </div>
-            <form id="savingsForm">
-                <input type="hidden" id="savingsId" value="">
-
-                <div class="form-group">
-                    <label>Nama Target</label>
-                    <input type="text" id="savingsName" placeholder="Contoh: DP Rumah" required>
-                </div>
-
-                <div class="form-group">
-                    <label>Target Nominal</label>
-                    <div class="amount-input">
-                        <span class="currency">Rp</span>
-                        <input type="text" id="savingsTarget" placeholder="0" required>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Tabungan Saat Ini</label>
-                    <div class="amount-input">
-                        <span class="currency">Rp</span>
-                        <input type="text" id="savingsCurrent" placeholder="0">
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Target Tanggal</label>
-                    <input type="date" id="savingsDeadline" required>
-                </div>
-
-                <div class="form-group">
-                    <label>Warna</label>
-                    <div class="color-picker" id="savingsColorPicker"></div>
-                </div>
-
-                <div class="form-actions">
-                    <button type="button" class="btn-secondary" id="cancelSavings">Batal</button>
-                    <button type="submit" class="btn-primary">Simpan</button>
-                </div>
+            <form id="budgetForm" onsubmit="saveBudget(event)">
+                <div id="budgetInputs" style="max-height: 400px; overflow-y: auto; margin-bottom: 20px;"></div>
+                <button type="submit" class="btn-primary">Simpan</button>
             </form>
         </div>
     </div>
 
-    <!-- Event Modal -->
-    <div class="modal" id="eventModal">
-        <div class="modal-overlay"></div>
+    <div class="modal" id="editProfileModal">
+        <div class="modal-overlay" onclick="closeModal('editProfileModal')"></div>
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="eventModalTitle">Buat Acara Baru</h3>
-                <button class="btn-close" id="closeEventModal">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                        <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                </button>
+                <h3>Profil</h3><button class="btn-close" onclick="closeModal('editProfileModal')">close</button>
             </div>
-            <form id="eventForm">
-                <input type="hidden" id="eventId" value="">
-
-                <div class="form-group">
-                    <label>Nama Acara</label>
-                    <input type="text" id="eventName" placeholder="Contoh: Pernikahan Adi & Budi" required>
-                </div>
-
-                <div class="form-group">
-                    <label>Tanggal Acara</label>
-                    <input type="date" id="eventDate" required>
-                </div>
-
-                <div class="form-group">
-                    <label>Anggaran Total</label>
-                    <div class="amount-input">
-                        <span class="currency">Rp</span>
-                        <input type="text" id="eventBudget" placeholder="0" required>
-                    </div>
-                </div>
-
-                <div class="form-actions">
-                    <button type="button" class="btn-secondary" id="cancelEvent">Batal</button>
-                    <button type="submit" class="btn-primary">Simpan</button>
-                </div>
-            </form>
+            <div class="form-group"><label>Nama</label><input type="text" id="settingsProfileName"></div>
+            <button class="btn-primary" id="saveProfileBtn">Simpan</button>
         </div>
     </div>
 
-    <!-- Event Detail Modal -->
-    <div class="modal" id="eventDetailModal">
-        <div class="modal-overlay"></div>
-        <div class="modal-content modal-large">
-            <div class="modal-header">
-                <h3 id="eventDetailTitle">Detail Acara</h3>
-                <button class="btn-close" id="closeEventDetailModal">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                        <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                </button>
-            </div>
-            <div class="event-detail-content" id="eventDetailContent"></div>
-        </div>
-    </div>
-
-    <!-- Add Savings Modal -->
-    <div class="modal" id="addToSavingsModal">
-        <div class="modal-overlay"></div>
-        <div class="modal-content modal-small">
-            <div class="modal-header">
-                <h3>Tambah Tabungan</h3>
-                <button class="btn-close" id="closeAddToSavingsModal">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                        <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                </button>
-            </div>
-            <form id="addToSavingsForm">
-                <input type="hidden" id="addToSavingsId" value="">
-
-                <div class="form-group">
-                    <label>Nominal</label>
-                    <div class="amount-input">
-                        <span class="currency">Rp</span>
-                        <input type="text" id="addToSavingsAmount" placeholder="0" required>
-                    </div>
-                </div>
-
-                <div class="form-actions">
-                    <button type="button" class="btn-secondary" id="cancelAddToSavings">Batal</button>
-                    <button type="submit" class="btn-primary">Tambah</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Category Modal -->
-    <div class="modal" id="categoryModal">
-        <div class="modal-overlay"></div>
-        <div class="modal-content modal-small">
-            <div class="modal-header">
-                <h3>Kategori Baru</h3>
-                <button class="btn-close" id="closeCategoryModal">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                        <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                </button>
-            </div>
-            <form id="categoryForm">
-                <div class="form-group">
-                    <label>Nama Kategori</label>
-                    <input type="text" id="categoryName" placeholder="Contoh: Investasi" required>
-                </div>
-
-                <div class="form-group">
-                    <label>Ikon</label>
-                    <div class="icon-picker" id="categoryIconPicker"></div>
-                </div>
-
-                <div class="form-group">
-                    <label>Warna</label>
-                    <div class="color-picker" id="categoryColorPicker"></div>
-                </div>
-
-                <div class="form-actions">
-                    <button type="button" class="btn-secondary" id="cancelCategory">Batal</button>
-                    <button type="submit" class="btn-primary">Simpan</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Event Item Modal -->
-    <div class="modal" id="eventItemModal">
-        <div class="modal-overlay"></div>
-        <div class="modal-content modal-small">
-            <div class="modal-header">
-                <h3 id="eventItemModalTitle">Tambah Item</h3>
-                <button class="btn-close" id="closeEventItemModal">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                        <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                </button>
-            </div>
-            <form id="eventItemForm">
-                <input type="hidden" id="eventItemEventId" value="">
-                <input type="hidden" id="eventItemId" value="">
-
-                <div class="form-group">
-                    <label>Nama Item</label>
-                    <input type="text" id="eventItemName" placeholder="Contoh: Gedung Resepsi" required>
-                </div>
-
-                <div class="form-group">
-                    <label>Kategori</label>
-                    <select id="eventItemCategory" required>
-                        <option value="venue">🏛️ Venue</option>
-                        <option value="dekorasi">🎨 Dekorasi</option>
-                        <option value="catering">🍽️ Catering</option>
-                        <option value="mahar">💍 Mahar</option>
-                        <option value="cincin">💎 Cincin</option>
-                        <option value="dokumentasi">📸 Dokumentasi</option>
-                        <option value="souvenir">🎁 Souvenir</option>
-                        <option value="busana">👔 Busana</option>
-                        <option value="lainnya">📦 Lain-lain</option>
-                        <option value="__new__">➕ Buat Kategori Baru...</option>
-                    </select>
-                </div>
-
-                <div class="form-group" id="newEventCategoryGroup" style="display: none;">
-                    <label>Nama Kategori Baru</label>
-                    <div style="display: flex; gap: var(--space-2);">
-                        <input type="text" id="newEventCategoryName" placeholder="Contoh: Hiburan">
-                        <select id="newEventCategoryIcon" style="width: 60px;">
-                            <option value="🎉">🎉</option>
-                            <option value="🎵">🎵</option>
-                            <option value="🎭">🎭</option>
-                            <option value="🚗">🚗</option>
-                            <option value="✈️">✈️</option>
-                            <option value="🏠">🏠</option>
-                            <option value="💄">💄</option>
-                            <option value="🎤">🎤</option>
-                            <option value="🍰">🍰</option>
-                            <option value="💐">💐</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Anggaran</label>
-                    <div class="amount-input">
-                        <span class="currency">Rp</span>
-                        <input type="text" id="eventItemBudget" placeholder="0" required>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Realisasi (Sudah Dibayar)</label>
-                    <div class="amount-input">
-                        <span class="currency">Rp</span>
-                        <input type="text" id="eventItemActual" placeholder="0">
-                    </div>
-                </div>
-
-                <div class="form-actions">
-                    <button type="button" class="btn-secondary" id="cancelEventItem">Batal</button>
-                    <button type="submit" class="btn-primary">Simpan</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- All Transactions Modal -->
-    <div class="modal" id="allTransactionsModal">
-        <div class="modal-overlay"></div>
-        <div class="modal-content modal-large">
-            <div class="modal-header">
-                <h3>Semua Transaksi</h3>
-                <button class="btn-close" id="closeAllTransactionsModal">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                        <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                </button>
-            </div>
-            <div class="all-transactions-content">
-                <div class="filter-bar">
-                    <select id="filterMonth">
-                        <option value="all">Semua Bulan</option>
-                    </select>
-                    <select id="filterCategory">
-                        <option value="all">Semua Kategori</option>
-                    </select>
-                    <select id="filterSender">
-                        <option value="all">Semua Pencatat</option>
-                    </select>
-                    <select id="filterType">
-                        <option value="all">Semua Tipe</option>
-                        <option value="income">Pemasukan</option>
-                        <option value="expense">Pengeluaran</option>
-                    </select>
-                </div>
-                <div class="transactions-list-full" id="allTransactionsList"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Telegram Settings Modal Removed -->
-
-    <!-- AI Settings Modal Removed (Server-side managed) -->
-
-    <!-- Toast Notification -->
-    <div class="toast-container" id="toastContainer"></div>
-
-    <!-- Debt Modal -->
-    <div class="modal" id="debtModal">
-        <div class="modal-overlay"></div>
+    <div class="modal" id="subscriptionModal">
+        <div class="modal-overlay" onclick="closeModal('subscriptionModal')"></div>
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="debtModalTitle">Catat Hutang Baru</h3>
-                <button class="btn-close" id="closeDebtModal">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                </button>
+                <h3>Langganan</h3><button class="btn-close" onclick="closeModal('subscriptionModal')">close</button>
             </div>
-            <form id="debtForm">
-                <input type="hidden" id="debtId" value="">
-                <input type="hidden" id="debtType" value="payable">
-
-                <div class="form-group">
-                    <label>Jenis</label>
-                    <div class="start-end-dates">
-                        <button type="button" class="btn-group-item active" data-type="payable" id="typePayableBtn">🔴
-                            Saya Berhutang</button>
-                        <button type="button" class="btn-group-item" data-type="receivable" id="typeReceivableBtn">🟢
-                            Orang Berhutang</button>
-                    </div>
+            <!-- Content populated by JS -->
+            <div class="subscription-status-banner" id="subscriptionStatusBanner"></div>
+            <div class="pricing-cards" style="display: grid; gap: 10px;">
+                <div class="pricing-card" data-plan="basic"
+                    style="border:1px solid #ddd; padding:10px; border-radius:10px;">
+                    <h4>Basic</h4>
+                    <button class="btn-primary btn-plan" onclick="handleSelectPlan('basic')">Pilih</button>
                 </div>
-
-                <div class="form-group">
-                    <label id="debtNameLabel">Nama Pemberi Pinjaman</label>
-                    <input type="text" id="debtName" placeholder="Contoh: Bank ABC / Budi" required>
+                <div class="pricing-card" data-plan="pro"
+                    style="border:1px solid #6366f1; padding:10px; border-radius:10px;">
+                    <h4>Pro</h4>
+                    <button class="btn-primary btn-plan" onclick="handleSelectPlan('pro')">Pilih</button>
                 </div>
-
-                <div class="form-group">
-                    <label>Deskripsi (Opsional)</label>
-                    <input type="text" id="debtDescription" placeholder="Contoh: Pinjaman Renovasi Rumah">
-                </div>
-
-                <div class="form-group">
-                    <label>Total Nominal</label>
-                    <div class="amount-input">
-                        <span class="currency">Rp</span>
-                        <input type="text" id="debtAmount" placeholder="0" required>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Jatuh Tempo (Opsional)</label>
-                    <input type="date" id="debtDueDate">
-                </div>
-
-                <div class="form-actions">
-                    <button type="button" class="btn-secondary" id="cancelDebt">Batal</button>
-                    <button type="submit" class="btn-primary">Simpan</button>
-                </div>
-            </form>
+            </div>
+            <div id="paymentProcessing" style="display:none; text-align:center;">Memproses...</div>
         </div>
     </div>
 
-    <!-- Pay Debt Modal -->
-    <div class="modal" id="payDebtModal">
-        <div class="modal-overlay"></div>
-        <div class="modal-content modal-small">
-            <div class="modal-header">
-                <h3>Catat Pembayaran</h3>
-                <button class="btn-close" id="closePayDebtModal">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                </button>
-            </div>
-            <form id="payDebtForm">
-                <input type="hidden" id="payDebtId" value="">
+    <!-- Toasts -->
+    <div id="toastContainer" class="toast-container"></div>
 
-                <div class="form-group">
-                    <p style="margin-bottom: 8px; font-size: 0.9rem;" id="payDebtInfo">Sisa Hutang: Rp 0</p>
-                    <label>Jumlah Bayar</label>
-                    <div class="amount-input">
-                        <span class="currency">Rp</span>
-                        <input type="text" id="payDebtAmount" placeholder="0" required>
-                    </div>
-                    <label class="checkbox-label" style="margin-top: 8px;">
-                        <input type="checkbox" id="recordAsTransaction" checked>
-                        <span>Catat juga sebagai Transaksi (Pengeluaran/Pemasukan)</span>
-                    </label>
-                </div>
-
-                <div class="form-actions">
-                    <button type="button" class="btn-secondary" id="cancelPayDebt">Batal</button>
-                    <button type="submit" class="btn-primary">Simpan Pembayaran</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Settings Modal (Comprehensive) -->
-    <div class="modal" id="settingsModal">
-        <div class="modal-overlay"></div>
-        <div class="modal-content modal-large settings-modal-content">
-            <div class="modal-header">
-                <h3>Pengaturan</h3>
-                <button class="btn-close" id="closeSettingsModal">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                </button>
-            </div>
-            <div class="settings-layout">
-                <aside class="settings-sidebar">
-                    <button class="settings-tab active" data-tab="account">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                            <circle cx="12" cy="7" r="4" />
-                        </svg>
-                        Akun & Profil
-                    </button>
-                    <button class="settings-tab" data-tab="categories">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="3" width="7" height="7" />
-                            <rect x="14" y="3" width="7" height="7" />
-                            <rect x="14" y="14" width="7" height="7" />
-                            <rect x="3" y="14" width="7" height="7" />
-                        </svg>
-                        Kategori
-                    </button>
-                    <button class="settings-tab" data-tab="notifications">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                        </svg>
-                        Notifikasi
-                    </button>
-                    <button class="settings-tab" data-tab="data">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                            <polyline points="7 10 12 15 17 10" />
-                            <line x1="12" y1="15" x2="12" y2="3" />
-                        </svg>
-                        Data & Sync
-                    </button>
-                    <button class="settings-tab" data-tab="appearance">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="5" />
-                            <path
-                                d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
-                        </svg>
-                        Tampilan
-                    </button>
-                    <button class="settings-tab" data-tab="telegramGroup">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path
-                                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z" />
-                        </svg>
-                        Telegram
-                    </button>
-                    <button class="settings-tab" data-tab="whatsapp">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path
-                                d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                        </svg>
-                        WhatsApp
-                    </button>
-                    <button class="settings-tab" data-tab="about">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10" />
-                            <line x1="12" y1="16" x2="12" y2="12" />
-                            <line x1="12" y1="8" x2="12.01" y2="8" />
-                        </svg>
-                        Tentang
-                    </button>
-                    <div class="settings-divider" style="margin: var(--space-2) 0;"></div>
-                    <button class="settings-tab" id="settingsLogoutBtn" style="color: var(--danger);">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
-                            <polyline points="16 17 21 12 16 7" />
-                            <line x1="21" y1="12" x2="9" y2="12" />
-                        </svg>
-                        Keluar
-                    </button>
-                </aside>
-                <main class="settings-content">
-                    <!-- Account Tab -->
-                    <div class="settings-panel active" id="settings-account">
-                        <div
-                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                            <h4>Profil Pengguna</h4>
-                            <button class="btn-primary" id="openEditProfileBtn">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                    style="width: 16px; height: 16px; margin-right: 8px;">
-                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                </svg>
-                                Edit Profil
-                            </button>
-                        </div>
-
-                        <div class="profile-view-section">
-                            <div class="profile-info-row">
-                                <div class="profile-avatar-container">
-                                    <div class="profile-avatar" id="viewProfileAvatar">
-                                        <svg viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M24 24H0V0h24v24z" fill="none" />
-                                            <path
-                                                d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                                        </svg>
-                                    </div>
-                                </div>
-                                <div class="profile-info-content">
-                                    <div class="profile-info-item">
-                                        <label class="profile-info-label">Nama Lengkap</label>
-                                        <div id="viewProfileName" class="profile-info-value">Loading...</div>
-                                    </div>
-                                    <div class="profile-info-item">
-                                        <label class="profile-info-label">Email</label>
-                                        <div id="viewProfileEmail" class="profile-info-value">Loading...</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="profile-divider"></div>
-
-                            <div class="profile-info-item">
-                                <label class="profile-info-label">Password</label>
-                                <div class="profile-info-value" style="letter-spacing: 2px;">••••••••</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Categories Tab -->
-                    <div class="settings-panel" id="settings-categories">
-                        <div class="panel-header">
-                            <h4>Kelola Kategori</h4>
-                            <button class="btn-small btn-primary" id="settingsAddCategoryBtn">+ Tambah</button>
-                        </div>
-                        <div class="settings-categories-list" id="settingsCategoriesList">
-                            <!-- Populated via JS -->
-                        </div>
-                    </div>
-
-                    <!-- Notifications Tab -->
-                    <div class="settings-panel" id="settings-notifications">
-                        <h4>Preferensi Notifikasi</h4>
-                        <div class="setting-toggle-item">
-                            <div class="toggle-info">
-                                <span class="toggle-title">Pengingat Harian</span>
-                                <span class="toggle-desc">Notifikasi untuk mencatat transaksi harian (20:00)</span>
-                            </div>
-                            <label class="switch">
-                                <input type="checkbox" id="notifyDaily">
-                                <span class="slider round"></span>
-                            </label>
-                        </div>
-                        <div class="setting-toggle-item">
-                            <div class="toggle-info">
-                                <span class="toggle-title">Jatuh Tempo Hutang</span>
-                                <span class="toggle-desc">Ingatkan 1 hari sebelum jatuh tempo</span>
-                            </div>
-                            <label class="switch">
-                                <input type="checkbox" id="notifyDebt">
-                                <span class="slider round"></span>
-                            </label>
-                        </div>
-                        <div class="setting-toggle-item">
-                            <div class="toggle-info">
-                                <span class="toggle-title">Pencapaian Target</span>
-                                <span class="toggle-desc">Notifikasi saat target tabungan tercapai</span>
-                            </div>
-                            <label class="switch">
-                                <input type="checkbox" id="notifyGoal">
-                                <span class="slider round"></span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Data Tab -->
-                    <div class="settings-panel" id="settings-data">
-                        <h4>Ekspor & Impor Data</h4>
-                        <div class="data-actions-grid">
-                            <div class="data-card">
-                                <div class="data-icon">📊</div>
-                                <h5>Ekspor CSV</h5>
-                                <p>Unduh data transaksi ke format Excel/CSV.</p>
-                                <button class="btn-secondary btn-full" id="exportCsvBtn">Download CSV</button>
-                            </div>
-                            <div class="data-card">
-                                <div class="data-icon">💾</div>
-                                <h5>Backup Data</h5>
-                                <p>Simpan seluruh data aplikasi ke file JSON.</p>
-                                <button class="btn-secondary btn-full" id="backupDataBtn">Backup JSON</button>
-                            </div>
-                            <div class="data-card">
-                                <div class="data-icon">📂</div>
-                                <h5>Restore Data</h5>
-                                <p>Kembalikan data dari file backup JSON.</p>
-                                <input type="file" id="restoreFile" accept=".json" style="display: none;">
-                                <button class="btn-secondary btn-full"
-                                    onclick="document.getElementById('restoreFile').click()">Restore JSON</button>
-                            </div>
-                        </div>
-                        <div class="settings-divider"></div>
-                        <div class="danger-zone">
-                            <h4>Zona Bahaya</h4>
-                            <button class="btn-danger" id="resetDataSettingsBtn">Reset Semua Data</button>
-                        </div>
-                    </div>
-
-                    <!-- Appearance Tab -->
-                    <div class="settings-panel" id="settings-appearance">
-                        <h4>Tampilan Aplikasi</h4>
-                        <div class="setting-toggle-item">
-                            <div class="toggle-info">
-                                <span class="toggle-title">Mode Gelap</span>
-                                <span class="toggle-desc">Gunakan tema gelap untuk kenyamanan mata</span>
-                            </div>
-                            <label class="switch">
-                                <input type="checkbox" id="settingsThemeToggle">
-                                <span class="slider round"></span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Telegram Group Tab -->
-                    <div class="settings-panel" id="settings-telegramGroup">
-                        <h4 style="margin-bottom: var(--space-2);">Pengaturan Telegram</h4>
-                        <p
-                            style="color: var(--text-muted); font-size: var(--font-size-sm); margin-bottom: var(--space-5); line-height: 1.5;">
-                            Kelola koneksi Telegram Anda untuk notifikasi dan input transaksi cepat (Pribadi & Grup).
-                        </p>
-
-                        <!-- Personal Telegram Section -->
-                        <div style="margin-bottom: var(--space-6);">
-                            <h5
-                                style="margin-bottom: var(--space-4); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-2); color: var(--text-primary);">
-                                Personal (Chat Pribadi)
-                            </h5>
-
-                            <!-- Status Box -->
-                            <div id="telegramLinkStatus" class="telegram-status-box"
-                                style="background: var(--bg-card); padding: var(--space-4); border-radius: var(--radius-lg); margin-bottom: var(--space-4); border: 1px solid var(--border-color);">
-                                <div style="display: flex; align-items: center; gap: var(--space-4);">
-                                    <div id="telegramStatusIcon"
-                                        style="width: 40px; height: 40px; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; background: var(--warning-light); color: var(--warning);">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            style="width: 20px; height: 20px;">
-                                            <path
-                                                d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-                                            <line x1="12" y1="9" x2="12" y2="13" />
-                                            <line x1="12" y1="17" x2="12.01" y2="17" />
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <h4 id="telegramStatusTitle"
-                                            style="margin-bottom: 2px; font-size: 1rem; color: var(--text-primary);">
-                                            Belum Terhubung</h4>
-                                        <p id="telegramStatusDesc"
-                                            style="font-size: var(--font-size-xs); color: var(--text-secondary); margin: 0;">
-                                            Hubungkan akun untuk input transaksi via chat pribadi</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Linked Account Info (hidden by default) -->
-                            <div id="linkedAccountInfo"
-                                style="display: none; background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%); padding: var(--space-4); border-radius: var(--radius-lg); margin-bottom: var(--space-4); border: 1px solid rgba(16, 185, 129, 0.3);">
-                                <div style="display: flex; align-items: center; justify-content: space-between;">
-                                    <div style="display: flex; align-items: center; gap: var(--space-3);">
-                                        <div
-                                            style="width: 36px; height: 36px; border-radius: var(--radius-full); background: var(--success); display: flex; align-items: center; justify-content: center;">
-                                            <svg viewBox="0 0 24 24" fill="currentColor"
-                                                style="width: 18px; height: 18px; color: white;">
-                                                <path
-                                                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z" />
-                                            </svg>
-                                        </div>
-                                        <div>
-                                            <p style="font-weight: 600; font-size: 0.95rem; color: var(--text-primary); margin: 0;"
-                                                id="linkedUsername">
-                                                @username</p>
-                                            <p style="font-size: var(--font-size-xs); color: var(--text-muted); margin: 0;"
-                                                id="linkedDate">Terhubung...</p>
-                                        </div>
-                                    </div>
-                                    <button class="btn-secondary btn-small" id="unlinkTelegramBtn"
-                                        style="color: var(--danger); padding: 4px 10px; font-size: 0.8rem;">
-                                        Putuskan
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Link Instructions -->
-                            <div id="linkInstructions" class="telegram-info"
-                                style="background: var(--bg-card); padding: var(--space-4); border-radius: var(--radius-lg); margin-bottom: var(--space-4); border: 1px solid var(--border-color);">
-                                <h5
-                                    style="margin-bottom: var(--space-3); font-size: 0.95rem; display: flex; align-items: center; gap: var(--space-2);">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                        style="width: 18px; height: 18px; color: var(--accent-primary);">
-                                        <circle cx="12" cy="12" r="10" />
-                                        <path d="M12 16v-4M12 8h.01" />
-                                    </svg>
-                                    Cara Menghubungkan
-                                </h5>
-                                <div style="display: flex; flex-direction: column; gap: var(--space-3);">
-                                    <div style="display: flex; gap: var(--space-3); align-items: center;">
-                                        <span
-                                            style="width: 20px; height: 20px; border-radius: var(--radius-full); background: var(--accent-gradient); color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0;">1</span>
-                                        <p
-                                            style="margin: 0; font-size: var(--font-size-sm); color: var(--text-primary);">
-                                            Buka Bot <a href="https://t.me/FinanzaidBot" target="_blank"
-                                                style="color: var(--accent-primary); text-decoration: none; font-weight: 600;">@FinanzaidBot</a>
-                                        </p>
-                                    </div>
-                                    <div style="display: flex; gap: var(--space-3); align-items: flex-start;">
-                                        <span
-                                            style="width: 20px; height: 20px; border-radius: var(--radius-full); background: var(--accent-gradient); color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0;">2</span>
-                                        <div style="flex: 1;">
-                                            <p
-                                                style="margin: 0; font-size: var(--font-size-sm); color: var(--text-primary);">
-                                                Kirim kode verifikasi ini ke bot:
-                                            </p>
-                                            <div
-                                                style="margin-top: 6px; background: var(--bg-secondary); padding: 8px 12px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: space-between; border: 1px dashed var(--border-color-hover);">
-                                                <code id="linkingCode"
-                                                    style="font-size: 1rem; font-weight: 700; color: var(--accent-primary-light); letter-spacing: 2px;">LOADING</code>
-                                                <button class="btn-icon" onclick="copyLinkingCode()" title="Salin kode"
-                                                    style="width: 28px; height: 28px;">
-                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                        stroke-width="2" style="width: 14px; height: 14px;">
-                                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                                                        <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div style="display: flex; gap: var(--space-3); align-items: flex-start;">
-                                        <span
-                                            style="width: 20px; height: 20px; border-radius: var(--radius-full); background: var(--accent-gradient); color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0;">3</span>
-                                        <div style="flex: 1;">
-                                            <p
-                                                style="margin: 0; font-size: var(--font-size-sm); color: var(--text-primary);">
-                                                Copy ID telegram dari balasan Bot ke kolom hubungkan di bawah ini:
-                                            </p>
-
-                                            <!-- Manual Link Input Exposed -->
-                                            <div id="manualLinkSection" style="margin-top: 8px;">
-                                                <div class="form-group" style="margin-bottom: var(--space-2);">
-                                                    <input type="text" id="manualTelegramUserId"
-                                                        placeholder="Paste ID Telegram disini" class="form-control"
-                                                        style="font-size: 0.9rem; padding: 8px 10px;">
-                                                </div>
-                                                <div class="form-group"
-                                                    style="margin-bottom: var(--space-3); display: none;">
-                                                    <!-- Username optional hidden/optional -->
-                                                    <input type="text" id="manualTelegramUsername"
-                                                        placeholder="@username" class="form-control">
-                                                </div>
-                                                <button class="btn-primary btn-small" id="linkManuallyBtn"
-                                                    onclick="linkTelegramManually()" style="width: 100%;">
-                                                    Hubungkan Akun
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                        </div>
-
-                        <!-- Group Telegram Section -->
-                        <div>
-                            <h5
-                                style="margin-bottom: var(--space-4); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-2); color: var(--text-primary);">
-                                Grup Bersama (Pasangan/Keluarga)
-                            </h5>
-
-                            <!-- Link New Group Section -->
-                            <div
-                                style="background: var(--bg-hover); padding: var(--space-5); border-radius: var(--radius-xl); margin-bottom: var(--space-5); border: 1px solid var(--border-color);">
-                                <h5
-                                    style="margin-bottom: var(--space-4); display: flex; align-items: center; gap: var(--space-2); color: var(--accent-primary);">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                        style="width: 20px; height: 20px;">
-                                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71">
-                                        </path>
-                                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71">
-                                        </path>
-                                    </svg>
-                                    Hubungkan Grup Baru
-                                </h5>
-
-                                <div class="form-group" style="margin-bottom: var(--space-4);">
-                                    <label style="display: block; margin-bottom: var(--space-2); font-weight: 500;">ID
-                                        Grup
-                                        Telegram</label>
-                                    <input type="text" id="telegramGroupIdInput" class="form-control"
-                                        placeholder="-1001234567890" style="background: var(--bg-card);">
-                                    <div
-                                        style="font-size: var(--font-size-xs); color: var(--text-muted); margin-top: 6px;">
-                                        <strong>Cara menghubungkan grup:</strong>
-                                        <ol style="margin: 4px 0 0 16px; padding: 0;">
-                                            <li>Kirim pesan dengan format <strong>/info</strong> di grup Telegram</li>
-                                            <li>Cek pesan masuk dari Karsafin Bot</li>
-                                            <li>Copy ID Grup dan tempelkan di field ID Grup Telegram</li>
-                                        </ol>
-                                    </div>
-                                </div>
-
-                                <div class="form-group" style="margin-bottom: var(--space-4);">
-                                    <label style="display: block; margin-bottom: var(--space-2); font-weight: 500;">Nama
-                                        Grup (opsional)</label>
-                                    <input type="text" id="telegramGroupNameInput" class="form-control"
-                                        placeholder="Keuangan Bersama" style="background: var(--bg-card);">
-                                </div>
-
-                                <button class="btn-primary" id="connectTelegramGroupBtn" style="width: auto;">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71">
-                                        </path>
-                                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71">
-                                        </path>
-                                    </svg>
-                                    Hubungkan Grup
-                                </button>
-                            </div>
-
-                            <!-- Linked Groups List -->
-                            <div id="linkedGroupsList">
-                                <h5 style="margin-bottom: var(--space-3);">Grup yang Terhubung</h5>
-                                <div class="empty-state small" style="padding: var(--space-4);">
-                                    <p>Belum ada grup yang terhubung</p>
-                                </div>
-                            </div>
-
-                            <!-- Tips Penggunaan -->
-                            <div
-                                style="margin-top: var(--space-5); padding: var(--space-4); background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%); border-radius: var(--radius-lg); border: 1px solid rgba(59, 130, 246, 0.2);">
-                                <div style="display: flex; align-items: flex-start; gap: var(--space-3);">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                        style="width: 20px; height: 20px; color: var(--accent-primary); flex-shrink: 0;">
-                                        <circle cx="12" cy="12" r="10" />
-                                        <line x1="12" y1="16" x2="12" y2="12" />
-                                        <line x1="12" y1="8" x2="12.01" y2="8" />
-                                    </svg>
-                                    <div>
-                                        <p
-                                            style="font-size: var(--font-size-sm); color: var(--text-primary); margin: 0; font-weight: 500;">
-                                            Tips Penggunaan</p>
-                                        <ul
-                                            style="font-size: var(--font-size-xs); color: var(--text-secondary); margin: var(--space-2) 0 0 0; padding-left: var(--space-4);">
-                                            <li>Buat grup Telegram bersama pasangan Anda</li>
-                                            <li>Invite @FinanzaidBot ke grup tersebut</li>
-                                            <li>Kirim pesan seperti: "Makan siang 50rb"</li>
-                                            <li>Transaksi akan tercatat dengan nama pengirim</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- WhatsApp Tab -->
-                    <div class="settings-panel" id="settings-whatsapp">
-                        <h4 style="margin-bottom: var(--space-2);">Integrasi WhatsApp</h4>
-                        <p
-                            style="color: var(--text-muted); font-size: var(--font-size-sm); margin-bottom: var(--space-5); line-height: 1.5;">
-                            Hubungkan WhatsApp untuk mencatat transaksi via chat. Kirim pesan seperti "Makan 50rb"
-                            dan
-                            transaksi akan tercatat otomatis.
-                        </p>
-
-                        <!-- Status Box -->
-                        <div id="whatsappLinkStatus" class="whatsapp-status-box"
-                            style="background: var(--bg-card); padding: var(--space-5); border-radius: var(--radius-xl); margin-bottom: var(--space-5); border: 1px solid var(--border-color);">
-                            <div style="display: flex; align-items: center; gap: var(--space-4);">
-                                <div id="whatsappStatusIcon"
-                                    style="width: 48px; height: 48px; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; background: var(--warning-light); color: var(--warning);">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                        style="width: 24px; height: 24px;">
-                                        <path
-                                            d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-                                        <line x1="12" y1="9" x2="12" y2="13" />
-                                        <line x1="12" y1="17" x2="12.01" y2="17" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h4 id="whatsappStatusTitle"
-                                        style="margin-bottom: var(--space-1); color: var(--text-primary);">Belum
-                                        Terhubung</h4>
-                                    <p id="whatsappStatusDesc"
-                                        style="font-size: var(--font-size-sm); color: var(--text-secondary); margin: 0;">
-                                        Hubungkan nomor WhatsApp Anda untuk input transaksi via chat</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Linked Account Info (hidden by default) -->
-                        <div id="linkedWhatsappInfo"
-                            style="display: none; background: linear-gradient(135deg, rgba(37, 211, 102, 0.1) 0%, rgba(18, 140, 126, 0.1) 100%); padding: var(--space-5); border-radius: var(--radius-xl); margin-bottom: var(--space-5); border: 1px solid rgba(37, 211, 102, 0.3);">
-                            <div style="display: flex; align-items: center; justify-content: space-between;">
-                                <div style="display: flex; align-items: center; gap: var(--space-3);">
-                                    <div
-                                        style="width: 40px; height: 40px; border-radius: var(--radius-full); background: #25D366; display: flex; align-items: center; justify-content: center;">
-                                        <svg viewBox="0 0 24 24" fill="currentColor"
-                                            style="width: 22px; height: 22px; color: white;">
-                                            <path
-                                                d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <p style="font-weight: 600; color: var(--text-primary); margin: 0;"
-                                            id="linkedWhatsappNumber">
-                                            +62812345678</p>
-                                        <p style="font-size: var(--font-size-xs); color: var(--text-muted); margin: 0;"
-                                            id="linkedWhatsappDate">Terhubung sejak...</p>
-                                    </div>
-                                </div>
-                                <button class="btn-secondary btn-small" id="unlinkWhatsappBtn"
-                                    style="color: var(--danger);">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                        style="width: 16px; height: 16px;">
-                                        <path d="M18 6L6 18M6 6l12 12" />
-                                    </svg>
-                                    Putuskan
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Link Phone Number Section -->
-                        <div id="whatsappLinkSection"
-                            style="background: var(--bg-hover); padding: var(--space-5); border-radius: var(--radius-xl); margin-bottom: var(--space-5); border: 1px solid var(--border-color);">
-                            <h5
-                                style="margin-bottom: var(--space-4); display: flex; align-items: center; gap: var(--space-2); color: var(--accent-primary);">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                    style="width: 20px; height: 20px;">
-                                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-                                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-                                </svg>
-                                Hubungkan Nomor WhatsApp
-                            </h5>
-
-                            <div class="form-group" style="margin-bottom: var(--space-4);">
-                                <label style="display: block; margin-bottom: var(--space-2); font-weight: 500;">Nomor
-                                    WhatsApp</label>
-                                <input type="text" id="whatsappPhoneInput" class="form-control"
-                                    placeholder="081234567890" style="background: var(--bg-card);">
-                                <p style="font-size: var(--font-size-xs); color: var(--text-muted); margin-top: 6px;">
-                                    Masukkan nomor WhatsApp yang terhubung ke Fonnte
-                                </p>
-                            </div>
-
-                            <div class="form-group" style="margin-bottom: var(--space-4);">
-                                <label style="display: block; margin-bottom: var(--space-2); font-weight: 500;">Nama
-                                    (opsional)</label>
-                                <input type="text" id="whatsappDisplayNameInput" class="form-control"
-                                    placeholder="Nama Saya" style="background: var(--bg-card);">
-                            </div>
-
-                            <button class="btn-primary" id="connectWhatsappBtn" style="width: auto;">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-                                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-                                </svg>
-                                Hubungkan Nomor
-                            </button>
-                        </div>
-
-                        <!-- WhatsApp Group Section -->
-                        <div
-                            style="background: var(--bg-hover); padding: var(--space-5); border-radius: var(--radius-xl); margin-bottom: var(--space-5); border: 1px solid var(--border-color);">
-                            <h5
-                                style="margin-bottom: var(--space-4); display: flex; align-items: center; gap: var(--space-2); color: var(--accent-primary);">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                    style="width: 20px; height: 20px;">
-                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                                    <circle cx="9" cy="7" r="4"></circle>
-                                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                                </svg>
-                                WhatsApp Grup
-                            </h5>
-
-                            <div class="form-group" style="margin-bottom: var(--space-4);">
-                                <label style="display: block; margin-bottom: var(--space-2); font-weight: 500;">ID
-                                    Grup
-                                    WhatsApp</label>
-                                <input type="text" id="whatsappGroupIdInput" class="form-control"
-                                    placeholder="1234567890-1234567890@g.us" style="background: var(--bg-card);">
-                                <div style="font-size: var(--font-size-xs); color: var(--text-muted); margin-top: 6px;">
-                                    <strong>Cara menghubungkan grup:</strong>
-                                    <ol style="margin: 4px 0 0 16px; padding: 0;">
-                                        <li>Kirim pesan dengan format <strong>/linkgroup</strong> di grup WhatsApp
-                                        </li>
-                                        <li>Cek pesan masuk dari Karsafin Bot di chat personal</li>
-                                        <li>Copy ID Grup dan tempelkan di field ID Grup WhatsApp</li>
-                                    </ol>
-                                </div>
-                            </div>
-
-                            <div class="form-group" style="margin-bottom: var(--space-4);">
-                                <label style="display: block; margin-bottom: var(--space-2); font-weight: 500;">Nama
-                                    Grup (opsional)</label>
-                                <input type="text" id="whatsappGroupNameInput" class="form-control"
-                                    placeholder="Keuangan Keluarga" style="background: var(--bg-card);">
-                            </div>
-
-                            <button class="btn-primary" id="connectWhatsappGroupBtn" style="width: auto;">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-                                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-                                </svg>
-                                Tambah Grup
-                            </button>
-                        </div>
-
-                        <!-- Linked Groups List -->
-                        <div id="linkedWhatsappGroupsList">
-                            <h5 style="margin-bottom: var(--space-3);">Grup yang Terhubung</h5>
-                            <div class="empty-state small" style="padding: var(--space-4);">
-                                <p>Belum ada grup WhatsApp yang terhubung</p>
-                            </div>
-                        </div>
-
-                        <!-- Tips Penggunaan -->
-                        <div
-                            style="margin-top: var(--space-5); padding: var(--space-4); background: linear-gradient(135deg, rgba(37, 211, 102, 0.1) 0%, rgba(18, 140, 126, 0.1) 100%); border-radius: var(--radius-lg); border: 1px solid rgba(37, 211, 102, 0.2);">
-                            <div style="display: flex; align-items: flex-start; gap: var(--space-3);">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                    style="width: 20px; height: 20px; color: #25D366; flex-shrink: 0;">
-                                    <circle cx="12" cy="12" r="10" />
-                                    <line x1="12" y1="16" x2="12" y2="12" />
-                                    <line x1="12" y1="8" x2="12.01" y2="8" />
-                                </svg>
-                                <div>
-                                    <p
-                                        style="font-size: var(--font-size-sm); color: var(--text-primary); margin: 0; font-weight: 500;">
-                                        Tips Penggunaan WhatsApp</p>
-                                    <ul
-                                        style="font-size: var(--font-size-xs); color: var(--text-secondary); margin: var(--space-2) 0 0 0; padding-left: var(--space-4);">
-                                        <li>Kirim pesan seperti: "Makan siang 50rb"</li>
-                                        <li>Untuk pemasukan: "Gaji 5juta" atau "Bonus 500k"</li>
-                                        <li>Semua anggota grup bisa mencatat transaksi</li>
-                                        <li>Transaksi grup tercatat ke akun Anda</li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-
-                    <!-- About Tab -->
-                    <div class="settings-panel" id="settings-about">
-                        <div class="about-header">
-                            <div class="logo-icon large">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                                    <path d="M2 17l10 5 10-5" />
-                                    <path d="M2 12l10 5 10-5" />
-                                </svg>
-                            </div>
-                            <h3>FinansialKu</h3>
-                            <span class="version-tag">Versi 1.2.0</span>
-                        </div>
-                        <div class="about-links">
-                            <a href="#" class="about-link-item">
-                                <span class="icon">❓</span>
-                                <div class="link-info">
-                                    <span class="link-title">FAQ / Bantuan</span>
-                                    <span class="link-desc">Pertanyaan yang sering diajukan</span>
-                                </div>
-                            </a>
-                            <a href="https://wa.me/6281234567890" target="_blank" class="about-link-item">
-                                <span class="icon">📞</span>
-                                <div class="link-info">
-                                    <span class="link-title">Hubungi Dukungan</span>
-                                    <span class="link-desc">Chat via WhatsApp</span>
-                                </div>
-                            </a>
-                            <a href="#" class="about-link-item">
-                                <span class="icon">📄</span>
-                                <div class="link-info">
-                                    <span class="link-title">Syarat & Ketentuan</span>
-                                    <span class="link-desc">Kebijakan penggunaan aplikasi</span>
-                                </div>
-                            </a>
-                        </div>
-                        <div class="about-footer">
-                            <p>© 2026 FinansialKu. Dibuat dengan ❤️ untuk Indonesia.</p>
-                        </div>
-                    </div>
-                </main>
-            </div>
-        </div>
-    </div>
-
-    <script src="supabase.js"></script>
-    <script src="app.js"></script>
-</body>
-
-</html>
-<!-- Edit Profile Modal -->
-<div class="modal" id="editProfileModal">
-    <div class="modal-overlay"></div>
-    <div class="modal-content modal-medium">
-        <div class="modal-header">
-            <h3>Edit Profil</h3>
-            <button class="btn-close" id="closeEditProfileModal">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-            </button>
-        </div>
-        <div class="modal-body">
-            <div class="profile-section" style="justify-content: center; margin-bottom: var(--space-6);">
-                <div class="profile-avatar-container">
-                    <div class="profile-avatar" id="editProfileAvatarPreview">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M24 24H0V0h24v24z" fill="none" />
-                            <path
-                                d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                        </svg>
-                    </div>
-                    <input type="file" id="avatarFileInput" accept="image/*" style="display: none;">
-                    <button class="btn-icon-small edit-avatar-btn" title="Ubah Foto"
-                        onclick="document.getElementById('avatarFileInput').click()">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                        </svg>
-                    </button>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label>Nama Lengkap</label>
-                <input type="text" id="settingsProfileName" placeholder="Nama Anda">
-            </div>
-            <div class="form-group">
-                <label>Email <span style="font-size: var(--font-size-xs); color: var(--text-muted);">(Tidak dapat
-                        diubah)</span></label>
-                <input type="email" id="settingsProfileEmail" placeholder="email@example.com" readonly
-                    style="background: var(--bg-secondary); cursor: not-allowed; opacity: 0.7;">
-            </div>
-
-            <div class="settings-divider"></div>
-
-            <h4 style="margin-bottom: var(--space-4);">Ganti Password (Opsional)</h4>
-            <div class="form-group">
-                <label>Password Baru</label>
-                <input type="password" id="settingsNewPassword" placeholder="Kosongkan jika tidak ingin mengubah">
-            </div>
-
-            <button class="btn-primary" id="saveProfileBtn" style="width: 100%; margin-top: var(--space-4);">Simpan
-                Perubahan</button>
-        </div>
-    </div>
-</div>
-
-<!-- Subscription Modal -->
-<div class="modal" id="subscriptionModal">
-    <div class="modal-overlay"></div>
-    <div class="modal-content modal-large">
-        <div class="modal-header">
-            <h3>💎 Pilih Paket Langganan</h3>
-            <button class="btn-close" onclick="closeModal('subscriptionModal')">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-            </button>
-        </div>
-        <div class="modal-body">
-            <!-- Current Status Banner -->
-            <div class="subscription-status-banner" id="subscriptionStatusBanner">
-                <div class="status-info">
-                    <span class="status-label">Status Saat Ini:</span>
-                    <span class="status-value" id="currentPlanName">-</span>
-                </div>
-                <div class="status-expiry" id="statusExpiry">
-                    <span>Berlaku hingga: </span>
-                    <span id="expiryDate">-</span>
-                </div>
-            </div>
-
-            <!-- Billing Cycle Toggle -->
-            <div class="billing-cycle-container">
-                <div class="billing-cycle-toggle">
-                    <button class="cycle-option active" onclick="setBillingCycle('monthly')" id="cycleMonthly">
-                        Bulanan
-                    </button>
-                    <button class="cycle-option" onclick="setBillingCycle('quarterly')" id="cycleQuarterly">
-                        3 Bulan <span class="discount-badge">Hemat 10%</span>
-                    </button>
-                    <button class="cycle-option" onclick="setBillingCycle('yearly')" id="cycleYearly">
-                        Tahunan <span class="discount-badge">Hemat 20%</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Pricing Cards -->
-            <div class="pricing-cards">
-                <!-- Basic Plan -->
-                <div class="pricing-card" data-plan="basic">
-                    <div class="pricing-header">
-                        <span class="plan-badge">📦 Basic</span>
-                        <div class="plan-price">
-                            <span class="currency">Rp</span>
-                            <span class="amount">15.000</span>
-                            <span class="period">/bulan</span>
-                        </div>
-                    </div>
-                    <div class="pricing-features">
-                        <div class="feature-item">✅ Transaksi Aplikasi Unlimited</div>
-                        <div class="feature-item">⚠️ Transaksi WA/Telegram Max 300/bulan</div>
-                        <div class="feature-item">✅ Fitur Anggaran</div>
-                        <div class="feature-item">✅ Target Tabungan</div>
-                        <div class="feature-item">✅ Laporan Keuangan</div>
-                        <div class="feature-item">✅ Hutang Piutang</div>
-                        <div class="feature-item">✅ Kalkulator Finansial</div>
-                        <div class="feature-item disabled">❌ Asisten AI</div>
-                        <div class="feature-item disabled">❌ Ekspor Laporan</div>
-                    </div>
-                    <button class="btn-primary btn-plan" onclick="handleSelectPlan('basic')">
-                        Pilih Basic
-                    </button>
-                </div>
-
-                <!-- Pro Plan -->
-                <div class="pricing-card featured" data-plan="pro">
-                    <div class="featured-badge">🔥 Paling Populer</div>
-                    <div class="pricing-header">
-                        <span class="plan-badge pro">⭐ Pro</span>
-                        <div class="plan-price">
-                            <span class="currency">Rp</span>
-                            <span class="amount">30.000</span>
-                            <span class="period">/bulan</span>
-                        </div>
-                    </div>
-                    <div class="pricing-features">
-                        <div class="feature-item">✅ Transaksi Aplikasi Unlimited</div>
-                        <div class="feature-item highlight">✅ Transaksi WA/Telegram Unlimited</div>
-                        <div class="feature-item">✅ Fitur Anggaran</div>
-                        <div class="feature-item">✅ Target Tabungan</div>
-                        <div class="feature-item">✅ Laporan Keuangan</div>
-                        <div class="feature-item">✅ Hutang Piutang</div>
-                        <div class="feature-item">✅ Kalkulator Finansial</div>
-                        <div class="feature-item highlight">✅ Asisten AI</div>
-                        <div class="feature-item highlight">✅ Ekspor Laporan PDF</div>
-                    </div>
-                    <button class="btn-primary btn-plan" onclick="handleSelectPlan('pro')">
-                        Pilih Pro
-                    </button>
-                </div>
-            </div>
-
-            <!-- Payment Processing Indicator -->
-            <div class="payment-processing" id="paymentProcessing" style="display: none;">
-                <div class="loading-spinner"></div>
-                <p>Memproses pembayaran...</p>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Upgrade Overlay (blocks app when no subscription) -->
-<div class="upgrade-overlay" id="upgradeOverlay" style="display: none;">
-    <div class="upgrade-overlay-content">
-        <div class="upgrade-overlay-icon">🔒</div>
-        <h2>Langganan Diperlukan</h2>
-        <p>Untuk mengakses semua fitur Karsafin, silakan berlangganan terlebih dahulu.</p>
-
-        <div class="upgrade-overlay-features">
-            <div class="feature-row">
-                <span class="feature-icon">📊</span>
-                <span>Dasbor Keuangan</span>
-            </div>
-            <div class="feature-row">
-                <span class="feature-icon">📝</span>
-                <span>Catat Transaksi</span>
-            </div>
-            <div class="feature-row">
-                <span class="feature-icon">💰</span>
-                <span>Anggaran & Tabungan</span>
-            </div>
-            <div class="feature-row">
-                <span class="feature-icon">📱</span>
-                <span>Integrasi WA/Telegram</span>
-            </div>
-            <div class="feature-row">
-                <span class="feature-icon">🤖</span>
-                <span>Asisten AI (Pro)</span>
-            </div>
-        </div>
-
-        <div class="upgrade-overlay-pricing">
-            <div class="pricing-mini basic">
-                <span class="plan-name">Basic</span>
-                <span class="plan-price">Rp 15.000/bln</span>
-            </div>
-            <div class="pricing-mini pro">
-                <span class="plan-name">Pro</span>
-                <span class="plan-price">Rp 30.000/bln</span>
-            </div>
-        </div>
-
-        <button class="btn-primary btn-large" onclick="openSubscriptionModal(); hideUpgradeOverlay();">
-            💎 Pilih Paket Langganan
-        </button>
-
-        <button class="btn-text" onclick="handleLogoutFromOverlay()">
-            Keluar dari Akun
-        </button>
-    </div>
-</div>
-
-<!-- App Scripts -->
-<script src="supabase.js?v=2"></script>
-<script src="app.js?v=3"></script>
+    <!-- Scripts -->
+    <script src="supabase.js?v=2"></script>
+    <script src="app.js?v=3"></script>
 </body>
 
 </html>
