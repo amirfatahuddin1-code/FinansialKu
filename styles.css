@@ -2627,11 +2627,36 @@ form {
 
     .period-selector {
         width: 100%;
+        gap: 4px;
+        /* Tighter gap */
     }
 
     .period-btn {
         flex: 1;
         text-align: center;
+        padding: 8px 4px;
+        font-size: 11px;
+        /* Smaller text */
+        font-weight: 700;
+        /* Bold */
+        white-space: nowrap;
+        /* Prevent multiple lines */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Custom calendar button styles for mobile */
+    .period-btn.period-custom {
+        flex: 0 0 40px;
+        /* Fixed width for calendar */
+        padding: 0;
+    }
+
+    .period-btn.period-custom svg {
+        width: 20px !important;
+        height: 20px !important;
+        /* Larger icon */
     }
 
     .card-value {
