@@ -1,4 +1,5 @@
 // FinansialKu - Main Application JavaScript
+console.log('APP VERSION 3 LOADED 🚀');
 
 // ========== Data Storage ==========
 const STORAGE_KEYS = {
@@ -556,7 +557,7 @@ function deleteCategory(categoryId, type) {
     showToast('Kategori dihapus', 'success');
 }
 
-async function saveTransaction(e) {
+async function handleTransactionFormSubmit(e) {
     e.preventDefault();
     if (!state.selectedCategory) { showToast('Pilih kategori', 'warning'); return; }
 
@@ -702,8 +703,22 @@ function renderTransactions() {
     }
     list.innerHTML = filtered.map(t => {
         const c = state.categories.find(x => x.id === t.categoryId) || { icon: '📦', name: 'Lainnya', color: '#64748b' };
-        const senderBadge = t.senderName ? `<div class="transaction-sender" style="font-size: 0.7rem; color: var(--text-muted); margin-top: 2px;">👤 ${t.senderName}</div>` : '';
-        return `<div class="transaction-item" data-id="${t.id}"><div class="transaction-icon" style="background:${c.color}20">${c.icon}</div><div class="transaction-info"><div class="transaction-category">${c.name}</div><div class="transaction-description">${t.description || '-'}</div>${senderBadge}</div><div><div class="transaction-amount ${t.type}">${t.type === 'income' ? '+' : '-'}${formatCurrency(t.amount)}</div><div class="transaction-date">${formatDateShort(t.date)}</div></div><div class="transaction-actions"><button onclick="editTx('${t.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="delete" onclick="deleteTransaction('${t.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button></div></div>`;
+
+        let badges = '';
+        if (t.source === 'telegram' || t.source === 'telegram-receipt') {
+            const label = t.source === 'telegram-receipt' ? '🧾 Scan' : '✈️ TG';
+            badges += `<span style="font-size: 0.65rem; background: #e0f2fe; color: #0284c7; padding: 2px 5px; border-radius: 4px; margin-right: 4px;">${label}</span>`;
+        }
+        if (t.source === 'whatsapp') {
+            badges += `<span style="font-size: 0.65rem; background: #dcfce7; color: #166534; padding: 2px 5px; border-radius: 4px; margin-right: 4px;">💬 WA</span>`;
+        }
+        if (t.senderName) {
+            badges += `<span style="font-size: 0.7rem; color: var(--text-muted);">👤 ${t.senderName}</span>`;
+        }
+
+        const metaInfo = badges ? `<div style="margin-top: 4px; display: flex; align-items: center;">${badges}</div>` : '';
+
+        return `<div class="transaction-item" data-id="${t.id}"><div class="transaction-icon" style="background:${c.color}20">${c.icon}</div><div class="transaction-info"><div class="transaction-category">${c.name}</div><div class="transaction-description">${t.description || '-'}</div>${metaInfo}</div><div><div class="transaction-amount ${t.type}">${t.type === 'income' ? '+' : '-'}${formatCurrency(t.amount)}</div><div class="transaction-date">${formatDateShort(t.date)}</div></div><div class="transaction-actions"><button onclick="editTx('${t.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="delete" onclick="deleteTransaction('${t.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button></div></div>`;
     }).join('');
 }
 
@@ -1309,15 +1324,26 @@ function renderAllTransactions() {
 
     const list = document.getElementById('allTransactionsList');
     if (!filtered.length) { list.innerHTML = '<div class="empty-state"><p>Tidak ada transaksi</p></div>'; return; }
+
+    // DEBUG: Print transactions to check 'source' field
+    console.log('Rendering Transactions:', filtered.map(t => ({ id: t.id, source: t.source, sender: t.senderName || t.sender_name })));
+
     list.innerHTML = filtered.map(t => {
         const c = state.categories.find(x => x.id === t.categoryId) || { icon: '📦', name: 'Lainnya', color: '#64748b' };
-        // Sender Badge Logic
-        const senderBadge = (t.senderName || t.sender_name)
-            ? `<span class="sender-badge" style="font-size: 0.75rem; background: #e0f2fe; color: #0284c7; padding: 2px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px; margin-top: 4px;">
-                <svg style="width: 10px; height: 10px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                Dicatat oleh ${(t.senderName || t.sender_name)}
-               </span>`
-            : '';
+        // Sender & Source Badge Logic
+        let badges = '';
+        if (t.source === 'telegram' || t.source === 'telegram-receipt') {
+            const label = t.source === 'telegram-receipt' ? '🧾 Scan' : '✈️ TG';
+            badges += `<span style="font-size: 0.75rem; background: #e0f2fe; color: #0284c7; padding: 2px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px; margin-right: 4px;">${label}</span>`;
+        }
+        if (t.source === 'whatsapp') {
+            badges += `<span style="font-size: 0.75rem; background: #dcfce7; color: #166534; padding: 2px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px; margin-right: 4px;">💬 WA</span>`;
+        }
+        if (t.senderName || t.sender_name) {
+            badges += `<span style="font-size: 0.75rem; color: var(--text-muted); display: inline-flex; align-items: center; gap: 3px;">👤 ${t.senderName || t.sender_name}</span>`;
+        }
+
+        const metaInfo = badges ? `<div style="margin-top: 4px; display: flex; align-items: center; flex-wrap: wrap; gap: 4px;">${badges}</div>` : '';
 
         return `<div class="transaction-item">
             <div class="transaction-icon" style="background:${c.color}20">${c.icon}</div>
@@ -1325,7 +1351,7 @@ function renderAllTransactions() {
                 <div class="transaction-category">${c.name}</div>
                 <div class="transaction-description">
                     ${t.description || '-'}
-                    ${senderBadge ? '<br>' + senderBadge : ''}
+                    ${metaInfo}
                 </div>
             </div>
             <div class="transaction-amount-col">
@@ -4362,3 +4388,15 @@ function hasProFeatures() {
 function getMessagingUsage() {
     return state.subscription.messaging;
 }
+
+// Fix for transaction form binding and v3 verification
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('APP v3 FIX: Binding transaction form...');
+    const txForm = document.getElementById('transactionForm');
+    if (txForm) {
+        txForm.onsubmit = handleTransactionFormSubmit; // Override any previous binding
+        console.log('APP v3 FIX: Transaction form bound to handleTransactionFormSubmit ✅');
+    } else {
+        console.error('APP v3 FIX: Transaction form NOT found ❌');
+    }
+});
