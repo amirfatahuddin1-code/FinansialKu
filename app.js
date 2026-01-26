@@ -109,28 +109,28 @@ function formatAmountInput(input) {
 }
 
 function getDateRange(period) {
-    const now = new Date();
-    const start = new Date();
     const end = new Date();
+    const start = new Date();
 
-    switch (period) {
-        case 'daily':
-            start.setHours(0, 0, 0, 0);
-            end.setHours(23, 59, 59, 999);
-            break;
-        case 'weekly':
-            const day = now.getDay();
-            start.setDate(now.getDate() - day);
-            start.setHours(0, 0, 0, 0);
-            end.setDate(start.getDate() + 6);
-            end.setHours(23, 59, 59, 999);
-            break;
-        case 'monthly':
-            start.setDate(1);
-            start.setHours(0, 0, 0, 0);
-            end.setMonth(end.getMonth() + 1, 0);
-            end.setHours(23, 59, 59, 999);
-            break;
+    if (period === 'custom') {
+        if (state.customRange && state.customRange.start && state.customRange.end) {
+            // Ensure end date includes the full day (23:59:59)
+            const customEnd = new Date(state.customRange.end);
+            customEnd.setHours(23, 59, 59, 999);
+            return { start: state.customRange.start, end: customEnd };
+        }
+        // Fallback if no custom range set
+        return { start, end };
+    }
+
+    if (period === 'daily') {
+        start.setHours(0, 0, 0, 0); end.setHours(23, 59, 59, 999);
+    } else if (period === 'weekly') {
+        const day = start.getDay() || 7;
+        if (day !== 1) start.setHours(-24 * (day - 1));
+        start.setHours(0, 0, 0, 0); end.setHours(23, 59, 59, 999);
+    } else if (period === 'monthly') {
+        start.setDate(1); start.setHours(0, 0, 0, 0); end.setHours(23, 59, 59, 999);
     }
     return { start, end };
 }
@@ -1617,7 +1617,78 @@ async function logout() {
 
 function initEventListeners() {
     // Period buttons
-    document.querySelectorAll('.period-btn').forEach(btn => btn.addEventListener('click', () => { document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); state.currentPeriod = btn.dataset.period; updateDashboard(); }));
+    document.querySelectorAll('.period-btn').forEach(btn => btn.addEventListener('click', () => {
+        if (btn.id === 'customDateBtn') {
+            // Handle custom date picker
+            document.getElementById('customDateInput').showPicker();
+            return;
+        }
+        document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.currentPeriod = btn.dataset.period;
+        updateDashboard();
+    }));
+
+    // Custom Date Input Handler
+    const dateInput = document.getElementById('customDateInput');
+    const dateInputEnd = document.getElementById('customDateInputEnd');
+
+    if (dateInput) {
+        dateInput.addEventListener('change', (e) => {
+            const startDate = e.target.value;
+            if (startDate) {
+                // Determine end date (default to same day if not picking range, but let's prompt for end date or just use single date for now, or maybe make it a range picker if supported)
+                // For simplicity, let's ask for the end date immediately after
+                /* 
+                  Strategy: 
+                  1. User picks start date.
+                  2. We store it temporarily.
+                  3. We programmatically open the second date picker for end date.
+                  4. If user cancels, we just use start date as single day or abort.
+               */
+                // Actually, let's just use the single date for start and set end to today, OR maybe we can't easily chain pickers reliably. 
+                // Let's try a simple approach: if custom is selected, maybe we just filter by that single day?
+                // The user said "rentang tertentu" (specific range). 
+                // Let's try to assume single date input for now acts as "Start Date", maybe we need a proper UI for range.
+                // Re-reading: "sortir periode rentang tertentu".
+                // Native date pickers don't support ranges well (Chrome does vaguely but it's not standard).
+                // A simple JS prompt is ugly but effective. "Masukkan Tanggal Akhir".
+                // Better: create a simple modal for date range. 
+                // However, to stick to "simple": 
+
+                // Let's check if we can filter by that specific date only first? 
+                // Or let's just make it a "Select Start Date" and "Select End Date" flow?
+
+                // Let's implement a workaround: When start date changes, immediately ask for end date via prompt or second picker.
+                // Second picker is better UX than prompt.
+                state.tempStartDate = startDate;
+                setTimeout(() => {
+                    // Ideally we show a toast "Pilih tanggal akhir"
+                    showToast('Pilih tanggal akhir', 'info');
+                    dateInputEnd.showPicker();
+                }, 500);
+            }
+        });
+    }
+
+    if (dateInputEnd) {
+        dateInputEnd.addEventListener('change', (e) => {
+            const endDate = e.target.value;
+            const startDate = state.tempStartDate;
+
+            if (startDate && endDate) {
+                state.customRange = { start: new Date(startDate), end: new Date(endDate) };
+
+                // Activate Custom Button
+                document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+                document.getElementById('customDateBtn').classList.add('active');
+
+                state.currentPeriod = 'custom';
+                updateDashboard();
+                showToast(`Periode: ${formatDate(startDate)} - ${formatDate(endDate)}`);
+            }
+        });
+    }
 
     // Modal close buttons
     document.querySelectorAll('.modal-overlay, .btn-close').forEach(el => el.addEventListener('click', closeAllModals));
