@@ -1619,8 +1619,30 @@ function initEventListeners() {
     // Period buttons
     document.querySelectorAll('.period-btn').forEach(btn => btn.addEventListener('click', () => {
         if (btn.id === 'customDateBtn') {
-            // Handle custom date picker
-            document.getElementById('customDateInput').showPicker();
+            // Flatpickr Initialization
+            if (!state.flatpickrInstance) {
+                state.flatpickrInstance = flatpickr("#customDateBtn", {
+                    mode: "range",
+                    dateFormat: "Y-m-d",
+                    locale: "id",
+                    position: "auto",
+                    onClose: function (selectedDates, dateStr, instance) {
+                        if (selectedDates.length === 2) {
+                            state.customRange = { start: selectedDates[0], end: selectedDates[1] };
+
+                            document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+                            document.getElementById('customDateBtn').classList.add('active');
+
+                            state.currentPeriod = 'custom';
+                            updateDashboard();
+                            showToast(`Periode: ${formatDateShort(selectedDates[0])} - ${formatDateShort(selectedDates[1])}`);
+                        }
+                    }
+                });
+                state.flatpickrInstance.open();
+            } else {
+                state.flatpickrInstance.open();
+            }
             return;
         }
         document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
@@ -1633,43 +1655,7 @@ function initEventListeners() {
     const dateInput = document.getElementById('customDateInput');
     const dateInputEnd = document.getElementById('customDateInputEnd');
 
-    if (dateInput) {
-        dateInput.addEventListener('change', (e) => {
-            const startDate = e.target.value;
-            if (startDate) {
-                // Determine end date (default to same day if not picking range, but let's prompt for end date or just use single date for now, or maybe make it a range picker if supported)
-                // For simplicity, let's ask for the end date immediately after
-                /* 
-                  Strategy: 
-                  1. User picks start date.
-                  2. We store it temporarily.
-                  3. We programmatically open the second date picker for end date.
-                  4. If user cancels, we just use start date as single day or abort.
-               */
-                // Actually, let's just use the single date for start and set end to today, OR maybe we can't easily chain pickers reliably. 
-                // Let's try a simple approach: if custom is selected, maybe we just filter by that single day?
-                // The user said "rentang tertentu" (specific range). 
-                // Let's try to assume single date input for now acts as "Start Date", maybe we need a proper UI for range.
-                // Re-reading: "sortir periode rentang tertentu".
-                // Native date pickers don't support ranges well (Chrome does vaguely but it's not standard).
-                // A simple JS prompt is ugly but effective. "Masukkan Tanggal Akhir".
-                // Better: create a simple modal for date range. 
-                // However, to stick to "simple": 
 
-                // Let's check if we can filter by that specific date only first? 
-                // Or let's just make it a "Select Start Date" and "Select End Date" flow?
-
-                // Let's implement a workaround: When start date changes, immediately ask for end date via prompt or second picker.
-                // Second picker is better UX than prompt.
-                state.tempStartDate = startDate;
-                setTimeout(() => {
-                    // Ideally we show a toast "Pilih tanggal akhir"
-                    showToast('Pilih tanggal akhir', 'info');
-                    dateInputEnd.showPicker();
-                }, 500);
-            }
-        });
-    }
 
     if (dateInputEnd) {
         dateInputEnd.addEventListener('change', (e) => {
