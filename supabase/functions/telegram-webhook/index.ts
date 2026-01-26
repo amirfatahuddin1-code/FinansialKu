@@ -32,8 +32,13 @@ serve(async (req) => {
         const telegramUsername = message.from.username || ''
 
         // --- 1. HANDLE COMMANDS ---
-        // Support /id, /start, and /info
-        if (message.text && ['/start', '/id', '/info'].includes(message.text.trim())) {
+        const text = message.text ? message.text.trim() : '';
+        // Regex to match /start, /id, /info optionally followed by @botname
+        const commandRegex = /^\/(start|id|info)(?:@\w+)?$/i;
+
+        if (commandRegex.test(text)) {
+            const match = text.match(commandRegex);
+            // match[1] will be 'start', 'id', or 'info'
             const isGroup = message.chat.type === 'group' || message.chat.type === 'supergroup';
             let replyText = '';
 
