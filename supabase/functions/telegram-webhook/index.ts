@@ -1,5 +1,4 @@
 // Supabase Edge Function: telegram-webhook
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -7,17 +6,21 @@ const corsHeaders = {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
     // Handle CORS
     if (req.method === 'OPTIONS') {
         return new Response('ok', { headers: corsHeaders })
     }
 
     try {
-        const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-        const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+        const supabaseUrl = Deno.env.get('SUPABASE_URL')
+        const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
         const groqApiKey = Deno.env.get('GROQ_API_KEY')
         const telegramBotToken = Deno.env.get('TELEGRAM_BOT_TOKEN')
+
+        if (!supabaseUrl || !supabaseServiceKey) {
+            throw new Error('Missing Supabase configuration')
+        }
 
         const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
@@ -29,7 +32,7 @@ serve(async (req) => {
         }
 
         const telegramUserId = String(message.from.id)
-        const telegramUsername = message.from.username || ''
+        const telegramUsername = message.from.username || 'User'
 
         // --- 1. HANDLE COMMANDS ---
         const text = message.text ? message.text.trim() : '';
@@ -37,17 +40,16 @@ serve(async (req) => {
         const commandRegex = /^\/(start|id|info)(?:@\w+)?$/i;
 
         if (commandRegex.test(text)) {
-            const match = text.match(commandRegex);
-            // match[1] will be 'start', 'id', or 'info'
             const isGroup = message.chat.type === 'group' || message.chat.type === 'supergroup';
             let replyText = '';
 
             if (isGroup) {
-                // Group Context: Show Group ID
-                replyText = `👥 *Info Grup*\n\nID Grup ini:\n\`${message.chat.id}\`\n\nSalin ID ini ke pengaturan aplikasi FinansialKu (Menu Telegram > Hubungkan Grup) untuk menghubungkan grup ini.`;
+                // Group Context: Group ID
+                replyText = `👥 *Info Grup*\n\nID Grup ini:\n\`${message.chat.id}\`\n\nSalin ID ini ke pengaturan aplikasi Karsafin (Menu Telegram > Hubungkan Grup).`
             } else {
-                // Private Context: Show User ID
-                replyText = `👋 Halo @${telegramUsername}!\n\nID Telegram Anda:\n\`${telegramUserId}\`\n\nSalin ID ini ke aplikasi FinansialKu (Menu Telegram > Hubungkan Manual) untuk menghubungkan akun.\n\nAnda bisa mencatat keuangan dengan mengetik:\n_makan 50000_\n_gaji +5jt_\n\nAtau kirimkan foto struk belanja! 🧾`;
+                // Private Context: User ID
+                // Careful with username in Markdown
+                replyText = `👋 Halo ${telegramUsername}!\n\nID Telegram Anda:\n\`${telegramUserId}\`\n\nSalin ID ini ke aplikasi Karsafin (Menu Telegram > Hubungkan Manual).\n\nKetik transaksi: "makan 50000"`;
             }
 
             return new Response(JSON.stringify({
@@ -74,10 +76,11 @@ serve(async (req) => {
         if (!link) {
             // Only reply if it looks like a command or transaction attempt
             if (message.text || message.photo) {
+                const idInfo = isGroupChat ? `ID Grup: \`${message.chat.id}\`` : `ID: \`${telegramUserId}\``;
                 return new Response(JSON.stringify({
                     method: 'sendMessage',
                     chat_id: message.chat.id,
-                    text: `⚠️ Akun belum terhubung.\n\nID Telegram Anda: \`${telegramUserId}\`\n${isGroupChat ? `ID Grup: \`${message.chat.id}\`\n` : ''}\nSilakan hubungkan akun Anda di aplikasi FinansialKu terlebih dahulu.`,
+                    text: `⚠️ Akun belum terhubung.\n\n${idInfo}\nSilakan hubungkan di aplikasi Karsafin.`,
                     parse_mode: 'Markdown'
                 }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
             }
@@ -95,7 +98,7 @@ serve(async (req) => {
             return new Response(JSON.stringify({ method: 'sendMessage', chat_id: message.chat.id, text: '❌ Langganan tidak aktif.' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
         }
 
-        // Helper: Check Usage Limit
+        // Helper: Check Usage Limit (Basic Plan)
         if (subscription.plan_id && subscription.plan_id.startsWith('basic') && subscription.status !== 'trial') {
             const { data: usage } = await supabase.rpc('get_messaging_usage', { p_user_id: userId })
             const currentUsage = usage && usage.length > 0 ? usage[0].total_count : 0
@@ -109,6 +112,7 @@ serve(async (req) => {
         // --- 4. HANDLE PHOTO (RECEIPT SCANNING) ---
         if (message.photo && message.photo.length > 0) {
             if (!groqApiKey || !telegramBotToken) {
+                // If secrets missing, reply error (optional: keep silent to not spam)
                 return new Response(JSON.stringify({ method: 'sendMessage', chat_id: message.chat.id, text: '⚠️ Sistem belum dikonfigurasi (API Key missing).' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
             }
 
@@ -129,16 +133,14 @@ serve(async (req) => {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${groqApiKey}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    "model": "llama-3.2-11b-vision-preview", // or "llama-3.2-90b-vision-preview" if available, usually cheaper/faster for receipts. User asked for "llama-4-scout-17b-16e-instruct" but that is likely a text model or placeholder name. I will use a known Groq Vision model "llama-3.2-11b-vision-preview" or "llama-3.2-90b-vision-preview". Wait, the user provided a screenshot. "meta-llama/llama-4-scout-17b-16e-instruct" might be a specific model they have access to. I will try to use the EXACT model name user requested if it supports vision. If not, I fallback to supported vision model. 
-                    // Wait, "llama-4-scout" is highly likely a typo or future model?
                     "model": "meta-llama/llama-4-scout-17b-16e-instruct",
                     "messages": [
                         {
                             "role": "user",
                             "content": [
                                 {
-                                    "type": "text", "text": `Current Date: ${new Date().toISOString().split('T')[0]}. Extract transaction data. Return ONLY JSON: {"items": [{"name": "item name", "amount": number}], "total": number, "store": "store name", "date": "YYYY-MM-DD", "category": "Food/Transport/Shopping"}.
-Context: Receipt date '17-01-26' usually means 17th Jan 2026 (DD-MM-YY), NOT 2017. If year is 2 digits '26', it is 2026. Prioritize recent dates.` },
+                                    "type": "text", "text": `Current Date: ${new Date().toISOString().split('T')[0]}. Extract transaction data. Return ONLY JSON: {"items": [{"name": "item name", "amount": number}], "total": number, "store": "store name", "date": "YYYY-MM-DD", "category": "Food/Transport/Shopping"}.`
+                                },
                                 { "type": "image_url", "image_url": { "url": imageUrl } }
                             ]
                         }
@@ -174,7 +176,6 @@ Context: Receipt date '17-01-26' usually means 17th Jan 2026 (DD-MM-YY), NOT 201
             const aiCategory = result.category || 'Belanja';
             const mappedCategory = findCategory(result.store + ' ' + aiCategory + ' ' + (result.items?.[0]?.name || ''), categories || [], 'expense'); // Improved context for matching
             const categoryId = mappedCategory?.id || null;
-            const categoryName = mappedCategory?.name || aiCategory;
 
             // Strategy: Insert Total as one transaction OR Items?
             // User likely prefers Items if detected, but let's allow fallback.
@@ -228,7 +229,7 @@ Context: Receipt date '17-01-26' usually means 17th Jan 2026 (DD-MM-YY), NOT 201
 
         // --- 6. SAVE & REPLY ---
         if (transactionsToSave.length > 0) {
-            const { data, error } = await supabase.from('transactions').insert(transactionsToSave).select()
+            const { error } = await supabase.from('transactions').insert(transactionsToSave)
             if (error) { console.error('Insert Error:', error); throw error; }
 
             // Increment Usage
@@ -262,7 +263,8 @@ Context: Receipt date '17-01-26' usually means 17th Jan 2026 (DD-MM-YY), NOT 201
 
     } catch (error) {
         console.error('Error:', error)
-        return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        // Try to reply with error if possible, otherwise just 200 to satisfy webhook
+        return new Response(JSON.stringify({ error: error.message }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 })
 
