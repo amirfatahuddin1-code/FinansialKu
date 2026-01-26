@@ -32,11 +32,23 @@ serve(async (req) => {
         const telegramUsername = message.from.username || ''
 
         // --- 1. HANDLE COMMANDS ---
-        if (message.text && (message.text === '/start' || message.text === '/id')) {
+        // Support /id, /start, and /info
+        if (message.text && ['/start', '/id', '/info'].includes(message.text.trim())) {
+            const isGroup = message.chat.type === 'group' || message.chat.type === 'supergroup';
+            let replyText = '';
+
+            if (isGroup) {
+                // Group Context: Show Group ID
+                replyText = `👥 *Info Grup*\n\nID Grup ini:\n\`${message.chat.id}\`\n\nSalin ID ini ke pengaturan aplikasi FinansialKu (Menu Telegram > Hubungkan Grup) untuk menghubungkan grup ini.`;
+            } else {
+                // Private Context: Show User ID
+                replyText = `👋 Halo @${telegramUsername}!\n\nID Telegram Anda:\n\`${telegramUserId}\`\n\nSalin ID ini ke aplikasi FinansialKu (Menu Telegram > Hubungkan Manual) untuk menghubungkan akun.\n\nAnda bisa mencatat keuangan dengan mengetik:\n_makan 50000_\n_gaji +5jt_\n\nAtau kirimkan foto struk belanja! 🧾`;
+            }
+
             return new Response(JSON.stringify({
                 method: 'sendMessage',
                 chat_id: message.chat.id,
-                text: `👋 Halo @${telegramUsername}!\n\nID Telegram Anda adalah:\n\`${telegramUserId}\`\n\nSilakan salin ID tersebut/masukkan ke aplikasi FinansialKu (Menu Telegram > Hubungkan Manual) untuk menghubungkan akun.\n\nAnda bisa mencatat keuangan dengan mengetik:\n_makan 50000_\n_gaji +5jt_\n\nAtau kirimkan foto struk belanja! 🧾`,
+                text: replyText,
                 parse_mode: 'Markdown'
             }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
         }
