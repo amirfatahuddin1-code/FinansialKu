@@ -73,7 +73,7 @@ let state = {
 
 // ========== Utility Functions ==========
 function generateId() {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+    return crypto.randomUUID();
 }
 
 function formatCurrency(amount) {
@@ -1276,29 +1276,51 @@ function renderIconPicker(containerId, selected) {
     document.querySelectorAll(`#${containerId} .icon-option`).forEach(el => el.addEventListener('click', () => { document.querySelectorAll(`#${containerId} .icon-option`).forEach(e => e.classList.remove('selected')); el.classList.add('selected'); }));
 }
 
-function handleSaveCategoryForm(e) {
+async function handleSaveCategoryForm(e) {
     e.preventDefault();
-    const name = document.getElementById('categoryName').value;
-    const icon = document.querySelector('#categoryIconPicker .icon-option.selected')?.dataset.icon || '📦';
-    const color = document.querySelector('#categoryColorPicker .color-option.selected')?.dataset.color || '#64748b';
-    if (!name) { showToast('Masukkan nama kategori', 'warning'); return; }
+    const btn = document.querySelector('#categoryForm button[type="submit"]');
+    const originalText = btn.textContent;
+    btn.textContent = 'Menyimpan...';
+    btn.disabled = true;
 
-    // Determine type: default to expense if not specified/hidden
-    const type = document.getElementById('transactionType').value || 'expense';
+    try {
+        const name = document.getElementById('categoryName').value;
+        const icon = document.querySelector('#categoryIconPicker .icon-option.selected')?.dataset.icon || '📦';
+        const color = document.querySelector('#categoryColorPicker .color-option.selected')?.dataset.color || '#64748b';
+        if (!name) { showToast('Masukkan nama kategori', 'warning'); return; }
 
-    // Create new category object
-    const newCategory = { id: generateId(), name, icon, color, type };
+        // Determine type: default to expense if not specified/hidden
+        const type = document.getElementById('transactionType').value || 'expense';
 
-    // Save locally
-    state.categories.push(newCategory);
+        // Create new category object with temp ID (now valid UUID)
+        const newCategory = { id: generateId(), name, icon, color, type };
 
-    // Save to API (calls async function saveCategory defined at top of file)
-    saveCategory(newCategory);
+        // Save locally (optimistic)
+        state.categories.push(newCategory);
 
-    closeModal('categoryModal');
-    renderCategoryGrid(type); // Update transaction modal grid
-    renderSettingsCategories(); // Update settings list if open
-    showToast('Kategori ditambahkan');
+        // Save to API and wait for real ID
+        const savedData = await saveCategory(newCategory);
+
+        if (savedData) {
+            // Update local object with real data from DB
+            // Find the optimistic category we just pushed and update it
+            const idx = state.categories.findIndex(c => c.id === newCategory.id);
+            if (idx !== -1) {
+                state.categories[idx] = savedData;
+            }
+        }
+
+        closeModal('categoryModal');
+        renderCategoryGrid(type); // Update transaction modal grid
+        renderSettingsCategories(); // Update settings list if open
+        showToast('Kategori ditambahkan');
+    } catch (err) {
+        console.error('Error saving category:', err);
+        showToast('Gagal menyimpan kategori', 'error');
+    } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+    }
 }
 // This completely broke the API saving function!
 // I need to rename THIS event handler to 'handleSaveCategoryForm' and update the event listener.
@@ -1315,16 +1337,22 @@ function populateFilters() {
     document.getElementById('filterMonth').innerHTML = '<option value="all">Semua Bulan</option>' + months.map(m => { const [y, mo] = m.split('-'); const d = new Date(y, mo - 1); return `<option value="${m}">${d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</option>`; }).join('');
     const cats = [...new Set(state.transactions.map(t => t.categoryId))];
     document.getElementById('filterCategory').innerHTML = '<option value="all">Semua Kategori</option>' + cats.map(c => { const cat = state.categories.find(x => x.id === c); return cat ? `<option value="${c}">${cat.icon} ${cat.name}</option>` : ''; }).join('');
+
+    // Populate Sender Filter
+    const senders = [...new Set(state.transactions.map(t => t.senderName || t.sender_name).filter(Boolean))].sort();
+    document.getElementById('filterSender').innerHTML = '<option value="all">Semua Pencatat</option>' + senders.map(s => `<option value="${s}">${s}</option>`).join('');
 }
 
 function renderAllTransactions() {
     const monthFilter = document.getElementById('filterMonth').value;
     const catFilter = document.getElementById('filterCategory').value;
+    const senderFilter = document.getElementById('filterSender').value;
     const typeFilter = document.getElementById('filterType').value;
 
     let filtered = state.transactions;
     if (monthFilter !== 'all') { const [y, m] = monthFilter.split('-'); filtered = filtered.filter(t => { const d = new Date(t.date); return d.getFullYear() === parseInt(y) && d.getMonth() === parseInt(m) - 1; }); }
     if (catFilter !== 'all') filtered = filtered.filter(t => t.categoryId === catFilter);
+    if (senderFilter !== 'all') filtered = filtered.filter(t => (t.senderName || t.sender_name) === senderFilter);
     if (typeFilter !== 'all') filtered = filtered.filter(t => t.type === typeFilter);
 
     const list = document.getElementById('allTransactionsList');
@@ -1338,7 +1366,12 @@ function renderAllTransactions() {
         // Sender & Source Badge Logic
         let badges = '';
         if (t.source === 'telegram' || t.source === 'telegram-receipt') {
-            const label = t.source === 'telegram-receipt' ? '🧾 Scan' : '✈️ TG';
+            let label;
+            if (t.source === 'telegram-receipt') {
+                label = '🧾 Scan';
+            } else {
+                label = `<svg viewBox="0 0 24 24" fill="currentColor" style="width:10px;height:10px;vertical-align:middle;margin-right:2px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/></svg> Telegram`;
+            }
             badges += `<span style="font-size: 0.75rem; background: #e0f2fe; color: #0284c7; padding: 2px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px; margin-right: 4px;">${label}</span>`;
         }
         if (t.source === 'whatsapp') {
@@ -1528,7 +1561,7 @@ function initEventListeners() {
     });
 
     // Filters
-    ['filterMonth', 'filterCategory', 'filterType'].forEach(id => document.getElementById(id).addEventListener('change', renderAllTransactions));
+    ['filterMonth', 'filterCategory', 'filterType', 'filterSender'].forEach(id => document.getElementById(id).addEventListener('change', renderAllTransactions));
 
     // Amount formatting
     ['transactionAmount', 'savingsTarget', 'savingsCurrent', 'eventBudget', 'eventItemBudget', 'eventItemActual', 'addToSavingsAmount'].forEach(id => document.getElementById(id).addEventListener('input', function () { formatAmountInput(this); }));
