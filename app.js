@@ -624,7 +624,9 @@ async function handleTransactionFormSubmit(e) {
             description: savedDataFromDB.description,
             date: savedDataFromDB.date,
             createdAt: savedDataFromDB.created_at,
-            userId: savedDataFromDB.user_id
+            userId: savedDataFromDB.user_id,
+            source: savedDataFromDB.source,
+            senderName: savedDataFromDB.sender_name
         };
 
         // Update local state
@@ -1525,7 +1527,7 @@ function initEventListeners() {
     document.querySelectorAll('.modal-overlay, .btn-close').forEach(el => el.addEventListener('click', closeAllModals));
 
     // Forms
-    document.getElementById('transactionForm').addEventListener('submit', saveTransaction);
+    document.getElementById('transactionForm').addEventListener('submit', handleTransactionFormSubmit);
     document.getElementById('budgetForm').addEventListener('submit', saveBudget);
     document.getElementById('savingsForm').addEventListener('submit', saveSavingsGoal);
     document.getElementById('eventForm').addEventListener('submit', saveEvent);
