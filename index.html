@@ -20,8 +20,13 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap"
         rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" />
     <style>
+        .material-symbols-rounded {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
         /* New Header & Nav Styles (Stitch Design) */
         :root {
             --stitch-bg: #f3f4f6;
@@ -55,13 +60,10 @@
         .header-brand .logo-box {
             width: 48px;
             height: 48px;
-            background: linear-gradient(135deg, #6366f1, #4f46e5);
-            border-radius: 12px;
+            /* Remove background, use image */
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-            font-size: 24px;
         }
 
         .header-brand div h1 {
@@ -143,6 +145,70 @@
             color: #6366f1;
         }
 
+        /* New Header & Nav Styles (Stitch Design) */
+        /* Restore dropdown styles from original CSS or add custom ones here if missing */
+        .profile-dropdown {
+            position: absolute;
+            top: 70px;
+            right: 20px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            width: 260px;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 1000;
+            border: 1px solid #f1f5f9;
+        }
+
+        .profile-dropdown.active {
+            display: flex;
+            animation: slideDown 0.2s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .dropdown-item {
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #1e293b;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 14px;
+        }
+
+        .dropdown-item:hover {
+            background: #f8fafc;
+            color: #6366f1;
+        }
+
+        .dropdown-divider {
+            height: 1px;
+            background: #e2e8f0;
+            margin: 4px 0;
+        }
+
+        .dropdown-item.danger {
+            color: #ef4444;
+        }
+
+        .dropdown-item.danger:hover {
+            background: #fef2f2;
+        }
+
         .new-profile {
             display: flex;
             align-items: center;
@@ -151,6 +217,8 @@
             border-left: 1px solid #e2e8f0;
             margin-left: 8px;
             cursor: pointer;
+            position: relative;
+            /* For dropdown positioning context if needed, currently dropdown is fixed or absolute to body? No, absolute to header container usually. */
         }
 
         .new-profile .info {
@@ -198,7 +266,7 @@
             overflow-x: auto;
         }
 
-        .new-nav-item {
+        .new-nav .new-nav-item {
             flex: 1;
             border: none;
             background: transparent;
@@ -213,7 +281,7 @@
             transition: all 0.3s;
         }
 
-        .new-nav-item .icon-box {
+        .new-nav .new-nav-item .icon-box {
             width: 32px;
             height: 32px;
             display: flex;
@@ -225,7 +293,7 @@
             transition: all 0.3s;
         }
 
-        .new-nav-item span {
+        .new-nav .new-nav-item span {
             font-size: 10px;
             font-weight: 700;
             color: #94a3b8;
@@ -234,25 +302,25 @@
         }
 
         /* Active States */
-        .new-nav-item.active {
+        .new-nav .new-nav-item.active {
             background: #6366f1;
             box-shadow: 0 8px 16px rgba(99, 102, 241, 0.25);
         }
 
-        .new-nav-item.active .icon-box {
+        .new-nav .new-nav-item.active .icon-box {
             color: white;
         }
 
-        .new-nav-item.active span {
+        .new-nav .new-nav-item.active span {
             color: rgba(255, 255, 255, 0.9);
         }
 
         /* Specific Colors for non-active hover */
-        .new-nav-item:hover .icon-box {
+        .new-nav .new-nav-item:hover .icon-box {
             transform: scale(1.1);
         }
 
-        .new-nav-item:hover span {
+        .new-nav .new-nav-item:hover span {
             color: #6366f1;
         }
 
@@ -289,8 +357,9 @@
         <!-- Header -->
         <header class="new-header">
             <div class="header-brand">
-                <div class="logo-box">
-                    <span class="material-icons-round">account_balance_wallet</span>
+                <div class="logo-box" style="background: transparent;">
+                    <img src="assets/img/logo.png" alt="Karsafin"
+                        style="width: 100%; height: 100%; object-fit: contain;">
                 </div>
                 <div>
                     <h1>Karsafin</h1>
@@ -299,19 +368,19 @@
             </div>
 
             <div class="header-search">
-                <span class="material-icons-round">search</span>
+                <span class="material-symbols-rounded">search</span>
                 <input type="text" placeholder="Cari data finansial...">
             </div>
 
             <div class="header-actions">
                 <button class="action-btn" id="themeToggle" title="Toggle Theme">
-                    <span class="material-icons-round">dark_mode</span>
+                    <span class="material-symbols-rounded">dark_mode</span>
                 </button>
                 <button class="action-btn">
-                    <span class="material-icons-round">notifications</span>
+                    <span class="material-symbols-rounded">notifications</span>
                 </button>
 
-                <div class="new-profile" id="profileTrigger">
+                <div class="new-profile" id="profileTrigger" style="position: relative;">
                     <div class="info">
                         <p class="name" id="headerProfileName">Loading...</p>
                         <p class="role" id="headerProfileEmail">User</p>
@@ -319,37 +388,55 @@
                     <img id="headerAvatarImg" src="https://ui-avatars.com/api/?name=User&background=6366f1&color=fff"
                         alt="Profile">
                 </div>
+
+                <!-- Dropdown Menu Restored -->
+                <div class="profile-dropdown" id="profileDropdown">
+                    <div class="dropdown-item" id="menuAccount">
+                        <span class="material-symbols-rounded">person</span> Informasi Akun
+                    </div>
+                    <div class="dropdown-item" id="menuSettings">
+                        <span class="material-symbols-rounded">settings</span> Pengaturan
+                    </div>
+                    <div class="dropdown-item upgrade" id="menuSubscription" onclick="openSubscriptionModal()">
+                        <span class="material-symbols-rounded">diamond</span>
+                        <span>Langganan</span>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <div class="dropdown-item danger" id="menuLogout">
+                        <span class="material-symbols-rounded">logout</span> Keluar
+                    </div>
+                </div>
             </div>
         </header>
 
         <!-- Navigation -->
         <nav class="new-nav">
-            <button class="new-nav-item active" data-tab="dashboard">
-                <div class="icon-box"><span class="material-icons-round">grid_view</span></div>
+            <button class="new-nav-item nav-item active" data-tab="dashboard">
+                <div class="icon-box"><span class="material-symbols-rounded">grid_view</span></div>
                 <span>DASHBOARD</span>
             </button>
-            <button class="new-nav-item" data-tab="planning">
-                <div class="icon-box color-green"><span class="material-icons-round">account_balance</span></div>
+            <button class="new-nav-item nav-item" data-tab="planning">
+                <div class="icon-box color-green"><span class="material-symbols-rounded">account_balance</span></div>
                 <span>ANGGARAN</span>
             </button>
-            <button class="new-nav-item" data-tab="events">
-                <div class="icon-box color-orange"><span class="material-icons-round">event</span></div>
+            <button class="new-nav-item nav-item" data-tab="events">
+                <div class="icon-box color-orange"><span class="material-symbols-rounded">event</span></div>
                 <span>ACARA</span>
             </button>
-            <button class="new-nav-item" data-tab="debts">
-                <div class="icon-box color-red"><span class="material-icons-round">link_off</span></div>
+            <button class="new-nav-item nav-item" data-tab="debts">
+                <div class="icon-box color-red"><span class="material-symbols-rounded">link_off</span></div>
                 <span>HUTANG</span>
             </button>
-            <button class="new-nav-item" data-tab="aiAssistant">
-                <div class="icon-box color-indigo"><span class="material-icons-round">psychology</span></div>
+            <button class="new-nav-item nav-item" data-tab="aiAssistant">
+                <div class="icon-box color-indigo"><span class="material-symbols-rounded">psychology</span></div>
                 <span>AI</span>
             </button>
-            <button class="new-nav-item" data-tab="calculator">
-                <div class="icon-box color-blue"><span class="material-icons-round">calculate</span></div>
+            <button class="new-nav-item nav-item" data-tab="calculator">
+                <div class="icon-box color-blue"><span class="material-symbols-rounded">calculate</span></div>
                 <span>KALKULATOR</span>
             </button>
-            <button class="new-nav-item" data-tab="reports">
-                <div class="icon-box color-purple"><span class="material-icons-round">bar_chart</span></div>
+            <button class="new-nav-item nav-item" data-tab="reports">
+                <div class="icon-box color-purple"><span class="material-symbols-rounded">bar_chart</span></div>
                 <span>LAPORAN</span>
             </button>
         </nav>
