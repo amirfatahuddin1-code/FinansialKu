@@ -171,7 +171,7 @@ Context: Receipt date '17-01-26' usually means 17th Jan 2026 (DD-MM-YY), NOT 201
                         description: `${storeName} - ${item.name}`,
                         date: txDate,
                         source: 'telegram-receipt',
-                        sender_name: isGroupChat ? senderName : null
+                        sender_name: senderName
                     })
                 }
             } else {
@@ -183,7 +183,7 @@ Context: Receipt date '17-01-26' usually means 17th Jan 2026 (DD-MM-YY), NOT 201
                     description: `Struk ${storeName}`,
                     date: txDate,
                     source: 'telegram-receipt',
-                    sender_name: isGroupChat ? senderName : null
+                    sender_name: senderName
                 })
             }
 
@@ -204,7 +204,7 @@ Context: Receipt date '17-01-26' usually means 17th Jan 2026 (DD-MM-YY), NOT 201
                     description: parsed.description,
                     date: new Date().toISOString().split('T')[0],
                     source: 'telegram',
-                    sender_name: isGroupChat ? senderName : null
+                    sender_name: senderName
                 })
             }
         }
