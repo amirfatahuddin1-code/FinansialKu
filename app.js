@@ -2,7 +2,42 @@
 console.log('APP VERSION 3 LOADED 🚀');
 
 // ========== Data Storage ==========
-const STORAGE_KEYS = {
+// ========== Data Storage ==========
+if (typeof STORAGE_KEYS === 'undefined') {
+    window.STORAGE_KEYS = {
+        TRANSACTIONS: 'finansialku_transactions',
+        CATEGORIES: 'finansialku_categories',
+        BUDGETS: 'finansialku_budgets',
+        SAVINGS: 'finansialku_savings',
+        EVENTS: 'finansialku_events',
+        SYNC_SERVER: 'finansialku_sync_server',
+        AI_SETTINGS: 'finansialku_ai_settings',
+        DEBTS: 'finansialku_debts'
+    };
+} else {
+    // If already defined, ensure we use the global one if needed, or just warn
+    console.warn('STORAGE_KEYS already defined');
+}
+const KEYS = window.STORAGE_KEYS; // Use a local alias if you want, or just update code to use STORAGE_KEYS globally.
+// However, to minimize refactoring, we can try:
+// const STORAGE_KEYS = ... throws error.
+// We should rely on the window object or var, but since 'const' is block scoped, the issue is likely app.js loaded twice.
+
+// BETTER FIX: Check if we are running the script for the second time and abort if so?
+// OR: Just make STORAGE_KEYS a var (hoisted, redeclarable) or window property.
+
+// Let's go with the window property approach to be safe against double loading,
+// BUT removing the duplicate script tag in HTML is the REAL fix (which I will check next).
+// For now, let's just use 'var' or check existence.
+
+// Actually, the user error shows "SyntaxError: Identifier 'STORAGE_KEYS' has already been declared".
+// This happens during the Parsing phase, before execution, if it's a 'const'/'let' in the same scope.
+// If app.js is loaded twice by the browser, it is separate executions, so 'const' usually isn't an issue UNLESS:
+// 1. It's properly a module (type="module") - but here it's likely standard script.
+// 2. The browser environment retains the previous execution context (hot reload?).
+
+// Simplest robust inline fix:
+var STORAGE_KEYS = window.STORAGE_KEYS || {
     TRANSACTIONS: 'finansialku_transactions',
     CATEGORIES: 'finansialku_categories',
     BUDGETS: 'finansialku_budgets',
@@ -12,6 +47,11 @@ const STORAGE_KEYS = {
     AI_SETTINGS: 'finansialku_ai_settings',
     DEBTS: 'finansialku_debts'
 };
+// Note: We change 'const' to 'var' to allow redeclaration if the script runs in the same context,
+// OR strictly, if we want to follow modern practices, we just ensure it's not redeclared.
+
+// Let's stick to the previous code content but change const to var to prevent the crash,
+// AND I will also check index.html for duplicate script tags.
 
 // Default Categories
 const DEFAULT_CATEGORIES = [
