@@ -1464,6 +1464,101 @@ async function deleteTransaction(id) {
     }
 }
 
+// ========== Banner Carousel ==========
+function initBannerCarousel() {
+    const carousel = document.getElementById('bannerCarousel');
+    const dotsContainer = document.getElementById('bannerDots');
+    if (!carousel || !dotsContainer) return;
+
+    const slides = carousel.querySelectorAll('.banner-slide');
+    const dots = dotsContainer.querySelectorAll('.banner-dot');
+    let currentSlide = 0;
+    let autoPlayInterval = null;
+
+    // Update active dot
+    function updateDots(index) {
+        dots.forEach((dot, i) => {
+            dot.classList.toggle('active', i === index);
+        });
+    }
+
+    // Scroll to slide
+    function goToSlide(index) {
+        if (index < 0) index = slides.length - 1;
+        if (index >= slides.length) index = 0;
+        currentSlide = index;
+        carousel.scrollTo({ left: slides[index].offsetLeft, behavior: 'smooth' });
+        updateDots(currentSlide);
+    }
+
+    // Dot click handlers
+    dots.forEach((dot, index) => {
+        dot.addEventListener('click', () => goToSlide(index));
+    });
+
+    // Track scroll position to update dots
+    carousel.addEventListener('scroll', () => {
+        const scrollLeft = carousel.scrollLeft;
+        const slideWidth = carousel.offsetWidth;
+        const newIndex = Math.round(scrollLeft / slideWidth);
+        if (newIndex !== currentSlide) {
+            currentSlide = newIndex;
+            updateDots(currentSlide);
+        }
+    });
+
+    // Auto-play
+    function startAutoPlay() {
+        autoPlayInterval = setInterval(() => goToSlide(currentSlide + 1), 5000);
+    }
+
+    function stopAutoPlay() {
+        clearInterval(autoPlayInterval);
+    }
+
+    carousel.addEventListener('mouseenter', stopAutoPlay);
+    carousel.addEventListener('mouseleave', startAutoPlay);
+    carousel.addEventListener('touchstart', stopAutoPlay, { passive: true });
+    carousel.addEventListener('touchend', startAutoPlay);
+
+    startAutoPlay();
+
+    // CTA button click handlers
+    document.querySelectorAll('.btn-banner-cta').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const action = btn.dataset.navigate;
+            handleBannerNavigation(action);
+        });
+    });
+
+    // Slide click handler (for slides with data-action)
+    slides.forEach(slide => {
+        slide.addEventListener('click', () => {
+            const action = slide.dataset.action;
+            if (action) handleBannerNavigation(action);
+        });
+    });
+}
+
+function handleBannerNavigation(action) {
+    // Navigate to Settings modal and appropriate tab
+    openModal('settingsModal');
+    setTimeout(() => {
+        let tabId = null;
+        if (action === 'telegram-personal') {
+            tabId = 'telegram';
+        } else if (action === 'telegram-group') {
+            tabId = 'telegramGroup';
+        }
+        if (tabId) {
+            // Find and click the settings tab button
+            const tabBtn = document.querySelector(`[data-tab="${tabId}"]`);
+            if (tabBtn) tabBtn.click();
+        }
+    }, 100);
+}
+
 // ========== Initialization ==========
 async function init() {
     // Check authentication first
@@ -1476,6 +1571,7 @@ async function init() {
     initNavigation();
     initFAB();
     initEventListeners();
+    initBannerCarousel(); // Initialize banner carousel
     updateDashboard();
     loadSyncSettings();
     initCalculators();

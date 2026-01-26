@@ -4936,3 +4936,203 @@ details[open] summary {
     font-weight: 700;
     line-height: 1.2;
 }
+
+/* ========== Banner Carousel ========== */
+.banner-carousel-container {
+    position: relative;
+    margin-bottom: var(--space-6);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+}
+
+.banner-carousel {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.banner-carousel::-webkit-scrollbar {
+    display: none;
+}
+
+.banner-slide {
+    min-width: 100%;
+    scroll-snap-align: start;
+    padding: var(--space-6);
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #06b6d4 100%);
+    border-radius: var(--radius-xl);
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform var(--transition-base);
+}
+
+.banner-slide::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 60%;
+    height: 200%;
+    background: radial-gradient(ellipse, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.banner-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-6);
+    position: relative;
+    z-index: 1;
+}
+
+.banner-text {
+    flex: 1;
+    max-width: 60%;
+}
+
+.banner-text h3 {
+    font-size: var(--font-size-2xl);
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: var(--space-2);
+    line-height: 1.3;
+}
+
+.banner-text p {
+    font-size: var(--font-size-sm);
+    color: rgba(255, 255, 255, 0.9);
+    line-height: 1.6;
+    margin-bottom: var(--space-4);
+}
+
+.btn-banner-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-5);
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #ffffff;
+    font-weight: 600;
+    font-size: var(--font-size-sm);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.btn-banner-cta:hover {
+    background: rgba(255, 255, 255, 0.35);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.btn-banner-cta svg {
+    width: 18px;
+    height: 18px;
+}
+
+.banner-illustration {
+    width: 140px;
+    height: 140px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-xl);
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(5px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+.illustration-icon {
+    font-size: 4rem;
+    line-height: 1;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+}
+
+/* Specific slide themes */
+.banner-slide[data-slide="0"] {
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 60%, #60a5fa 100%);
+}
+
+.banner-slide[data-slide="1"] {
+    background: linear-gradient(135deg, #0f766e 0%, #14b8a6 50%, #2dd4bf 100%);
+}
+
+.banner-slide[data-slide="2"] {
+    background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 50%, #a78bfa 100%);
+}
+
+/* Carousel Dots */
+.banner-dots {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: var(--space-3) 0;
+    position: absolute;
+    bottom: var(--space-3);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+}
+
+.banner-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: var(--radius-full);
+    background: rgba(255, 255, 255, 0.4);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    border: none;
+}
+
+.banner-dot.active {
+    background: #ffffff;
+    width: 28px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.banner-dot:hover {
+    background: rgba(255, 255, 255, 0.7);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .banner-slide {
+        padding: var(--space-4);
+    }
+
+    .banner-content {
+        flex-direction: column-reverse;
+        text-align: center;
+    }
+
+    .banner-text {
+        max-width: 100%;
+    }
+
+    .banner-text h3 {
+        font-size: var(--font-size-xl);
+    }
+
+    .banner-illustration {
+        width: 100px;
+        height: 100px;
+    }
+
+    .illustration-icon {
+        font-size: 3rem;
+    }
+
+    .btn-banner-cta {
+        width: 100%;
+        justify-content: center;
+    }
+}
