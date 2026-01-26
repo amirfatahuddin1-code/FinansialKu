@@ -2835,21 +2835,6 @@ async function syncTelegramTransactions() {
 }
 
 function initTelegramSettings() {
-    // Open telegram settings modal
-    const openBtn = document.getElementById('openTelegramSettings');
-    if (openBtn) {
-        openBtn.addEventListener('click', () => {
-            openModal('telegramSettingsModal');
-            checkTelegramLinkStatus();
-        });
-    }
-
-    // Close buttons
-    const closeBtn = document.getElementById('closeTelegramSettings');
-    const closeBtnFooter = document.getElementById('closeTelegramSettingsBtn');
-    if (closeBtn) closeBtn.addEventListener('click', () => closeModal('telegramSettingsModal'));
-    if (closeBtnFooter) closeBtnFooter.addEventListener('click', () => closeModal('telegramSettingsModal'));
-
     // Unlink button
     const unlinkBtn = document.getElementById('unlinkTelegramBtn');
     if (unlinkBtn) {
@@ -3574,6 +3559,7 @@ function switchSettingsTab(tabName) {
     // Load tab-specific data
     if (tabName === 'telegramGroup') {
         loadLinkedGroups();
+        checkTelegramLinkStatus();
     }
 }
 
