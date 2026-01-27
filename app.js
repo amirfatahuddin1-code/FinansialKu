@@ -481,6 +481,9 @@ function initFAB() {
     const fabMenu = document.getElementById('fabMenu');
 
     if (fab && fabMenu) {
+        // Clear Rescue Script Handler to prevent double-toggling
+        fab.onclick = null;
+
         fab.addEventListener('click', () => {
             fab.classList.toggle('active');
             fabMenu.classList.toggle('active');
@@ -519,6 +522,9 @@ function initSettings() {
     const profileDropdown = document.getElementById('profileDropdown');
 
     if (profileTrigger && profileDropdown) {
+        // Clear Rescue Script Handler to prevent double-toggling
+        profileTrigger.onclick = null;
+
         // Toggle Dropdown
         profileTrigger.addEventListener('click', (e) => {
             e.stopPropagation();
