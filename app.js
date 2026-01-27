@@ -3148,7 +3148,9 @@ function initDebtEvents() {
 }
 
 // ========== Profile Photo Upload (NO SIZE LIMIT) ==========
-let selectedAvatarFile = null;
+if (typeof selectedAvatarFile === 'undefined') {
+    var selectedAvatarFile = null;
+}
 
 // Handle avatar file selection
 document.addEventListener('DOMContentLoaded', () => {
