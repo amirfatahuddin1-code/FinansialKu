@@ -32,28 +32,40 @@ var STORAGE_KEYS = window.STORAGE_KEYS;
 // AND I will also check index.html for duplicate script tags.
 
 // Default Categories
-const DEFAULT_CATEGORIES = [
-    { id: 'food', name: 'Makanan', icon: '🍽️', color: '#ef4444', type: 'expense' },
-    { id: 'transport', name: 'Transportasi', icon: '🚗', color: '#f59e0b', type: 'expense' },
-    { id: 'shopping', name: 'Belanja', icon: '🛒', color: '#8b5cf6', type: 'expense' },
-    { id: 'entertainment', name: 'Hiburan', icon: '🎬', color: '#ec4899', type: 'expense' },
-    { id: 'health', name: 'Kesehatan', icon: '💊', color: '#10b981', type: 'expense' },
-    { id: 'bills', name: 'Tagihan', icon: '📄', color: '#3b82f6', type: 'expense' },
-    { id: 'education', name: 'Pendidikan', icon: '📚', color: '#06b6d4', type: 'expense' },
-    { id: 'savings', name: 'Tabungan', icon: '🏦', color: '#14b8a6', type: 'expense' },
-    { id: 'other', name: 'Lainnya', icon: '📦', color: '#64748b', type: 'expense' },
-    { id: 'salary', name: 'Gaji', icon: '💰', color: '#10b981', type: 'income' },
-    { id: 'bonus', name: 'Bonus', icon: '🎁', color: '#f59e0b', type: 'income' },
-    { id: 'investment', name: 'Investasi', icon: '📈', color: '#8b5cf6', type: 'income' },
-    { id: 'freelance', name: 'Freelance', icon: '💼', color: '#3b82f6', type: 'income' },
-    { id: 'freelance', name: 'Freelance', icon: '💼', color: '#3b82f6', type: 'income' }
-];
+// Default Categories
+if (typeof DEFAULT_CATEGORIES === 'undefined') {
+    var DEFAULT_CATEGORIES = [
+        { id: 'food', name: 'Makanan', icon: '🍽️', color: '#ef4444', type: 'expense' },
+        { id: 'transport', name: 'Transportasi', icon: '🚗', color: '#f59e0b', type: 'expense' },
+        { id: 'shopping', name: 'Belanja', icon: '🛒', color: '#8b5cf6', type: 'expense' },
+        { id: 'entertainment', name: 'Hiburan', icon: '🎬', color: '#ec4899', type: 'expense' },
+        { id: 'health', name: 'Kesehatan', icon: '💊', color: '#10b981', type: 'expense' },
+        { id: 'bills', name: 'Tagihan', icon: '📄', color: '#3b82f6', type: 'expense' },
+        { id: 'education', name: 'Pendidikan', icon: '📚', color: '#06b6d4', type: 'expense' },
+        { id: 'savings', name: 'Tabungan', icon: '🏦', color: '#14b8a6', type: 'expense' },
+        { id: 'other', name: 'Lainnya', icon: '📦', color: '#64748b', type: 'expense' },
+        { id: 'salary', name: 'Gaji', icon: '💰', color: '#10b981', type: 'income' },
+        { id: 'bonus', name: 'Bonus', icon: '🎁', color: '#f59e0b', type: 'income' },
+        { id: 'investment', name: 'Investasi', icon: '📈', color: '#8b5cf6', type: 'income' },
+        { id: 'freelance', name: 'Freelance', icon: '💼', color: '#3b82f6', type: 'income' },
+        { id: 'freelance', name: 'Freelance', icon: '💼', color: '#3b82f6', type: 'income' }
+    ];
+} else {
+    // If it exists, we can use it, or just do nothing.
+    // var redeclaration of a pre-existing var is fine, but if it was const it would fail.
+    // Since we are changing it to var, it should be robust.
+}
 
-const ICON_OPTIONS = ['🍽️', '🚗', '🛒', '🎬', '💊', '📄', '📚', '📦', '💰', '🎁', '📈', '💼', '🏠', '✈️', '🎮', '👔', '💍', '📸', '🎨', '🏛️'];
-const COLOR_OPTIONS = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#06b6d4', '#64748b', '#84cc16', '#f97316'];
+if (typeof ICON_OPTIONS === 'undefined') {
+    var ICON_OPTIONS = ['🍽️', '🚗', '🛒', '🎬', '💊', '📄', '📚', '📦', '💰', '🎁', '📈', '💼', '🏠', '✈️', '🎮', '👔', '💍', '📸', '🎨', '🏛️'];
+}
+
+if (typeof COLOR_OPTIONS === 'undefined') {
+    var COLOR_OPTIONS = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#06b6d4', '#64748b', '#84cc16', '#f97316'];
+}
 
 // ========== State Management ==========
-let state = {
+var state = {
     transactions: [],
     categories: [],
     budgets: {},
@@ -750,7 +762,7 @@ function renderTransactions() {
 
 function editTx(id) { const t = state.transactions.find(x => x.id === id); if (t) openTransactionModal(t.type, t); }
 
-let weeklyChart = null;
+var weeklyChart = null;
 function updateWeeklyChart() {
     const ctx = document.getElementById('weeklyChart').getContext('2d');
     const labels = [], incData = [], expData = [];
@@ -4395,20 +4407,22 @@ function removeAIGating() {
 }
 
 // Billing Cycle Logic
-const BILLING_PLANS = {
-    monthly: {
-        basic: { price: "15.000", period: "/bulan", id: "basic", btnText: "Pilih Basic" },
-        pro: { price: "30.000", period: "/bulan", id: "pro", btnText: "Pilih Pro" }
-    },
-    quarterly: {
-        basic: { price: "40.500", period: "/3 bulan", id: "basic_3m", btnText: "Pilih Basic (3 Bulan)" },
-        pro: { price: "81.000", period: "/3 bulan", id: "pro_3m", btnText: "Pilih Pro (3 Bulan)" }
-    },
-    yearly: {
-        basic: { price: "144.000", period: "/tahun", id: "basic_1y", btnText: "Pilih Basic (1 Tahun)" },
-        pro: { price: "288.000", period: "/tahun", id: "pro_1y", btnText: "Pilih Pro (1 Tahun)" }
-    }
-};
+if (typeof BILLING_PLANS === 'undefined') {
+    var BILLING_PLANS = {
+        monthly: {
+            basic: { price: "15.000", period: "/bulan", id: "basic", btnText: "Pilih Basic" },
+            pro: { price: "30.000", period: "/bulan", id: "pro", btnText: "Pilih Pro" }
+        },
+        quarterly: {
+            basic: { price: "40.500", period: "/3 bulan", id: "basic_3m", btnText: "Pilih Basic (3 Bulan)" },
+            pro: { price: "81.000", period: "/3 bulan", id: "pro_3m", btnText: "Pilih Pro (3 Bulan)" }
+        },
+        yearly: {
+            basic: { price: "144.000", period: "/tahun", id: "basic_1y", btnText: "Pilih Basic (1 Tahun)" },
+            pro: { price: "288.000", period: "/tahun", id: "pro_1y", btnText: "Pilih Pro (1 Tahun)" }
+        }
+    };
+}
 
 state.billingCycle = 'monthly'; // Default
 
