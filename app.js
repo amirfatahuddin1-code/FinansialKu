@@ -1117,15 +1117,31 @@ async function confirmAddToSavings(e) {
 }
 
 async function createTransactionFromSavings(savings, amount) {
-    // Find 'Tabungan' category dynamically
-    let category = state.categories.find(c => c.name.toLowerCase() === 'tabungan');
+    // Find 'Tabungan' category dynamically with more robust search
+    let category = state.categories.find(c => {
+        const name = (c.name || '').toLowerCase().trim();
+        return name === 'tabungan' || name === 'savings' || name === 'simpanan';
+    });
 
-    // Fallback: look for any category that might be savings-related or just the first expense category
+    // Fallback: look for any category that includes the word 'tabung' or 'simpan'
     if (!category) {
-        category = state.categories.find(c => c.id === 'savings' || c.name.toLowerCase().includes('simpanan'));
+        category = state.categories.find(c => {
+            const name = (c.name || '').toLowerCase();
+            return name.includes('tabung') || name.includes('simpan');
+        });
     }
 
-    // Fallback 2: First expense category
+    // Fallback 2: Look for the 'savings' ID if it's a default category
+    if (!category) {
+        category = state.categories.find(c => c.id === 'savings');
+    }
+
+    // Fallback 3: Look for the 'Lainnya' category specifically if possible, instead of just the first expense
+    if (!category) {
+        category = state.categories.find(c => (c.name || '').toLowerCase().trim() === 'lainnya');
+    }
+
+    // Fallback 4: First expense category as last resort
     if (!category) {
         category = state.categories.find(c => c.type === 'expense');
     }
@@ -1143,7 +1159,7 @@ async function createTransactionFromSavings(savings, amount) {
         description: `Tabungan: ${savings.name}`,
         date: new Date().toISOString().split('T')[0],
         source: 'savings',
-        savingsId: savings.id,
+        savingsId: savings.id
     };
 
     // Use API
