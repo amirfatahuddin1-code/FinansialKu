@@ -1117,31 +1117,41 @@ async function confirmAddToSavings(e) {
 }
 
 async function createTransactionFromSavings(savings, amount) {
-    // Find 'Tabungan' category dynamically with more robust search
-    let category = state.categories.find(c => {
-        const name = (c.name || '').toLowerCase().trim();
-        return name === 'tabungan' || name === 'savings' || name === 'simpanan';
-    });
+    // 1. Try to find 'Tabungan' with precise and loose matches
+    let category = state.categories.find(c => (c.name || '').trim() === 'Tabungan');
 
-    // Fallback: look for any category that includes the word 'tabung' or 'simpan'
     if (!category) {
         category = state.categories.find(c => {
-            const name = (c.name || '').toLowerCase();
-            return name.includes('tabung') || name.includes('simpan');
+            const n = (c.name || '').toLowerCase().trim();
+            return n === 'tabungan' || n === 'savings' || n === 'simpanan';
         });
     }
 
-    // Fallback 2: Look for the 'savings' ID if it's a default category
+    // 2. Fallback: Keyword search
+    if (!category) {
+        category = state.categories.find(c => {
+            const n = (c.name || '').toLowerCase();
+            return n.includes('tabung') || n.includes('simpan') || n.includes('saving');
+        });
+    }
+
+    // 3. Fallback: Icon search (🏦 is the standard bank/savings icon)
+    if (!category) {
+        category = state.categories.find(c => c.icon === '🏦' || c.icon === '💰');
+    }
+
+    // 4. Fallback: Legacy ID search
     if (!category) {
         category = state.categories.find(c => c.id === 'savings');
     }
 
-    // Fallback 3: Look for the 'Lainnya' category specifically if possible, instead of just the first expense
+    // 5. Fallback: Look for any category that is NOT 'Lainnya' if we still haven't found it?
+    // Actually, if we still haven't found it, we'll try to find 'Lainnya' specifically.
     if (!category) {
-        category = state.categories.find(c => (c.name || '').toLowerCase().trim() === 'lainnya');
+        category = state.categories.find(c => (c.name || '').toLowerCase().trim() === 'lainnya' || c.id === 'other');
     }
 
-    // Fallback 4: First expense category as last resort
+    // 6. Last resort: First expense category
     if (!category) {
         category = state.categories.find(c => c.type === 'expense');
     }
