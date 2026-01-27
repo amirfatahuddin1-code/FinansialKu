@@ -990,7 +990,9 @@ function openEventDetail(id) {
     openModal('eventDetailModal');
 }
 
-const eventCatEmoji = { venue: '🏛️', dekorasi: '🎨', catering: '🍽️', mahar: '💍', cincin: '💎', dokumentasi: '📸', souvenir: '🎁', busana: '👔', lainnya: '📦' };
+if (typeof eventCatEmoji === 'undefined') {
+    var eventCatEmoji = { venue: '🏛️', dekorasi: '🎨', catering: '🍽️', mahar: '💍', cincin: '💎', dokumentasi: '📸', souvenir: '🎁', busana: '👔', lainnya: '📦' };
+}
 
 function renderEventItem(eventId, item, idx) {
     return `<div class="event-item">
@@ -1129,19 +1131,24 @@ function deleteEventItem(eventId, idx) {
 }
 
 // Custom Event Categories
-const CUSTOM_EVENT_CATEGORIES_KEY = 'finansialku_event_categories';
+// Custom Event Categories
+if (typeof CUSTOM_EVENT_CATEGORIES_KEY === 'undefined') {
+    var CUSTOM_EVENT_CATEGORIES_KEY = 'finansialku_event_categories';
+}
 
-const DEFAULT_EVENT_CATEGORIES = [
-    { id: 'venue', name: 'Venue', icon: '🏛️' },
-    { id: 'dekorasi', name: 'Dekorasi', icon: '🎨' },
-    { id: 'catering', name: 'Catering', icon: '🍽️' },
-    { id: 'mahar', name: 'Mahar', icon: '💍' },
-    { id: 'cincin', name: 'Cincin', icon: '💎' },
-    { id: 'dokumentasi', name: 'Dokumentasi', icon: '📸' },
-    { id: 'souvenir', name: 'Souvenir', icon: '🎁' },
-    { id: 'busana', name: 'Busana', icon: '👔' },
-    { id: 'lainnya', name: 'Lain-lain', icon: '📦' }
-];
+if (typeof DEFAULT_EVENT_CATEGORIES === 'undefined') {
+    var DEFAULT_EVENT_CATEGORIES = [
+        { id: 'venue', name: 'Venue', icon: '🏛️' },
+        { id: 'dekorasi', name: 'Dekorasi', icon: '🎨' },
+        { id: 'catering', name: 'Catering', icon: '🍽️' },
+        { id: 'mahar', name: 'Mahar', icon: '💍' },
+        { id: 'cincin', name: 'Cincin', icon: '💎' },
+        { id: 'dokumentasi', name: 'Dokumentasi', icon: '📸' },
+        { id: 'souvenir', name: 'Souvenir', icon: '🎁' },
+        { id: 'busana', name: 'Busana', icon: '👔' },
+        { id: 'lainnya', name: 'Lain-lain', icon: '📦' }
+    ];
+}
 
 function getEventCategories() {
     const saved = localStorage.getItem(CUSTOM_EVENT_CATEGORIES_KEY);
