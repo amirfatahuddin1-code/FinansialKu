@@ -1659,9 +1659,13 @@ async function init() {
     updateDashboard();
     loadSyncSettings();
     initCalculators();
+    initSettings(); // Initialize Settings Dropdown
     initTelegramSettings();
     initAIEventListeners(); // Initialize AI chat listeners
 }
+
+// Start App
+document.addEventListener('DOMContentLoaded', init);
 
 async function checkAuth() {
     const API = window.FinansialKuAPI;
