@@ -260,17 +260,30 @@ async function saveTransaction(transaction) {
         event_id: transaction.eventId || null
     };
 
+    let result;
     if (transaction.id && transaction.id.length > 20) {
         // Update existing (UUID)
         const { data, error } = await API.transactions.update(transaction.id, payload);
         if (error) { showToast(error.message, 'error'); return null; }
-        return data;
+        result = data;
     } else {
         // Create new
         const { data, error } = await API.transactions.create(payload);
         if (error) { showToast(error.message, 'error'); return null; }
-        return data;
+        result = data;
     }
+
+    if (result) {
+        // Return in local state format (camelCase)
+        return {
+            ...result,
+            categoryId: result.category_id,
+            userId: result.user_id,
+            createdAt: result.created_at,
+            senderName: result.sender_name
+        };
+    }
+    return null;
 }
 
 async function deleteTransactionById(id) {
