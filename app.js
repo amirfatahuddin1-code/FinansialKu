@@ -480,29 +480,166 @@ function initFAB() {
     const fab = document.getElementById('mainFab');
     const fabMenu = document.getElementById('fabMenu');
 
-    fab.addEventListener('click', () => {
-        fab.classList.toggle('active');
-        fabMenu.classList.toggle('active');
-    });
+    if (fab && fabMenu) {
+        fab.addEventListener('click', () => {
+            fab.classList.toggle('active');
+            fabMenu.classList.toggle('active');
+        });
 
-    document.getElementById('fabIncome').addEventListener('click', () => {
-        openTransactionModal('income');
-        fab.classList.remove('active');
-        fabMenu.classList.remove('active');
-    });
-
-    document.getElementById('fabExpense').addEventListener('click', () => {
-        openTransactionModal('expense');
-        fab.classList.remove('active');
-        fabMenu.classList.remove('active');
-    });
-
-    document.addEventListener('click', (e) => {
-        if (!e.target.closest('.fab-container')) {
+        document.getElementById('fabIncome')?.addEventListener('click', () => {
+            openTransactionModal('income');
             fab.classList.remove('active');
             fabMenu.classList.remove('active');
-        }
+        });
+
+        document.getElementById('fabExpense')?.addEventListener('click', () => {
+            openTransactionModal('expense');
+            fab.classList.remove('active');
+            fabMenu.classList.remove('active');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.fab-container')) {
+                fab.classList.remove('active');
+                fabMenu.classList.remove('active');
+            }
+        });
+    } else {
+        console.warn('FAB elements not found');
+    }
+}
+
+// ... existing code ...
+
+// ========== Settings Management ==========
+
+function initSettings() {
+    // Bind Settings Dropdown Logic
+    const profileTrigger = document.getElementById('profileTrigger');
+    const profileDropdown = document.getElementById('profileDropdown');
+
+    if (profileTrigger && profileDropdown) {
+        // Toggle Dropdown
+        profileTrigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            profileDropdown.classList.toggle('show');
+
+            // Rotate chevron if we want animation
+            const chevron = profileTrigger.querySelector('.chevron-down');
+            if (chevron) {
+                chevron.style.transform = profileDropdown.classList.contains('show') ? 'rotate(180deg)' : 'rotate(0deg)';
+            }
+        });
+
+        // Close on click outside
+        document.addEventListener('click', (e) => {
+            if (!profileTrigger.contains(e.target) && !profileDropdown.contains(e.target)) {
+                profileDropdown.classList.remove('show');
+                const chevron = profileTrigger.querySelector('.chevron-down');
+                if (chevron) chevron.style.transform = 'rotate(0deg)';
+            }
+        });
+
+        // Bind Menu Items
+        document.getElementById('menuAccount')?.addEventListener('click', () => {
+            profileDropdown.classList.remove('show');
+            openSettingsModal();
+            switchSettingsTab('account');
+        });
+
+        document.getElementById('menuSettings')?.addEventListener('click', () => {
+            profileDropdown.classList.remove('show');
+            openSettingsModal();
+        });
+
+        document.getElementById('menuLogout')?.addEventListener('click', logout);
+    } else {
+        console.warn('Profile Dropdown elements not found');
+    }
+
+    // Initial Load of header profile
+    try { updateProfileHeader(); } catch (e) { console.error('Update profile header failed', e); }
+
+    // Bind Close Button
+    document.getElementById('closeSettingsModal')?.addEventListener('click', () => {
+        closeModal('settingsModal');
     });
+
+    // Bind Tabs
+    document.querySelectorAll('.settings-tab[data-tab]').forEach(tab => {
+        tab.addEventListener('click', () => {
+            switchSettingsTab(tab.dataset.tab);
+        });
+    });
+
+    // Bind Actions
+    // Open Edit Profile Modal
+    const openEditProfileBtn = document.getElementById('openEditProfileBtn');
+    if (openEditProfileBtn) {
+        openEditProfileBtn.addEventListener('click', () => {
+            openModal('editProfileModal');
+        });
+    }
+
+    // Close Edit Profile Modal
+    document.getElementById('closeEditProfileModal')?.addEventListener('click', () => {
+        closeModal('editProfileModal');
+    });
+
+    document.getElementById('saveProfileBtn')?.addEventListener('click', saveProfileSettings);
+
+    // Avatar Edit
+    const editAvatarBtn = document.querySelector('.edit-avatar-btn');
+    if (editAvatarBtn) {
+        editAvatarBtn.addEventListener('click', () => {
+            let fileInput = document.getElementById('avatarInput');
+            if (!fileInput) {
+                fileInput = document.createElement('input');
+                fileInput.type = 'file';
+                fileInput.id = 'avatarInput';
+                fileInput.accept = 'image/*';
+                fileInput.style.display = 'none';
+                document.body.appendChild(fileInput);
+
+                fileInput.addEventListener('change', handleAvatarSelect);
+            }
+            fileInput.click();
+        });
+    }
+
+    const updatePasswordBtn = document.getElementById('updatePasswordBtn');
+    if (updatePasswordBtn) {
+        updatePasswordBtn.addEventListener('click', updatePasswordSettings);
+    }
+    document.getElementById('settingsAddCategoryBtn')?.addEventListener('click', () => openCategoryModalSettings());
+    document.getElementById('exportCsvBtn')?.addEventListener('click', exportToCSV);
+    document.getElementById('backupDataBtn')?.addEventListener('click', backupData);
+    document.getElementById('restoreFile')?.addEventListener('change', restoreData);
+    // Use the robust reset function
+    document.getElementById('resetDataSettingsBtn')?.addEventListener('click', resetAllData);
+    document.getElementById('settingsLogoutBtn')?.addEventListener('click', logout);
+
+    // Theme Toggle
+    const themeToggle = document.getElementById('settingsThemeToggle');
+    // Sync with existing main theme toggle state
+    if (document.body.classList.contains('light-theme')) {
+        if (themeToggle) themeToggle.checked = false;
+    } else {
+        if (themeToggle) themeToggle.checked = true; // Dark by default in CSS variables
+    }
+    if (themeToggle) {
+        themeToggle.addEventListener('change', (e) => {
+            // Toggle body class
+            document.body.classList.toggle('light-theme', !e.target.checked);
+            localStorage.setItem('theme', e.target.checked ? 'dark' : 'light');
+        });
+    }
+
+    // Notifications Init
+    // initNotificationSettings(); // Optional, ensure defined
+
+    // Telegram Group Init
+    try { initTelegramGroupSettings(); } catch (e) { console.error('Telegram Group Init failed', e); }
 }
 
 // ========== Transaction Management ==========
@@ -1645,28 +1782,29 @@ function handleBannerNavigation(action) {
 // ========== Initialization ==========
 async function init() {
     // 1. Initialize UI components IMMEDIATELY (so buttons work event if data fails)
-    loadTheme();
-    initNavigation();
-    initFAB();
-    initSettings(); // Initialize Settings Dropdown
-    initEventListeners();
-    initBannerCarousel();
-    initCalculators();
-    initTelegramSettings();
-    initAIEventListeners();
+    // Wrap in try-catch to prevent one failure from stopping everything
+    try { loadTheme(); } catch (e) { console.error('Theme init failed', e); }
+    try { initNavigation(); } catch (e) { console.error('Nav init failed', e); }
+    try { initFAB(); } catch (e) { console.error('FAB init failed', e); }
+    try { initSettings(); } catch (e) { console.error('Settings init failed', e); }
+    try { initEventListeners(); } catch (e) { console.error('Listeners init failed', e); }
+    try { initBannerCarousel(); } catch (e) { console.error('Banner init failed', e); }
+    try { initCalculators(); } catch (e) { console.error('Calc init failed', e); }
+    try { initTelegramSettings(); } catch (e) { console.error('Telegram init failed', e); }
+    try { initAIEventListeners(); } catch (e) { console.error('AI init failed', e); }
 
     // 2. Check authentication
     const isAuthenticated = await checkAuth();
     if (!isAuthenticated) return;
 
     // 3. Load Data
-    await loadData();
-    await loadUserInfo();
+    try { await loadData(); } catch (e) { console.error('Data load failed', e); }
+    try { await loadUserInfo(); } catch (e) { console.error('User info failed', e); }
 
     // 4. Update UI with Data
-    initHomeDashboard();
-    updateDashboard();
-    loadSyncSettings();
+    try { initHomeDashboard(); } catch (e) { console.error('Home Dashboard init failed', e); }
+    try { updateDashboard(); } catch (e) { console.error('Dashboard update failed', e); }
+    try { loadSyncSettings(); } catch (e) { console.error('Sync settings failed', e); }
 }
 
 // Start App
