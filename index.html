@@ -113,7 +113,14 @@
 
         <!-- Navigation -->
         <nav class="main-nav">
-            <button class="nav-item active" data-tab="dashboard">
+            <button class="nav-item active" data-tab="beranda">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+                <span>Beranda</span>
+            </button>
+            <button class="nav-item" data-tab="dashboard">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="7" height="9" />
                     <rect x="14" y="3" width="7" height="5" />
@@ -178,9 +185,9 @@
 
         <!-- Main Content -->
         <main class="main-content">
-            <!-- Dashboard Tab -->
-            <section class="tab-content active" id="dashboard">
-                <!-- Banner Carousel -->
+            <!-- Beranda Tab -->
+            <section class="tab-content active" id="beranda">
+                <!-- Banner Carousel (Moved from Dashboard) -->
                 <div class="banner-carousel-container">
                     <div class="banner-carousel" id="bannerCarousel">
                         <!-- Slide 1: Welcome / Finance Management -->
@@ -242,6 +249,120 @@
                         <span class="banner-dot" data-slide="2"></span>
                     </div>
                 </div>
+
+                <!-- Financial Overview Widgets -->
+                <div class="home-widgets-grid">
+                    <!-- Widget 1: Budget Allocation -->
+                    <div class="home-widget glass-card">
+                        <div class="widget-header">
+                            <h3>Alokasi Anggaran</h3>
+                            <button class="btn-text-small" onclick="switchTab('planning')">Atur</button>
+                        </div>
+                        <div class="widget-content centered">
+                            <div class="budget-chart-mini">
+                                <canvas id="homeBudgetChart"></canvas>
+                                <div class="chart-center-text">
+                                    <span class="label">AKTUAL</span>
+                                    <span class="value" id="homeBudgetPercent">0%</span>
+                                </div>
+                            </div>
+                            <div class="budget-legend-mini" id="homeBudgetLegend">
+                                <!-- Legend items will be injected here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Widget 2: Upcoming Events -->
+                    <div class="home-widget glass-card">
+                        <div class="widget-header">
+                            <h3>Acara Mendatang</h3>
+                            <button class="btn-text-small" onclick="switchTab('events')">Lihat Kalender</button>
+                        </div>
+                        <div class="widget-content scrollable" id="homeEventsList">
+                            <!-- Event items will be injected here -->
+                            <div class="empty-state small">
+                                <p>Tidak ada acara mendatang</p>
+                            </div>
+                        </div>
+                        <div class="widget-footer-info" id="homeEventsSummary">
+                            <span class="info-icon">💡</span>
+                            <span id="homeEventsTotalNeeds">Total kebutuhan dana: Rp 0</span>
+                        </div>
+                    </div>
+
+                    <!-- Widget 3: Recent Transactions -->
+                    <div class="home-widget glass-card">
+                        <div class="widget-header">
+                            <h3>Transaksi Terakhir</h3>
+                            <button class="btn-text-small" onclick="switchTab('dashboard')">Semua</button>
+                        </div>
+                        <div class="widget-content scrollable" id="homeTransactionsList">
+                            <!-- Transactions will be injected here -->
+                            <div class="empty-state small">
+                                <p>Belum ada transaksi</p>
+                            </div>
+                        </div>
+                        <div class="widget-footer-progress">
+                            <div class="progress-label">
+                                <span>Progress Tabungan</span>
+                                <span id="homeSavingsPercent">0%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="homeSavingsBar" style="width: 0%"></div>
+                            </div>
+                            <small id="homeSavingsTargetText">Target: Rp 0</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom Row Widgets -->
+                <div class="home-widgets-grid two-columns">
+                    <!-- Widget 4: Savings Progress -->
+                    <div class="home-widget glass-card">
+                        <div class="widget-header">
+                            <h3>Progres Tabungan</h3>
+                            <button class="btn-text-small" onclick="switchTab('planning')">Tambah Goal</button>
+                        </div>
+                        <div class="widget-content scrollable" id="homeSavingsList">
+                            <!-- Savings items will be injected here -->
+                            <div class="empty-state small">
+                                <p>Belum ada target tabungan</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Widget 5: Debts -->
+                    <div class="home-widget glass-card">
+                        <div class="widget-header">
+                            <h3>Hutang & Piutang</h3>
+                            <button class="btn-text-small" onclick="switchTab('debts')">Rincian</button>
+                        </div>
+                        <div class="widget-content">
+                            <div class="debt-summary-mini">
+                                <div class="debt-box payable">
+                                    <span class="label">TOTAL HUTANG</span>
+                                    <span class="value" id="homeTotalDebt">Rp 0</span>
+                                </div>
+                                <div class="debt-box receivable">
+                                    <span class="label">TOTAL PIUTANG</span>
+                                    <span class="value" id="homeTotalReceivable">Rp 0</span>
+                                </div>
+                            </div>
+                            <div class="debt-list-mini" id="homeDebtList">
+                                <!-- Debt items -->
+                                <div class="empty-state small">
+                                    <p>Bersih dari hutang!</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- Dashboard Tab (Modified) -->
+            <section class="tab-content" id="dashboard">
+                <!-- Banner Carousel Removed (Moved to Home) -->
 
                 <div class="section-header">
                     <h2>Dasbor Keuangan</h2>
@@ -2090,6 +2211,7 @@
     </div>
 
     <script src="supabase.js"></script>
+    <script src="home_dashboard.js"></script>
     <script src="app.js"></script>
 </body>
 

@@ -1403,6 +1403,10 @@ function renderAllTransactions() {
 
     list.innerHTML = filtered.map(t => {
         const c = state.categories.find(x => x.id === t.categoryId) || { icon: '📦', name: 'Lainnya', color: '#64748b' };
+
+        // Update Home Dashboard Widgets if we are on summary update
+        updateHomeWidgets();
+
         // Sender & Source Badge Logic
         let badges = '';
         if (t.source === 'telegram' || t.source === 'telegram-receipt') {
@@ -1610,6 +1614,7 @@ async function init() {
     initFAB();
     initEventListeners();
     initBannerCarousel(); // Initialize banner carousel
+    initHomeDashboard(); // Initialize home dashboard graphs
     updateDashboard();
     loadSyncSettings();
     initCalculators();
