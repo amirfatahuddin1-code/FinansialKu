@@ -1030,56 +1030,115 @@ function renderColorPicker(containerId, selected) {
     document.querySelectorAll(`#${containerId} .color-option`).forEach(el => el.addEventListener('click', () => { document.querySelectorAll(`#${containerId} .color-option`).forEach(e => e.classList.remove('selected')); el.classList.add('selected'); }));
 }
 
-function saveSavingsGoal(e) {
+async function saveSavingsGoal(e) {
     e.preventDefault();
-    const id = document.getElementById('savingsId').value || generateId();
-    const name = document.getElementById('savingsName').value;
-    const target = parseAmount(document.getElementById('savingsTarget').value);
-    const current = parseAmount(document.getElementById('savingsCurrent').value);
-    const deadline = document.getElementById('savingsDeadline').value;
-    const color = document.querySelector('#savingsColorPicker .color-option.selected')?.dataset.color || COLOR_OPTIONS[0];
-    if (!name || !target || !deadline) { showToast('Lengkapi semua field', 'warning'); return; }
-    const savings = { id, name, target, current, deadline, color };
-    const idx = state.savings.findIndex(s => s.id === id);
-    if (idx >= 0) state.savings[idx] = savings; else state.savings.push(savings);
-    saveSavings(); closeModal('savingsModal'); updatePlanning(); showToast('Target disimpan');
+    const btn = document.querySelector('#savingsForm button[type="submit"]');
+    const originalText = btn.textContent;
+    btn.textContent = 'Menyimpan...';
+    btn.disabled = true;
+
+    try {
+        const id = document.getElementById('savingsId').value;
+        const name = document.getElementById('savingsName').value;
+        const target = parseAmount(document.getElementById('savingsTarget').value);
+        const current = parseAmount(document.getElementById('savingsCurrent').value);
+        const deadline = document.getElementById('savingsDeadline').value;
+        const color = document.querySelector('#savingsColorPicker .color-option.selected')?.dataset.color || COLOR_OPTIONS[0];
+
+        if (!name || !target || !deadline) { showToast('Lengkapi semua field', 'warning'); return; }
+
+        const savingsPayload = { id, name, target, current, deadline, color };
+
+        // Use API to save
+        const savedData = await saveSavingsItem(savingsPayload);
+
+        if (savedData) {
+            // Update local state with real data from DB
+            const idx = state.savings.findIndex(s => s.id === savedData.id);
+            if (idx >= 0) state.savings[idx] = savedData;
+            else state.savings.push(savedData);
+
+            closeModal('savingsModal');
+            updatePlanning();
+            showToast('Target disimpan');
+        }
+    } catch (err) {
+        console.error('Save savings failed:', err);
+        showToast('Gagal menyimpan target', 'error');
+    } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+    }
 }
 
 function deleteSavingsGoal(id) { state.savings = state.savings.filter(s => s.id !== id); saveSavings(); updatePlanning(); showToast('Target dihapus'); }
 
 function addToSavings(id) { document.getElementById('addToSavingsId').value = id; document.getElementById('addToSavingsAmount').value = ''; openModal('addToSavingsModal'); }
 
-function confirmAddToSavings(e) {
+async function confirmAddToSavings(e) {
     e.preventDefault();
-    const id = document.getElementById('addToSavingsId').value;
-    const amount = parseAmount(document.getElementById('addToSavingsAmount').value);
-    const savings = state.savings.find(s => s.id === id);
-    if (savings && amount > 0) {
-        savings.current += amount;
-        saveSavings();
+    const btn = document.querySelector('#addToSavingsForm button[type="submit"]');
+    const originalText = btn.textContent;
+    btn.textContent = 'Menyimpan...';
+    btn.disabled = true;
 
-        // Create expense transaction for savings
-        createTransactionFromSavings(savings, amount);
+    try {
+        const id = document.getElementById('addToSavingsId').value;
+        const amount = parseAmount(document.getElementById('addToSavingsAmount').value);
+        const savings = state.savings.find(s => s.id === id);
 
-        closeModal('addToSavingsModal');
-        updatePlanning();
-        showToast(`💰 Tabungan ditambahkan: ${formatCurrency(amount)}`);
+        if (savings && amount > 0) {
+            // Call API
+            const updatedSavings = await addToSavingsAmount(id, amount);
+
+            if (updatedSavings) {
+                // Update local state
+                savings.current = updatedSavings.current;
+
+                // Create expense transaction for savings (Assuming this still needs to be done locally or via API?)
+                // The transaction saving itself IS using the API in createTransactionFromSavings -> saveTransactions (legacy?)
+                // Wait, createTransactionFromSavings calls saveTransactions() which is LEGACY?
+                // I need to check createTransactionFromSavings too.
+
+                await createTransactionFromSavings(savings, amount);
+
+                closeModal('addToSavingsModal');
+                updatePlanning();
+                showToast(`💰 Tabungan ditambahkan: ${formatCurrency(amount)}`);
+            }
+        }
+    } catch (err) {
+        console.error('Add to savings failed:', err);
+        showToast('Gagal menambahkan tabungan', 'error');
+    } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
     }
 }
 
-function createTransactionFromSavings(savings, amount) {
+async function createTransactionFromSavings(savings, amount) {
     const transaction = {
-        id: generateId(),
+        // id: generateId(), // Let API handle ID or saveTransaction will handle it? 
+        // saveTransaction seems to prepare payload. If I want optimistic UI I might need temp ID, 
+        // but saveTransaction seems to handle API interaction directly.
         type: 'expense',
         amount: amount,
-        categoryId: 'savings',
+        categoryId: 'savings', // ensure this category exists or is handled
         description: `Tabungan: ${savings.name}`,
         date: new Date().toISOString().split('T')[0],
         source: 'savings',
-        savingsId: savings.id
+        savingsId: savings.id,
+        // Explicitly set category name/icon for UI if needed before reload? 
+        // But saveTransaction returns the saved object which usually allows state update.
     };
-    state.transactions.unshift(transaction);
-    saveTransactions();
+
+    // Use API
+    const saved = await saveTransaction(transaction);
+    if (saved) {
+        state.transactions.unshift(saved);
+        updateDashboard();
+        renderAllTransactions();
+    }
 }
 
 function renderSavingsGoals() {
@@ -1104,17 +1163,52 @@ function openEventModal(event = null) {
     openModal('eventModal');
 }
 
-function saveEvent(e) {
+async function saveEvent(e) {
     e.preventDefault();
-    const id = document.getElementById('eventId').value || generateId();
-    const name = document.getElementById('eventName').value;
-    const date = document.getElementById('eventDate').value;
-    const budget = parseAmount(document.getElementById('eventBudget').value);
-    if (!name || !date || !budget) { showToast('Lengkapi semua field', 'warning'); return; }
-    const idx = state.events.findIndex(ev => ev.id === id);
-    if (idx >= 0) { state.events[idx] = { ...state.events[idx], name, date, budget }; }
-    else { state.events.push({ id, name, date, budget, items: [], archived: false }); }
-    saveEvents(); closeModal('eventModal'); updateEvents(); showToast('Acara disimpan');
+    const btn = document.querySelector('#eventForm button[type="submit"]');
+    const originalText = btn.textContent;
+    btn.textContent = 'Menyimpan...';
+    btn.disabled = true;
+
+    try {
+        const id = document.getElementById('eventId').value;
+        const name = document.getElementById('eventName').value;
+        const date = document.getElementById('eventDate').value;
+        const budget = parseAmount(document.getElementById('eventBudget').value);
+
+        if (!name || !date || !budget) { showToast('Lengkapi semua field', 'warning'); return; }
+
+        // Find existing event to preserve items if updating
+        const existingEvent = state.events.find(ev => ev.id === id);
+        const items = existingEvent ? existingEvent.items : [];
+        const archived = existingEvent ? existingEvent.archived : false;
+
+        const eventPayload = { id, name, date, budget, items, archived };
+
+        // Use API to save (saveEventItem handles the API call)
+        const savedData = await saveEventItem(eventPayload);
+
+        if (savedData) {
+            // Update local state
+            const idx = state.events.findIndex(ev => ev.id === savedData.id);
+            if (idx >= 0) {
+                // Preserve local items array if API doesn't return it strictly (though it should)
+                state.events[idx] = { ...savedData, items: items };
+            } else {
+                state.events.push({ ...savedData, items: [] });
+            }
+
+            closeModal('eventModal');
+            updateEvents();
+            showToast('Acara disimpan');
+        }
+    } catch (err) {
+        console.error('Save event failed:', err);
+        showToast('Gagal menyimpan acara', 'error');
+    } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+    }
 }
 
 function updateEvents() {
