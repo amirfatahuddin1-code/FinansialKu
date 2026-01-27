@@ -2433,9 +2433,79 @@
 </div>
 
 <!-- App Scripts -->
-<script src="supabase.js?v=2"></script>
-<script src="home_dashboard.js?v=2"></script>
-<script src="app.js?v=3"></script>
+<!-- Fallback CDN for Chart.js in case local file is missing/corrupt -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="supabase.js?v=2" defer></script>
+<script src="home_dashboard.js?v=2" defer></script>
+<script src="app.js?v=3" defer></script>
+
+<script>
+    // EMERGENCY UI RESCUE SYSTEM
+    // This script ensures buttons work even if app.js crashes
+    (function () {
+        console.log('--- RESCUE SCRIPT: Monitoring UI ---');
+
+        function forceBind() {
+            // 1. Force FAB
+            const fab = document.getElementById('mainFab');
+            if (fab) {
+                // Remove old listeners by cloning (optional, but cleaner if we want total control)
+                // For now, just overwrite onclick which takes precedence over empty addEventListeners
+                fab.onclick = function (e) {
+                    e.stopPropagation();
+                    console.log('FAB Clicked (Rescue Path)');
+                    this.classList.toggle('active');
+                    const menu = document.getElementById('fabMenu');
+                    if (menu) menu.classList.toggle('active');
+                };
+            }
+
+            // 2. Force Settings
+            const profile = document.getElementById('profileTrigger');
+            if (profile) {
+                profile.onclick = function (e) {
+                    e.stopPropagation();
+                    console.log('Profile Clicked (Rescue Path)');
+                    const dropdown = document.getElementById('profileDropdown');
+                    if (dropdown) {
+                        dropdown.classList.toggle('show');
+                        // Fix chevron animation
+                        const chevron = profile.querySelector('.chevron-down');
+                        if (chevron) {
+                            chevron.style.transform = dropdown.classList.contains('show') ? 'rotate(180deg)' : 'rotate(0deg)';
+                        }
+                    }
+                };
+            }
+
+            // 3. Global Close Listener
+            document.addEventListener('click', function (e) {
+                // Close FAB
+                if (fab && !e.target.closest('.fab-container')) {
+                    fab.classList.remove('active');
+                    document.getElementById('fabMenu')?.classList.remove('active');
+                }
+                // Close Settings
+                if (profile && !profile.contains(e.target) && !document.getElementById('profileDropdown')?.contains(e.target)) {
+                    const dd = document.getElementById('profileDropdown');
+                    if (dd) dd.classList.remove('show');
+                    const chev = profile.querySelector('.chevron-down');
+                    if (chev) chev.style.transform = 'rotate(0deg)';
+                }
+            });
+        }
+
+        // Run as soon as DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', forceBind);
+        } else {
+            forceBind();
+        }
+
+        // Re-apply after 2 seconds to override any broken app.js initialization
+        setTimeout(forceBind, 2000);
+    })();
+</script>
 </body>
 
 </html>
