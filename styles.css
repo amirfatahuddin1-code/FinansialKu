@@ -1311,7 +1311,8 @@ input:checked+.slider:before {
     position: fixed;
     bottom: var(--space-8);
     right: var(--space-8);
-    z-index: 100;
+    z-index: 9999;
+    /* Boost z-index significantly */
 }
 
 /* Hide FAB when AI Assistant is active */
@@ -2975,6 +2976,8 @@ form {
     .fab-container {
         bottom: var(--space-4);
         right: var(--space-4);
+        /* Ensure it's not cut off on small screens */
+        padding-right: env(safe-area-inset-right);
     }
 
     .fab {
@@ -4456,6 +4459,12 @@ details[open] summary {
     background: var(--bg-hover);
 }
 
+.profile-menu-container {
+    position: relative;
+    /* Ensure no overflow clipping */
+    overflow: visible;
+}
+
 .header-avatar {
     width: 36px;
     height: 36px;
@@ -4520,7 +4529,8 @@ details[open] summary {
     border: 1px solid var(--border-color);
     padding: 8px;
     display: none;
-    z-index: 100;
+    z-index: 9999;
+    /* Boost z-index to be above everything */
     animation: fadeIn 0.2s ease;
 }
 
