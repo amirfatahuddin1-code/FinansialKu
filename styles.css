@@ -1311,8 +1311,8 @@ input:checked+.slider:before {
     position: fixed;
     bottom: var(--space-8);
     right: var(--space-8);
-    z-index: 9999;
-    /* Boost z-index significantly */
+    z-index: 20000;
+    /* Super high to beat modals/overlays */
 }
 
 /* Hide FAB when AI Assistant is active */
@@ -4529,7 +4529,7 @@ details[open] summary {
     border: 1px solid var(--border-color);
     padding: 8px;
     display: none;
-    z-index: 9999;
+    z-index: 20000;
     /* Boost z-index to be above everything */
     animation: fadeIn 0.2s ease;
 }
@@ -5170,7 +5170,8 @@ details[open] summary {
     bottom: 0;
     background: var(--bg-modal);
     backdrop-filter: blur(10px);
-    z-index: 10000;
+    z-index: 9000;
+    /* Lower than FAB and important controls */
     display: flex;
     align-items: center;
     justify-content: center;
