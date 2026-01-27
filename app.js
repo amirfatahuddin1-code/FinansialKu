@@ -1644,24 +1644,29 @@ function handleBannerNavigation(action) {
 
 // ========== Initialization ==========
 async function init() {
-    // Check authentication first
+    // 1. Initialize UI components IMMEDIATELY (so buttons work event if data fails)
+    loadTheme();
+    initNavigation();
+    initFAB();
+    initSettings(); // Initialize Settings Dropdown
+    initEventListeners();
+    initBannerCarousel();
+    initCalculators();
+    initTelegramSettings();
+    initAIEventListeners();
+
+    // 2. Check authentication
     const isAuthenticated = await checkAuth();
     if (!isAuthenticated) return;
 
+    // 3. Load Data
     await loadData();
-    loadTheme();
     await loadUserInfo();
-    initNavigation();
-    initFAB();
-    initEventListeners();
-    initBannerCarousel(); // Initialize banner carousel
-    initHomeDashboard(); // Initialize home dashboard graphs
+
+    // 4. Update UI with Data
+    initHomeDashboard();
     updateDashboard();
     loadSyncSettings();
-    initCalculators();
-    initSettings(); // Initialize Settings Dropdown
-    initTelegramSettings();
-    initAIEventListeners(); // Initialize AI chat listeners
 }
 
 // Start App
