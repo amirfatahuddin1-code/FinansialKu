@@ -799,7 +799,7 @@ function saveBudget(e) {
     saveBudgets(); closeModal('budgetModal'); updatePlanning(); showToast('Anggaran disimpan');
 }
 
-let budgetChart = null;
+var budgetChart = null;
 function updatePlanning() { renderBudgetOverview(); renderSavingsGoals(); }
 
 function renderBudgetOverview() {
@@ -1220,7 +1220,8 @@ function exportEventPDF(id) {
 }
 
 // ========== Reports ==========
-let monthlyChart = null, pieChart = null;
+var monthlyChart = null;
+var pieChart = null;
 
 function updateReports() { renderMonthlyChart(); renderCategoryPie(); renderTimeline(); }
 
