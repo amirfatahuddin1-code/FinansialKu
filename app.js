@@ -789,14 +789,55 @@ function openBudgetModal() {
     openModal('budgetModal');
 }
 
-function saveBudget(e) {
+async function saveBudget(e) {
     e.preventDefault();
-    state.categories.filter(c => c.type === 'expense').forEach(c => {
+
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn ? submitBtn.textContent : 'Simpan';
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Menyimpan...';
+    }
+
+    const updates = [];
+    const expCats = state.categories.filter(c => c.type === 'expense');
+
+    for (const c of expCats) {
         const input = document.getElementById(`budget_${c.id}`);
+        // Handle potential null input (though unlikely given selector)
+        if (!input) continue;
+
         const val = parseAmount(input.value);
-        if (val > 0) state.budgets[c.id] = val; else delete state.budgets[c.id];
-    });
-    saveBudgets(); closeModal('budgetModal'); updatePlanning(); showToast('Anggaran disimpan');
+
+        // Determine if we need to save/update
+        // We save if value > 0 OR if it was previously set and now is 0 (to clear it)
+        const oldVal = state.budgets[c.id] || 0;
+
+        if (val > 0) {
+            state.budgets[c.id] = val;
+            updates.push(saveBudgetItem(c.id, val));
+        } else if (oldVal > 0) {
+            // It was set, now cleared. Set to 0 in DB.
+            delete state.budgets[c.id];
+            updates.push(saveBudgetItem(c.id, 0));
+        }
+    }
+
+    try {
+        await Promise.all(updates);
+        closeModal('budgetModal');
+        updatePlanning();
+        if (typeof updateHomeWidgets === 'function') updateHomeWidgets();
+        showToast('Anggaran disimpan');
+    } catch (err) {
+        console.error("Failed to save budgets", err);
+        showToast('Gagal menyimpan anggaran', 'error');
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+        }
+    }
 }
 
 var budgetChart = null;
