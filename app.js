@@ -2805,7 +2805,10 @@ function calculateEducation() {
 }
 
 // ========== Telegram Linking ==========
-let telegramLinkingCode = null;
+// ========== Telegram Linking ==========
+if (typeof telegramLinkingCode === 'undefined') {
+    var telegramLinkingCode = null;
+}
 
 async function generateLinkingCode() {
     const API = window.FinansialKuAPI;
@@ -3804,7 +3807,9 @@ function updateAvatarDisplay(src) {
     }
 }
 
-let tempAvatarFile = null; // Store selected file temporarily
+if (typeof tempAvatarFile === 'undefined') {
+    var tempAvatarFile = null; // Store selected file temporarily
+}
 
 function handleAvatarSelect(e) {
     const file = e.target.files[0];
