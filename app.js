@@ -1117,19 +1117,33 @@ async function confirmAddToSavings(e) {
 }
 
 async function createTransactionFromSavings(savings, amount) {
+    // Find 'Tabungan' category dynamically
+    let category = state.categories.find(c => c.name.toLowerCase() === 'tabungan');
+
+    // Fallback: look for any category that might be savings-related or just the first expense category
+    if (!category) {
+        category = state.categories.find(c => c.id === 'savings' || c.name.toLowerCase().includes('simpanan'));
+    }
+
+    // Fallback 2: First expense category
+    if (!category) {
+        category = state.categories.find(c => c.type === 'expense');
+    }
+
+    if (!category) {
+        console.error('Could not find a valid category for savings transaction');
+        showToast('Gagal: Kategori Tabungan tidak ditemukan', 'error');
+        return;
+    }
+
     const transaction = {
-        // id: generateId(), // Let API handle ID or saveTransaction will handle it? 
-        // saveTransaction seems to prepare payload. If I want optimistic UI I might need temp ID, 
-        // but saveTransaction seems to handle API interaction directly.
         type: 'expense',
         amount: amount,
-        categoryId: 'savings', // ensure this category exists or is handled
+        categoryId: category.id, // Use the real UUID
         description: `Tabungan: ${savings.name}`,
         date: new Date().toISOString().split('T')[0],
         source: 'savings',
         savingsId: savings.id,
-        // Explicitly set category name/icon for UI if needed before reload? 
-        // But saveTransaction returns the saved object which usually allows state update.
     };
 
     // Use API
