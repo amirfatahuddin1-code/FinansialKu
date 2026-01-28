@@ -252,7 +252,10 @@ async function loadData() {
         // Process Events
         state.events = (eventsRes.data || []).map(e => ({
             ...e,
-            items: e.items || []
+            items: (e.items || []).map(item => ({
+                ...item,
+                isPaid: item.is_paid // Map snake_case from DB to camelCase for frontend
+            }))
         }));
 
         // Process Debts
