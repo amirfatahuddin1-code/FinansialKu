@@ -250,13 +250,23 @@ async function loadData() {
         state.savings = savingsRes.data || [];
 
         // Process Events
-        state.events = (eventsRes.data || []).map(e => ({
-            ...e,
-            items: (e.items || []).map(item => ({
+        state.events = (eventsRes.data || []).map(e => {
+            const items = (e.items || []).map(item => ({
                 ...item,
-                isPaid: item.is_paid // Map snake_case from DB to camelCase for frontend
-            }))
-        }));
+                isPaid: item.is_paid
+            }));
+
+            // Calculate total spent based on paid items
+            const totalSpent = items
+                .filter(item => item.isPaid)
+                .reduce((sum, item) => sum + item.amount, 0);
+
+            return {
+                ...e,
+                items,
+                totalSpent
+            };
+        });
 
         // Process Debts
         state.debts = debtsRes.data || [];

@@ -222,32 +222,6 @@ function updateHomeTransactionsWidget() {
              `;
         }).join('');
     }
-
-    // Update Savings Progress bar
-    // Logic: Total Income vs Total Expense (All time or Monthly?)
-    // Let's use Monthly Savings Ratio
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-
-    const monthlyTx = state.transactions.filter(t => t.date >= startOfMonth);
-    const income = monthlyTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-    const expense = monthlyTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
-    const savings = income - expense;
-
-    // Arbitary target: 20% of Income
-    const targetSavings = income * 0.2;
-    const percent = targetSavings > 0 ? Math.round((savings / targetSavings) * 100) : 0;
-    const finalPercent = Math.max(0, Math.min(100, percent));
-
-    document.getElementById('homeSavingsPercent').textContent = `${finalPercent}%`;
-    document.getElementById('homeSavingsBar').style.width = `${finalPercent}%`;
-    // Color logic
-    const bar = document.getElementById('homeSavingsBar');
-    if (finalPercent >= 100) bar.style.backgroundColor = 'var(--success)';
-    else if (finalPercent >= 50) bar.style.backgroundColor = 'var(--accent-primary)';
-    else bar.style.backgroundColor = 'var(--warning)';
-
-    document.getElementById('homeSavingsTargetText').textContent = `Sisa simpanan: ${formatCurrencyCompact(savings)} (Target 20%)`;
 }
 
 // 4. Savings Widget (List)
