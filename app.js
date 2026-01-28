@@ -876,7 +876,12 @@ async function deleteTransaction(id) {
 }
 
 // ========== Dashboard ==========
-function updateDashboard() { updateSummaryCards(); renderTransactions(); updateWeeklyChart(); }
+function updateDashboard() {
+    updateSummaryCards();
+    renderTransactions();
+    updateWeeklyChart();
+    if (typeof updateHomeWidgets === 'function') updateHomeWidgets();
+}
 
 function updateSummaryCards() {
     const { start, end } = getDateRange(state.currentPeriod);
