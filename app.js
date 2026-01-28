@@ -1053,6 +1053,7 @@ function renderBudgetOverview() {
     }).filter(c => c.budget > 0);
 
     document.getElementById('budgetUsedPercent').textContent = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) + '%' : '0%';
+    document.getElementById('totalBudgetValue').textContent = formatCurrency(totalBudget);
 
     const ctx = document.getElementById('budgetDonutChart').getContext('2d');
     if (budgetChart) budgetChart.destroy();

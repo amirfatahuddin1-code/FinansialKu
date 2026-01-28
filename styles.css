@@ -2248,6 +2248,29 @@ form {
     color: var(--text-muted);
 }
 
+.budget-summary-total {
+    margin-bottom: var(--space-4);
+    padding: var(--space-4);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.budget-summary-total .summary-label {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.budget-summary-total .summary-value {
+    font-size: var(--font-size-lg);
+    font-weight: 700;
+    color: var(--accent-primary);
+}
+
 .budget-categories {
     display: flex;
     flex-direction: column;
