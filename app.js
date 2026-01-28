@@ -210,42 +210,59 @@ async function ensureDebtCategory(name, type, icon, color) {
 // ========== Storage Functions (Supabase) ==========
 async function loadData() {
     const API = window.FinansialKuAPI;
-
-    // Load categories
-    const { data: categories } = await API.categories.getAll();
-    state.categories = categories || [];
-
-    // Load transactions
-    const { data: transactions } = await API.transactions.getAll();
-    state.transactions = (transactions || []).map(t => ({
-        ...t,
-        categoryId: t.category_id,
-        category: t.category,
-        senderName: t.sender_name
-    }));
-
-    // Load budgets for current month
     const now = new Date();
-    const { data: budgets } = await API.budgets.getByMonth(now.getFullYear(), now.getMonth() + 1);
-    state.budgets = {};
-    (budgets || []).forEach(b => {
-        state.budgets[b.category_id] = b.amount;
-    });
 
-    // Load savings
-    const { data: savings } = await API.savings.getAll();
-    state.savings = savings || [];
+    try {
+        const [
+            categoriesRes,
+            transactionsRes,
+            budgetsRes,
+            savingsRes,
+            eventsRes,
+            debtsRes
+        ] = await Promise.all([
+            API.categories.getAll(),
+            API.transactions.getAll(),
+            API.budgets.getByMonth(now.getFullYear(), now.getMonth() + 1),
+            API.savings.getAll(),
+            API.events.getAll(true),
+            API.debts.getAll()
+        ]);
 
-    // Load events with items
-    const { data: events } = await API.events.getAll(true);
-    state.events = (events || []).map(e => ({
-        ...e,
-        items: e.items || []
-    }));
+        // Process Categories
+        state.categories = categoriesRes.data || [];
 
-    // Load debts
-    const { data: debts } = await API.debts.getAll();
-    state.debts = debts || [];
+        // Process Transactions
+        state.transactions = (transactionsRes.data || []).map(t => ({
+            ...t,
+            categoryId: t.category_id,
+            category: t.category,
+            senderName: t.sender_name
+        }));
+
+        // Process Budgets
+        state.budgets = {};
+        (budgetsRes.data || []).forEach(b => {
+            state.budgets[b.category_id] = b.amount;
+        });
+
+        // Process Savings
+        state.savings = savingsRes.data || [];
+
+        // Process Events
+        state.events = (eventsRes.data || []).map(e => ({
+            ...e,
+            items: e.items || []
+        }));
+
+        // Process Debts
+        state.debts = debtsRes.data || [];
+
+        console.log('Data loaded successfully in parallel');
+    } catch (err) {
+        console.error('Failed to load data in parallel:', err);
+        // Fallback or re-throw if necessary
+    }
 }
 
 async function saveTransaction(transaction) {
