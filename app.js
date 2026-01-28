@@ -1066,7 +1066,7 @@ function renderBudgetOverview() {
     const ctx = document.getElementById('budgetDonutChart').getContext('2d');
     if (budgetChart) budgetChart.destroy();
     if (catData.length) {
-        budgetChart = new Chart(ctx, { type: 'doughnut', data: { labels: catData.map(c => c.name), datasets: [{ data: catData.map(c => c.spent), backgroundColor: catData.map(c => c.color), borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '55%', plugins: { legend: { display: false } } } });
+        budgetChart = new Chart(ctx, { type: 'doughnut', data: { labels: catData.map(c => c.name), datasets: [{ data: catData.map(c => c.spent), backgroundColor: catData.map(c => c.color), borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '35%', plugins: { legend: { display: false } } } });
     }
 
     const list = document.getElementById('budgetCategoriesList');
@@ -1698,7 +1698,9 @@ function renderMonthlyChart() {
 function renderCategoryPie() {
     const { start, end } = getDateRange('monthly');
     const expCats = state.categories.filter(c => c.type === 'expense');
-    const data = expCats.map(c => ({ ...c, total: state.transactions.filter(t => t.categoryId === c.id && t.type === 'expense' && new Date(t.date) >= start && new Date(t.date) <= end).reduce((s, t) => s + t.amount, 0) })).filter(c => c.total > 0);
+    const data = expCats.map(c => ({ ...c, total: state.transactions.filter(t => t.categoryId === c.id && t.type === 'expense' && new Date(t.date) >= start && new Date(t.date) <= end).reduce((s, t) => s + t.amount, 0) }))
+        .filter(c => c.total > 0)
+        .sort((a, b) => b.total - a.total);
 
     const ctx = document.getElementById('categoryPieChart').getContext('2d');
     if (pieChart) pieChart.destroy();
