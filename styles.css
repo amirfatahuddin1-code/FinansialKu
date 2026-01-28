@@ -293,7 +293,7 @@ a:hover {
     background: transparent;
     color: var(--text-muted);
     font-size: var(--font-size-sm);
-    font-weight: 500;
+    font-weight: 700;
     cursor: pointer;
     border-radius: var(--radius-lg);
     transition: all var(--transition-base);
@@ -302,6 +302,40 @@ a:hover {
 .nav-item svg {
     width: 22px;
     height: 22px;
+    transition: transform var(--transition-fast), color var(--transition-fast);
+}
+
+/* Colorful Navigation Icons */
+.nav-item[data-tab="beranda"] svg {
+    color: #4F46E5;
+}
+
+.nav-item[data-tab="dashboard"] svg {
+    color: #10B981;
+}
+
+.nav-item[data-tab="planning"] svg {
+    color: #8B5CF6;
+}
+
+.nav-item[data-tab="events"] svg {
+    color: #F59E0B;
+}
+
+.nav-item[data-tab="reports"] svg {
+    color: #06B6D4;
+}
+
+.nav-item[data-tab="debts"] svg {
+    color: #F43F5E;
+}
+
+.nav-item[data-tab="aiAssistant"] svg {
+    color: #D4AF37;
+}
+
+.nav-item[data-tab="calculator"] svg {
+    color: #6366F1;
 }
 
 .nav-item:hover {
@@ -309,10 +343,18 @@ a:hover {
     background: var(--bg-card);
 }
 
+.nav-item:hover svg {
+    transform: translateY(-2px);
+}
+
 .nav-item.active {
     background: var(--accent-gradient);
     color: white;
     box-shadow: var(--shadow-glow);
+}
+
+.nav-item.active svg {
+    color: white !important;
 }
 
 /* ========== Main Content ========== */
