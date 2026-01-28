@@ -259,7 +259,7 @@ async function loadData() {
             // Calculate total spent based on paid items
             const totalSpent = items
                 .filter(item => item.isPaid)
-                .reduce((sum, item) => sum + item.amount, 0);
+                .reduce((sum, item) => sum + Number(item.budget || 0), 0);
 
             return {
                 ...e,
