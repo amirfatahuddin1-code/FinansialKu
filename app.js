@@ -1426,17 +1426,21 @@ async function createTransactionFromEventItem(event, item) {
 
 function mapEventCategoryToTransactionCategory(eventCategory) {
     const mapping = {
-        'venue': 'other',
-        'dekorasi': 'shopping',
-        'catering': 'food',
-        'mahar': 'other',
-        'cincin': 'shopping',
-        'dokumentasi': 'entertainment',
-        'souvenir': 'shopping',
-        'busana': 'shopping',
-        'lainnya': 'other'
+        'venue': 'Lainnya',
+        'dekorasi': 'Belanja',
+        'catering': 'Makanan',
+        'mahar': 'Lainnya',
+        'cincin': 'Belanja',
+        'dokumentasi': 'Hiburan',
+        'souvenir': 'Belanja',
+        'busana': 'Belanja',
+        'lainnya': 'Lainnya'
     };
-    return mapping[eventCategory] || 'other';
+
+    const targetName = mapping[eventCategory] || 'Lainnya';
+    const category = state.categories.find(c => c.name === targetName && c.type === 'expense');
+
+    return category ? category.id : null;
 }
 
 function openEventItemModal(eventId, idx = -1) {
