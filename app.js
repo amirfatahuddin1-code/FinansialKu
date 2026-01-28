@@ -1357,53 +1357,71 @@ function renderEventItem(eventId, item, idx) {
     </div>`;
 }
 
-function toggleEventItem(eventId, idx) {
+async function toggleEventItem(eventId, idx) {
     const event = state.events.find(e => e.id === eventId);
     if (event && event.items[idx]) {
         const item = event.items[idx];
         const wasPaid = item.isPaid;
         item.isPaid = !item.isPaid;
 
-        // If marking as paid and has realization amount, create transaction
-        if (!wasPaid && item.isPaid && item.actual > 0) {
-            createTransactionFromEventItem(event, item);
-        }
+        try {
+            // Persist checkbox state to DB
+            const API = window.FinansialKuAPI;
+            await API.eventItems.togglePaid(item.id, item.isPaid);
 
-        saveEvents();
-        openEventDetail(eventId);
+            // If marking as paid and has realization amount, create transaction
+            if (!wasPaid && item.isPaid && item.actual > 0) {
+                await createTransactionFromEventItem(event, item);
+            }
+
+            openEventDetail(eventId);
+        } catch (err) {
+            console.error('Failed to toggle event item:', err);
+            showToast('Gagal mengubah status item', 'error');
+            // Revert local state on error
+            item.isPaid = wasPaid;
+        }
     }
 }
 
-function createTransactionFromEventItem(event, item) {
-    // Check if transaction already exists for this item
-    const existingTx = state.transactions.find(t =>
-        t.source === 'event-item' &&
-        t.eventId === event.id &&
-        t.itemName === item.name
-    );
+async function createTransactionFromEventItem(event, item) {
+    const API = window.FinansialKuAPI;
 
-    if (existingTx) {
-        // Update existing transaction
-        existingTx.amount = item.actual;
-        existingTx.date = new Date().toISOString().split('T')[0];
-    } else {
-        // Create new transaction
-        const transaction = {
-            id: generateId(),
-            type: 'expense',
-            amount: item.actual,
-            categoryId: mapEventCategoryToTransactionCategory(item.category),
-            description: `${item.name} - ${event.name}`,
-            date: new Date().toISOString().split('T')[0],
-            source: 'event-item',
-            eventId: event.id,
-            itemName: item.name
+    // Payload for DB
+    const dbPayload = {
+        type: 'expense',
+        amount: item.actual,
+        category_id: mapEventCategoryToTransactionCategory(item.category),
+        description: `${item.name} - ${event.name}`,
+        date: new Date().toISOString().split('T')[0],
+        source: 'event-item'
+        // We can add metadata if needed, but the API expects these standard fields
+    };
+
+    try {
+        const { data, error } = await API.transactions.create(dbPayload);
+        if (error) throw error;
+
+        // data holds the created transaction with the real UUID
+        const localTransaction = {
+            id: data.id,
+            type: data.type,
+            amount: data.amount,
+            categoryId: data.category_id,
+            description: data.description,
+            date: data.date,
+            createdAt: data.created_at,
+            source: data.source,
+            userId: data.user_id
         };
-        state.transactions.unshift(transaction);
-    }
 
-    saveTransactions();
-    showToast(`📝 Transaksi dicatat: ${item.name} - ${formatCurrency(item.actual)}`, 'success');
+        state.transactions.unshift(localTransaction);
+        updateDashboard(); // Refresh UI including widgets
+        showToast(`📝 Transaksi dicatat: ${item.name} - ${formatCurrency(item.actual)}`, 'success');
+    } catch (err) {
+        console.error('Failed to create transaction from event item:', err);
+        showToast('Gagal mencatat transaksi ke database', 'error');
+    }
 }
 
 function mapEventCategoryToTransactionCategory(eventCategory) {
