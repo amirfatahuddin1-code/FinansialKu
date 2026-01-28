@@ -908,7 +908,15 @@ function updateSummaryCards() {
     const filtered = state.transactions.filter(t => { const d = new Date(t.date); return d >= start && d <= end; });
     const income = filtered.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
     const expense = filtered.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
-    animateValue('totalIncome', income); animateValue('totalExpense', expense); animateValue('totalBalance', income - expense);
+
+    // Overall balance (lifetime) for the total balance card
+    const totalIncome = state.transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+    const totalExpense = state.transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+    const overallBalance = totalIncome - totalExpense;
+
+    animateValue('totalIncome', income);
+    animateValue('totalExpense', expense);
+    animateValue('totalBalance', overallBalance);
 }
 
 function animateValue(elId, target) {

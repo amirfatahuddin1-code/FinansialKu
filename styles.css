@@ -635,6 +635,7 @@ a:hover {
     font-weight: 700;
     font-size: var(--font-size-base);
     text-align: right;
+    white-space: nowrap;
 }
 
 .transaction-amount.income {
@@ -2267,7 +2268,7 @@ form {
 
 .budget-summary-total .summary-value {
     font-size: var(--font-size-lg);
-    font-weight: 700;
+    font-weight: 800;
     color: var(--accent-primary);
 }
 
