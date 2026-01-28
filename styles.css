@@ -1531,8 +1531,8 @@ input:checked+.slider:before {
     display: flex;
     flex-direction: column;
     height: 100%;
-    min-height: 480px;
-    /* Consistent height across all widgets */
+    min-height: 300px;
+    /* Flexible height, naturally balances within its row */
 }
 
 .widget-header {
