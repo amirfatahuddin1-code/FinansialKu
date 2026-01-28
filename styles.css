@@ -1531,8 +1531,8 @@ input:checked+.slider:before {
     display: flex;
     flex-direction: column;
     height: 100%;
-    min-height: 280px;
-    /* Consistent height */
+    min-height: 480px;
+    /* Consistent height across all widgets */
 }
 
 .widget-header {
@@ -1579,7 +1579,7 @@ input:checked+.slider:before {
 
 .widget-content.scrollable {
     overflow-y: auto;
-    max-height: 200px;
+    max-height: 350px;
     padding-right: var(--space-1);
 }
 
