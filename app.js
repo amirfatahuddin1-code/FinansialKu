@@ -360,7 +360,7 @@ async function addToSavingsAmount(id, amount) {
     return data;
 }
 
-async function saveEventItem(event) {
+async function saveEventToAPI(event) {
     const API = window.FinansialKuAPI;
     const payload = {
         name: event.name,
@@ -1238,8 +1238,8 @@ async function saveEvent(e) {
 
         const eventPayload = { id, name, date, budget, items, archived };
 
-        // Use API to save (saveEventItem handles the API call)
-        const savedData = await saveEventItem(eventPayload);
+        // Use API to save (saveEventToAPI handles the API call)
+        const savedData = await saveEventToAPI(eventPayload);
 
         if (savedData) {
             // Update local state
