@@ -1531,8 +1531,13 @@ input:checked+.slider:before {
     display: flex;
     flex-direction: column;
     height: 100%;
-    min-height: 300px;
-    /* Flexible height, naturally balances within its row */
+    min-height: 320px;
+    /* Default min-height */
+}
+
+/* Row 1 Specific: Symmetrical Height */
+.home-widgets-grid:not(.two-columns) .home-widget {
+    min-height: 520px;
 }
 
 .widget-header {
@@ -1596,9 +1601,9 @@ input:checked+.slider:before {
 /* Budget Widget Mini */
 .budget-chart-mini {
     position: relative;
-    width: 160px;
-    height: 160px;
-    margin-bottom: var(--space-4);
+    width: 200px;
+    height: 200px;
+    margin-bottom: var(--space-5);
 }
 
 .chart-center-text {
@@ -1613,15 +1618,15 @@ input:checked+.slider:before {
 }
 
 .chart-center-text .label {
-    font-size: 12px;
+    font-size: var(--font-size-sm);
     color: var(--text-muted);
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 1px;
     text-transform: uppercase;
 }
 
 .chart-center-text .value {
-    font-size: var(--font-size-xl);
+    font-size: var(--font-size-2xl);
     font-weight: 800;
     color: var(--text-primary);
 }
