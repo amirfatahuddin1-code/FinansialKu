@@ -636,6 +636,8 @@ a:hover {
     font-size: var(--font-size-base);
     text-align: right;
     white-space: nowrap;
+    flex-shrink: 0;
+    margin-left: var(--space-2);
 }
 
 .transaction-amount.income {
@@ -2310,10 +2312,11 @@ form {
 }
 
 .budget-progress {
-    height: 8px;
+    height: 14px;
     background: var(--bg-secondary);
     border-radius: var(--radius-full);
     overflow: hidden;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .budget-progress-bar {

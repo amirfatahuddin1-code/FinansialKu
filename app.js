@@ -1066,7 +1066,7 @@ function renderBudgetOverview() {
     const ctx = document.getElementById('budgetDonutChart').getContext('2d');
     if (budgetChart) budgetChart.destroy();
     if (catData.length) {
-        budgetChart = new Chart(ctx, { type: 'doughnut', data: { labels: catData.map(c => c.name), datasets: [{ data: catData.map(c => c.spent), backgroundColor: catData.map(c => c.color), borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { display: false } } } });
+        budgetChart = new Chart(ctx, { type: 'doughnut', data: { labels: catData.map(c => c.name), datasets: [{ data: catData.map(c => c.spent), backgroundColor: catData.map(c => c.color), borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '55%', plugins: { legend: { display: false } } } });
     }
 
     const list = document.getElementById('budgetCategoriesList');
