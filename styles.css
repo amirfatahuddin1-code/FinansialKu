@@ -1532,12 +1532,19 @@ input:checked+.slider:before {
     flex-direction: column;
     height: 100%;
     min-height: 320px;
-    /* Default min-height */
+    display: flex;
+    flex-direction: column;
 }
 
-/* Row 1 Specific: Symmetrical Height */
+/* Row 1 Specific: Symmetrical Height & Alignment */
+.home-widgets-grid:not(.two-columns) {
+    align-items: stretch;
+}
+
 .home-widgets-grid:not(.two-columns) .home-widget {
-    min-height: 520px;
+    min-height: 500px;
+    /* Reduced from 520px to allow tighter packing */
+    height: auto;
 }
 
 .widget-header {
@@ -1603,7 +1610,8 @@ input:checked+.slider:before {
     position: relative;
     width: 200px;
     height: 200px;
-    margin-bottom: var(--space-5);
+    margin-bottom: var(--space-2);
+    /* Reduced space below chart */
 }
 
 .chart-center-text {
@@ -1652,7 +1660,8 @@ input:checked+.slider:before {
 
 .top-cats-container {
     width: 100%;
-    margin-top: var(--space-5);
+    margin-top: var(--space-2);
+    /* Reduced space above list */
     padding-top: var(--space-4);
     border-top: 1px dashed var(--border-color);
 }

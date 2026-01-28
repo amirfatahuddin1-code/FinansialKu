@@ -238,14 +238,15 @@ function updateHomeSavingsWidget() {
 
     list.innerHTML = goals.map(g => {
         const percent = Math.round((g.current / g.target) * 100);
+        const goalColor = g.color || 'var(--accent-primary)';
         return `
             <div style="margin-bottom: var(--space-5);">
                 <div style="display:flex; justify-content:space-between; margin-bottom:var(--space-2); font-size:var(--font-size-base);">
                     <span style="font-weight:700; color:var(--text-primary);">${g.name}</span>
-                    <span style="color:var(--accent-primary); font-weight:800;">${percent}%</span>
+                    <span style="color:${goalColor}; font-weight:800;">${percent}%</span>
                 </div>
                  <div class="budget-progress" style="height:12px; border-radius:10px; background:var(--bg-secondary); overflow:hidden;">
-                    <div class="budget-progress-bar" style="width: ${percent}%; height:100%; border-radius:10px; background: var(--accent-primary);"></div>
+                    <div class="budget-progress-bar" style="width: ${percent}%; height:100%; border-radius:10px; background: ${goalColor};"></div>
                 </div>
                 <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:600; color:var(--text-muted); margin-top:8px;">
                     <span style="color:var(--text-secondary);">${formatCurrencyCompact(g.current)}</span>
