@@ -1645,6 +1645,41 @@ input:checked+.slider:before {
     gap: var(--space-2);
 }
 
+.top-cats-container {
+    width: 100%;
+    margin-top: var(--space-5);
+    padding-top: var(--space-4);
+    border-top: 1px dashed var(--border-color);
+}
+
+.top-cats-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: var(--space-3);
+}
+
+.top-cats-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.top-cat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.top-cat-val {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
 .legend-color {
     width: 8px;
     height: 8px;

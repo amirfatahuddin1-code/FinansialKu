@@ -67,16 +67,16 @@ function updateHomeBudgetWidget() {
         homeBudgetChart.destroy();
     }
 
+    const budgetColor = percentage > 100 ? '#ef4444' : (percentage > 80 ? '#f59e0b' : '#10b981');
+    const remainingColor = 'rgba(148, 163, 184, 0.2)'; // More visible muted color
+
     homeBudgetChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
             labels: ['Terpakai', 'Sisa'],
             datasets: [{
                 data: [totalSpent, Math.max(0, renderBudget - totalSpent)],
-                backgroundColor: [
-                    percentage > 100 ? '#ef4444' : (percentage > 80 ? '#f59e0b' : '#10b981'),
-                    'rgba(255, 255, 255, 0.1)'
-                ],
+                backgroundColor: [budgetColor, remainingColor],
                 borderWidth: 0,
                 cutout: '85%'
             }]
@@ -94,17 +94,52 @@ function updateHomeBudgetWidget() {
         legendContainer.innerHTML = `
             <div class="legend-item-mini">
                 <div class="legend-info">
-                   <div class="legend-color" style="background: ${percentage > 100 ? '#ef4444' : (percentage > 80 ? '#f59e0b' : '#10b981')}"></div>
+                   <div class="legend-color" style="background: ${budgetColor}"></div>
                    <span>Terpakai (Rp ${formatCurrencyCompact(totalSpent)})</span>
                 </div>
             </div>
              <div class="legend-item-mini">
                 <div class="legend-info">
-                   <div class="legend-color" style="background: rgba(255, 255, 255, 0.2)"></div>
+                   <div class="legend-color" style="background: ${remainingColor}"></div>
                    <span>Budget (Rp ${formatCurrencyCompact(totalBudget)})</span>
                 </div>
             </div>
         `;
+    }
+
+    // Render Top 5 Categories
+    const topCatsContainer = document.getElementById('homeBudgetTopCategories');
+    if (topCatsContainer) {
+        // Group expenses by category name
+        const categoryMap = {};
+        monthlyTx.forEach(t => {
+            const catId = t.category_id || 'unnamed';
+            const cat = state.categories.find(c => c.id === catId) || { name: 'Lainnya', icon: '📦' };
+            if (!categoryMap[catId]) {
+                categoryMap[catId] = { name: cat.name, icon: cat.icon, amount: 0 };
+            }
+            categoryMap[catId].amount += t.amount;
+        });
+
+        const sortedCats = Object.values(categoryMap)
+            .sort((a, b) => b.amount - a.amount)
+            .slice(0, 5);
+
+        if (sortedCats.length > 0) {
+            topCatsContainer.innerHTML = `
+                <div class="top-cats-title">Top 5 Pengeluaran</div>
+                <div class="top-cats-list">
+                    ${sortedCats.map(c => `
+                        <div class="top-cat-item">
+                            <span class="top-cat-name">${c.icon} ${c.name}</span>
+                            <span class="top-cat-val">Rp ${formatCurrencyCompact(c.amount)}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        } else {
+            topCatsContainer.innerHTML = '';
+        }
     }
 }
 
