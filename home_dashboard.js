@@ -78,7 +78,7 @@ function updateHomeBudgetWidget() {
                 data: [totalSpent, Math.max(0, renderBudget - totalSpent)],
                 backgroundColor: [budgetColor, remainingColor],
                 borderWidth: 0,
-                cutout: '35%'
+                cutout: '75%'
             }]
         },
         options: {
