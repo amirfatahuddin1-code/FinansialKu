@@ -1471,7 +1471,7 @@ function openEventItemModal(eventId, idx = -1) {
     openModal('eventItemModal');
 }
 
-function saveEventItem(e) {
+async function saveEventItem(e) {
     e.preventDefault();
     const eventId = document.getElementById('eventItemEventId').value;
     const idxStr = document.getElementById('eventItemId').value;
@@ -1488,9 +1488,7 @@ function saveEventItem(e) {
             showToast('Masukkan nama kategori baru', 'warning');
             return;
         }
-        // Create category ID from name
         category = newName.toLowerCase().replace(/\s+/g, '_');
-        // Save custom category
         saveCustomEventCategory(category, newName, newIcon);
     }
 
@@ -1501,16 +1499,61 @@ function saveEventItem(e) {
         actual: parseAmount(document.getElementById('eventItemActual').value),
         isPaid: false
     };
-    if (!item.name || !item.budget) { showToast('Lengkapi nama dan anggaran', 'warning'); return; }
 
-    if (idxStr !== '') { const idx = parseInt(idxStr); item.isPaid = event.items[idx]?.isPaid || false; event.items[idx] = item; }
-    else { event.items.push(item); }
-    saveEvents(); closeModal('eventItemModal'); openEventDetail(eventId); showToast('Item disimpan');
+    if (!item.name || !item.budget) {
+        showToast('Lengkapi nama dan anggaran', 'warning');
+        return;
+    }
+
+    try {
+        let savedItem;
+        if (idxStr !== '') {
+            const idx = parseInt(idxStr);
+            const existingItem = event.items[idx];
+            item.id = existingItem.id; // Preserve UUID
+            item.isPaid = existingItem.isPaid || false;
+
+            savedItem = await saveEventItemDetail(eventId, item);
+            if (savedItem) event.items[idx] = savedItem;
+        } else {
+            savedItem = await saveEventItemDetail(eventId, item);
+            if (savedItem) event.items.push(savedItem);
+        }
+
+        if (savedItem) {
+            closeModal('eventItemModal');
+            openEventDetail(eventId);
+            updateEvents(); // Update parent cards
+            showToast('Item disimpan');
+        }
+    } catch (err) {
+        console.error('Failed to save event item:', err);
+        showToast('Gagal menyimpan item ke database', 'error');
+    }
 }
 
-function deleteEventItem(eventId, idx) {
+async function deleteEventItem(eventId, idx) {
     const event = state.events.find(e => e.id === eventId);
-    if (event) { event.items.splice(idx, 1); saveEvents(); openEventDetail(eventId); showToast('Item dihapus'); }
+    if (!event) return;
+
+    const item = event.items[idx];
+    if (!item) return;
+
+    if (!confirm(`Hapus item "${item.name}"?`)) return;
+
+    try {
+        const API = window.FinansialKuAPI;
+        const { error } = await API.eventItems.delete(item.id);
+        if (error) throw error;
+
+        event.items.splice(idx, 1);
+        openEventDetail(eventId);
+        updateEvents();
+        showToast('Item dihapus');
+    } catch (err) {
+        console.error('Failed to delete event item:', err);
+        showToast('Gagal menghapus item dari database', 'error');
+    }
 }
 
 // Custom Event Categories
