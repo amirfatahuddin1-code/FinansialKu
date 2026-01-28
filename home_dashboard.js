@@ -139,7 +139,7 @@ function updateHomeEventsWidget() {
                     <span class="date-month">${month}</span>
                 </div>
                 <div class="event-info-mini">
-                    <div class="event-title-mini">${e.title}</div>
+                    <div class="event-title-mini">${e.name}</div>
                     <div class="event-subtitle-mini">${e.category || 'Event'}</div>
                 </div>
                 <div class="event-amount-mini">

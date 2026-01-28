@@ -495,6 +495,13 @@ function initNavigation() {
     });
 }
 
+function switchTab(tabId) {
+    const navItem = document.querySelector(`.nav-item[data-tab="${tabId}"]`);
+    if (navItem) {
+        navItem.click();
+    }
+}
+
 function updateCurrentTab(tab) {
     switch (tab) {
         case 'dashboard': updateDashboard(); break;
