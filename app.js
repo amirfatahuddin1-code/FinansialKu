@@ -1257,7 +1257,8 @@ async function saveEvent(e) {
         }
     } catch (err) {
         console.error('Save event failed:', err);
-        showToast('Gagal menyimpan acara', 'error');
+        const msg = err.message || 'Gagal menyimpan acara';
+        showToast(msg, 'error');
     } finally {
         btn.textContent = originalText;
         btn.disabled = false;

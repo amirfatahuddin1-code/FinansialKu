@@ -90,8 +90,9 @@
 
     const profilesAPI = {
         async get() {
-            const { data: { user } } = await authAPI.getUser();
-            if (!user) return { data: null, error: 'Not authenticated' };
+            const { data: authData, error: authError } = await authAPI.getUser();
+            const user = authData?.user;
+            if (authError || !user) return { data: null, error: authError || 'Not authenticated' };
 
             const { data, error } = await supabaseClient
                 .from('profiles')
@@ -102,8 +103,9 @@
         },
 
         async update(updates) {
-            const { data: { user } } = await authAPI.getUser();
-            if (!user) return { data: null, error: 'Not authenticated' };
+            const { data: authData, error: authError } = await authAPI.getUser();
+            const user = authData?.user;
+            if (authError || !user) return { data: null, error: authError || 'Not authenticated' };
 
             const { data, error } = await supabaseClient
                 .from('profiles')
@@ -128,8 +130,9 @@
         },
 
         async create(category) {
-            const { data: { user } } = await authAPI.getUser();
-            if (!user) return { data: null, error: 'Not authenticated' };
+            const { data: authData, error: authError } = await authAPI.getUser();
+            const user = authData?.user;
+            if (authError || !user) return { data: null, error: authError || 'Not authenticated' };
 
             const { data, error } = await supabaseClient
                 .from('categories')
@@ -168,8 +171,9 @@
         },
 
         async create(transaction) {
-            const { data: { user } } = await authAPI.getUser();
-            if (!user) return { data: null, error: 'Not authenticated' };
+            const { data: authData, error: authError } = await authAPI.getUser();
+            const user = authData?.user;
+            if (authError || !user) return { data: null, error: authError || 'Not authenticated' };
 
             const { data, error } = await supabaseClient
                 .from('transactions')
@@ -211,8 +215,9 @@
         },
 
         async upsert(budget) {
-            const { data: { user } } = await authAPI.getUser();
-            if (!user) return { data: null, error: 'Not authenticated' };
+            const { data: authData, error: authError } = await authAPI.getUser();
+            const user = authData?.user;
+            if (authError || !user) return { data: null, error: authError || 'Not authenticated' };
 
             const { data, error } = await supabaseClient
                 .from('budgets')
@@ -237,8 +242,9 @@
         },
 
         async create(savings) {
-            const { data: { user } } = await authAPI.getUser();
-            if (!user) return { data: null, error: 'Not authenticated' };
+            const { data: authData, error: authError } = await authAPI.getUser();
+            const user = authData?.user;
+            if (authError || !user) return { data: null, error: authError || 'Not authenticated' };
 
             const { data, error } = await supabaseClient
                 .from('savings')
@@ -303,8 +309,9 @@
         },
 
         async create(event) {
-            const { data: { user } } = await authAPI.getUser();
-            if (!user) return { data: null, error: 'Not authenticated' };
+            const { data: authData, error: authError } = await authAPI.getUser();
+            const user = authData?.user;
+            if (authError || !user) return { data: null, error: authError || 'Not authenticated' };
 
             const { data, error } = await supabaseClient
                 .from('events')
@@ -377,8 +384,9 @@
     const telegramAPI = {
         // Get pending (unsynced) transactions from Telegram
         async getPending() {
-            const { data: { user } } = await authAPI.getUser();
-            if (!user) return { data: null, error: 'Not authenticated' };
+            const { data: authData, error: authError } = await authAPI.getUser();
+            const user = authData?.user;
+            if (authError || !user) return { data: null, error: authError || 'Not authenticated' };
 
             const { data, error } = await supabaseClient
                 .from('telegram_transactions')
@@ -400,8 +408,9 @@
 
         // Link Telegram account
         async linkTelegram(telegramUserId, telegramUsername) {
-            const { data: { user } } = await authAPI.getUser();
-            if (!user) return { data: null, error: 'Not authenticated' };
+            const { data: authData, error: authError } = await authAPI.getUser();
+            const user = authData?.user;
+            if (authError || !user) return { data: null, error: authError || 'Not authenticated' };
 
             const { data, error } = await supabaseClient
                 .from('telegram_user_links')
@@ -417,8 +426,9 @@
 
         // Get linked Telegram account
         async getLinkedAccount() {
-            const { data: { user } } = await authAPI.getUser();
-            if (!user) return { data: null, error: 'Not authenticated' };
+            const { data: authData, error: authError } = await authAPI.getUser();
+            const user = authData?.user;
+            if (authError || !user) return { data: null, error: authError || 'Not authenticated' };
 
             const { data, error } = await supabaseClient
                 .from('telegram_user_links')
@@ -430,8 +440,9 @@
 
         // Unlink Telegram account
         async unlinkTelegram() {
-            const { data: { user } } = await authAPI.getUser();
-            if (!user) return { data: null, error: 'Not authenticated' };
+            const { data: authData, error: authError } = await authAPI.getUser();
+            const user = authData?.user;
+            if (authError || !user) return { data: null, error: authError || 'Not authenticated' };
 
             const { data, error } = await supabaseClient
                 .from('telegram_user_links')
@@ -442,8 +453,9 @@
 
         // Generate verification code for Telegram linking
         async generateLinkCode() {
-            const { data: { user } } = await authAPI.getUser();
-            if (!user) return { data: null, error: 'Not authenticated' };
+            const { data: authData, error: authError } = await authAPI.getUser();
+            const user = authData?.user;
+            if (authError || !user) return { data: null, error: authError || 'Not authenticated' };
 
             // Generate random 6-char code
             const code = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -464,8 +476,9 @@
 
         // Get active link code (for display)
         async getActiveLinkCode() {
-            const { data: { user } } = await authAPI.getUser();
-            if (!user) return { data: null, error: 'Not authenticated' };
+            const { data: authData, error: authError } = await authAPI.getUser();
+            const user = authData?.user;
+            if (authError || !user) return { data: null, error: authError || 'Not authenticated' };
 
             const { data, error } = await supabaseClient
                 .from('telegram_link_codes')
@@ -486,8 +499,9 @@
     const telegramGroupAPI = {
         // Link a Telegram group to user account
         async linkGroup(telegramGroupId, groupName) {
-            const { data: { user } } = await authAPI.getUser();
-            if (!user) return { data: null, error: 'Not authenticated' };
+            const { data: authData, error: authError } = await authAPI.getUser();
+            const user = authData?.user;
+            if (authError || !user) return { data: null, error: authError || 'Not authenticated' };
 
             const { data, error } = await supabaseClient
                 .from('telegram_group_links')
@@ -503,8 +517,9 @@
 
         // Get all linked Telegram groups for current user
         async getLinkedGroups() {
-            const { data: { user } } = await authAPI.getUser();
-            if (!user) return { data: null, error: 'Not authenticated' };
+            const { data: authData, error: authError } = await authAPI.getUser();
+            const user = authData?.user;
+            if (authError || !user) return { data: null, error: authError || 'Not authenticated' };
 
             const { data, error } = await supabaseClient
                 .from('telegram_group_links')
@@ -516,8 +531,9 @@
 
         // Unlink a Telegram group
         async unlinkGroup(telegramGroupId) {
-            const { data: { user } } = await authAPI.getUser();
-            if (!user) return { data: null, error: 'Not authenticated' };
+            const { data: authData, error: authError } = await authAPI.getUser();
+            const user = authData?.user;
+            if (authError || !user) return { data: null, error: authError || 'Not authenticated' };
 
             const { data, error } = await supabaseClient
                 .from('telegram_group_links')
@@ -543,8 +559,9 @@
     const whatsappAPI = {
         // Get pending (unsynced) transactions from WhatsApp
         async getPending() {
-            const { data: { user } } = await authAPI.getUser();
-            if (!user) return { data: null, error: 'Not authenticated' };
+            const { data: authData, error: authError } = await authAPI.getUser();
+            const user = authData?.user;
+            if (authError || !user) return { data: null, error: authError || 'Not authenticated' };
 
             const { data, error } = await supabaseClient
                 .from('whatsapp_transactions')
@@ -566,8 +583,9 @@
 
         // Link WhatsApp phone number
         async linkPhone(phoneNumber, displayName) {
-            const { data: { user } } = await authAPI.getUser();
-            if (!user) return { data: null, error: 'Not authenticated' };
+            const { data: authData, error: authError } = await authAPI.getUser();
+            const user = authData?.user;
+            if (authError || !user) return { data: null, error: authError || 'Not authenticated' };
 
             // Normalize phone number (remove + and spaces)
             const normalizedPhone = phoneNumber.replace(/[\s\-\+]/g, '');
@@ -586,8 +604,9 @@
 
         // Get linked WhatsApp account
         async getLinkedAccount() {
-            const { data: { user } } = await authAPI.getUser();
-            if (!user) return { data: null, error: 'Not authenticated' };
+            const { data: authData, error: authError } = await authAPI.getUser();
+            const user = authData?.user;
+            if (authError || !user) return { data: null, error: authError || 'Not authenticated' };
 
             const { data, error } = await supabaseClient
                 .from('whatsapp_user_links')
@@ -599,8 +618,9 @@
 
         // Unlink WhatsApp account
         async unlinkPhone() {
-            const { data: { user } } = await authAPI.getUser();
-            if (!user) return { data: null, error: 'Not authenticated' };
+            const { data: authData, error: authError } = await authAPI.getUser();
+            const user = authData?.user;
+            if (authError || !user) return { data: null, error: authError || 'Not authenticated' };
 
             const { data, error } = await supabaseClient
                 .from('whatsapp_user_links')
@@ -611,8 +631,9 @@
 
         // Link a WhatsApp group to user account
         async linkGroup(groupId, groupName) {
-            const { data: { user } } = await authAPI.getUser();
-            if (!user) return { data: null, error: 'Not authenticated' };
+            const { data: authData, error: authError } = await authAPI.getUser();
+            const user = authData?.user;
+            if (authError || !user) return { data: null, error: authError || 'Not authenticated' };
 
             const { data, error } = await supabaseClient
                 .from('whatsapp_group_links')
@@ -628,8 +649,9 @@
 
         // Get all linked WhatsApp groups for current user
         async getLinkedGroups() {
-            const { data: { user } } = await authAPI.getUser();
-            if (!user) return { data: null, error: 'Not authenticated' };
+            const { data: authData, error: authError } = await authAPI.getUser();
+            const user = authData?.user;
+            if (authError || !user) return { data: null, error: authError || 'Not authenticated' };
 
             const { data, error } = await supabaseClient
                 .from('whatsapp_group_links')
@@ -641,8 +663,9 @@
 
         // Unlink a WhatsApp group
         async unlinkGroup(groupId) {
-            const { data: { user } } = await authAPI.getUser();
-            if (!user) return { data: null, error: 'Not authenticated' };
+            const { data: authData, error: authError } = await authAPI.getUser();
+            const user = authData?.user;
+            if (authError || !user) return { data: null, error: authError || 'Not authenticated' };
 
             const { data, error } = await supabaseClient
                 .from('whatsapp_group_links')
@@ -656,8 +679,9 @@
 
     const debtsAPI = {
         async getAll() {
-            const { data: { user } } = await authAPI.getUser();
-            if (!user) return { data: null, error: 'Not authenticated' };
+            const { data: authData, error: authError } = await authAPI.getUser();
+            const user = authData?.user;
+            if (authError || !user) return { data: null, error: authError || 'Not authenticated' };
 
             const { data, error } = await supabaseClient
                 .from('debts')
@@ -668,8 +692,9 @@
         },
 
         async create(debt) {
-            const { data: { user } } = await authAPI.getUser();
-            if (!user) return { data: null, error: 'Not authenticated' };
+            const { data: authData, error: authError } = await authAPI.getUser();
+            const user = authData?.user;
+            if (authError || !user) return { data: null, error: authError || 'Not authenticated' };
 
             const { data, error } = await supabaseClient
                 .from('debts')
