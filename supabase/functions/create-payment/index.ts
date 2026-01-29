@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
                 id: plan_id,
                 price: plan.price,
                 quantity: 1,
-                name: `Karsafin ${plan.name} - 30 Hari`,
+                name: `Karsafin ${plan.name}`,
             }],
             customer_details: {
                 email: user_email || '',

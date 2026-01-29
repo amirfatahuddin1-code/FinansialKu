@@ -2072,6 +2072,7 @@ async function init() {
     // 3. Load Data
     try { await loadData(); } catch (e) { console.error('Data load failed', e); }
     try { await loadUserInfo(); } catch (e) { console.error('User info failed', e); }
+    try { await initSubscription(); } catch (e) { console.error('Subscription init failed', e); }
 
     // 4. Update UI with Data
     try { initHomeDashboard(); } catch (e) { console.error('Home Dashboard init failed', e); }
