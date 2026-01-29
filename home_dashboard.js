@@ -200,24 +200,53 @@ function updateHomeTransactionsWidget() {
     if (!list) return;
 
     // Get top 5 recent transactions
-    const recent = state.transactions.slice(0, 5);
+    const recent = state.transactions.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
 
     if (recent.length === 0) {
         list.innerHTML = '<div class="empty-state small"><p>Belum ada transaksi</p></div>';
     } else {
+        const today = new Date().toISOString().split('T')[0];
+        const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+
         list.innerHTML = recent.map(t => {
-            const c = state.categories.find(x => x.id === t.categoryId) || { icon: '📦', name: 'Lainnya' };
+            const c = state.categories.find(x => x.id === t.categoryId) || { icon: '📦', name: 'Lainnya', color: 'var(--text-muted)' };
             const isInc = t.type === 'income';
+
+            // Date Formatting
+            let dateStr = t.date; // default YYYY-MM-DD
+            if (t.date.startsWith(today)) dateStr = 'Hari ini';
+            else if (t.date.startsWith(yesterday)) dateStr = 'Kemarin';
+            else {
+                const d = new Date(t.date);
+                dateStr = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+            }
+
+            // Time Formatting (if available in date string, else default)
+            let timeStr = '';
+            if (t.date.includes('T')) {
+                const time = new Date(t.date);
+                timeStr = `, ${time.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.', ':')}`;
+            }
+
+            // Fallback color if not present
+            const catColor = c.color || (isInc ? 'var(--success)' : 'var(--danger)');
+            // Light background for icon
+            const bgStyle = `background: ${catColor}20; color: ${catColor};`;
+
             return `
-                <div class="tx-item-mini">
-                    <div class="tx-left">
-                        <div class="tx-icon-mini">${c.icon}</div>
-                        <div class="tx-details">
-                            <span class="tx-name">${t.description || c.name}</span>
-                            <span class="tx-cat">${c.name}</span>
+                <div class="tx-card">
+                    <div class="tx-card-left">
+                        <div class="tx-card-icon" style="${bgStyle}">
+                            ${c.icon}
+                        </div>
+                        <div class="tx-card-details">
+                            <span class="tx-card-title">${t.description || c.name}</span>
+                            <span class="tx-card-meta">${dateStr}${timeStr}</span>
                         </div>
                     </div>
-                    <span class="tx-amount ${t.type}">${isInc ? '+' : '-'} ${formatCurrencyCompact(t.amount)}</span>
+                    <div class="tx-card-amount ${t.type}">
+                        ${isInc ? '+' : '-'} Rp ${Math.abs(t.amount).toLocaleString('id-ID')}
+                    </div>
                 </div>
              `;
         }).join('');

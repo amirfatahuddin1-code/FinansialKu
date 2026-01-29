@@ -1829,62 +1829,72 @@ input:checked+.slider:before {
     color: var(--accent-primary);
 }
 
-/* Transactions Widget Mini */
-.tx-item-mini {
+/* Transactions Widget Card Style */
+.tx-card {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: var(--space-2) 0;
-    border-bottom: 1px solid var(--border-color);
+    padding: var(--space-4);
+    background: var(--bg-card);
+    border-radius: var(--radius-xl);
+    margin-bottom: var(--space-3);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+    transition: transform 0.2s, box-shadow 0.2s;
 }
 
-.tx-item-mini:last-child {
-    border-bottom: none;
+.tx-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
 }
 
-.tx-left {
+.tx-card-left {
     display: flex;
     align-items: center;
-    gap: var(--space-3);
+    gap: var(--space-4);
 }
 
-.tx-icon-mini {
-    width: 32px;
-    height: 32px;
-    background: var(--bg-secondary);
-    border-radius: var(--radius-md);
+.tx-card-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-lg);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
+    font-size: 1.5rem;
+    flex-shrink: 0;
 }
 
-.tx-details {
+.tx-card-details {
     display: flex;
     flex-direction: column;
+    gap: 2px;
 }
 
-.tx-name {
-    font-weight: 600;
-    font-size: 15px;
-    margin-bottom: 2px;
-}
-
-.tx-cat {
-    font-size: 13px;
-    color: var(--text-muted);
-}
-
-.tx-amount {
+.tx-card-title {
     font-weight: 700;
-    font-size: 15px;
+    /* Bolder as per design */
+    font-size: var(--font-size-base);
+    color: var(--text-primary);
 }
 
-.tx-amount.expense {
+.tx-card-meta {
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.tx-card-amount {
+    font-weight: 700;
+    font-size: var(--font-size-base);
+    white-space: nowrap;
+}
+
+.tx-card-amount.expense {
     color: var(--danger);
 }
 
-.tx-amount.income {
+.tx-card-amount.income {
     color: var(--success);
 }
 
