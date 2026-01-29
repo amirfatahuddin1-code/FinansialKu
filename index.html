@@ -2188,31 +2188,31 @@
                                     <path d="M2 12l10 5 10-5" />
                                 </svg>
                             </div>
-                            <h3>FinansialKu</h3>
+                            <h3>Karsafin</h3>
                             <span class="version-tag">Versi 1.2.0</span>
                         </div>
                         <div class="about-links">
-                            <a href="#" class="about-link-item">
+                            <button class="about-link-item about-btn" onclick="openModal('faqModal')">
                                 <span class="icon">❓</span>
                                 <div class="link-info">
                                     <span class="link-title">FAQ / Bantuan</span>
                                     <span class="link-desc">Pertanyaan yang sering diajukan</span>
                                 </div>
-                            </a>
-                            <a href="https://wa.me/6281234567890" target="_blank" class="about-link-item">
-                                <span class="icon">📞</span>
+                            </button>
+                            <button class="about-link-item about-btn" onclick="openModal('supportModal')">
+                                <span class="icon">💬</span>
                                 <div class="link-info">
                                     <span class="link-title">Hubungi Dukungan</span>
                                     <span class="link-desc">Chat via WhatsApp</span>
                                 </div>
-                            </a>
-                            <a href="#" class="about-link-item">
+                            </button>
+                            <button class="about-link-item about-btn" onclick="openModal('termsModal')">
                                 <span class="icon">📄</span>
                                 <div class="link-info">
                                     <span class="link-title">Syarat & Ketentuan</span>
                                     <span class="link-desc">Kebijakan penggunaan aplikasi</span>
                                 </div>
-                            </a>
+                            </button>
                         </div>
                         <div class="about-footer">
                             <p>© 2026 FinansialKu. Dibuat dengan ❤️ untuk Indonesia.</p>
@@ -2519,6 +2519,144 @@
         setTimeout(forceBind, 2000);
     })();
 </script>
+<!-- FAQ Modal -->
+<div class="modal" id="faqModal">
+    <div class="modal-overlay"></div>
+    <div class="modal-content modal-medium">
+        <div class="modal-header">
+            <h3>❓ FAQ / Bantuan</h3>
+            <button class="btn-close" onclick="closeModal('faqModal')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body scrollable-y">
+            <div class="faq-item">
+                <h4 class="faq-question">1. Bagaimana cara mencatat pemasukan dan pengeluaran?</h4>
+                <p class="faq-answer">Masuk ke halaman utama, lalu tekan tombol "+" untuk menambahkan transaksi. Pilih
+                    jenis transaksi (pemasukan atau pengeluaran), isi nominal, kategori, tanggal, dan deskripsi jika
+                    perlu. Tekan "Simpan" untuk mencatat.</p>
+            </div>
+            <div class="faq-item">
+                <h4 class="faq-question">2. Bagaimana cara membuat kategori keuangan pribadi?</h4>
+                <p class="faq-answer">Buka menu "Kategori" di pengaturan atau halaman transaksi. Tekan "Tambah
+                    Kategori", beri nama dan pilih ikon atau warna sesuai preferensi. Kategori ini akan muncul saat
+                    mencatat transaksi.</p>
+            </div>
+            <div class="faq-item">
+                <h4 class="faq-question">3. Bagaimana cara melihat laporan bulanan?</h4>
+                <p class="faq-answer">Masuk ke menu "Laporan" atau "Ringkasan". Di sana Anda bisa melihat grafik dan
+                    total pemasukan/pengeluaran per bulan, serta distribusi berdasarkan kategori. Anda juga bisa memilih
+                    bulan tertentu untuk analisis lebih detail.</p>
+            </div>
+            <div class="faq-item">
+                <h4 class="faq-question">4. Apakah data saya aman?</h4>
+                <p class="faq-answer">Ya. Karsafin menyimpan data Anda secara lokal di perangkat dan/atau di cloud
+                    terenkripsi (jika Anda mengaktifkan sinkronisasi). Kami tidak membagikan data Anda ke pihak ketiga
+                    tanpa izin.</p>
+            </div>
+            <div class="faq-item">
+                <h4 class="faq-question">5. Bagaimana cara backup dan restore data?</h4>
+                <div class="faq-answer">
+                    <p>Masuk ke menu "Pengaturan" > "Data & Sync".</p>
+                    <p><strong>a. Backup Data (JSON)</strong><br>
+                        Simpan seluruh data aplikasi Anda ke file JSON untuk keamanan dan pemulihan di masa depan.<br>
+                        - Tekan tombol Backup JSON<br>
+                        - File akan berisi semua data: transaksi, kategori, pengaturan<br>
+                        - Simpan file ini di tempat aman (misalnya Google Drive atau flashdisk)</p>
+                    <p><strong>b. Restore Data (JSON)</strong><br>
+                        Kembalikan data Anda dari file backup JSON jika berpindah perangkat atau ingin memulihkan data
+                        lama.<br>
+                        - Tekan tombol Restore JSON<br>
+                        - Pilih file backup yang valid<br>
+                        - Data akan dipulihkan sesuai isi file tersebut.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Support Modal -->
+<div class="modal" id="supportModal">
+    <div class="modal-overlay"></div>
+    <div class="modal-content modal-medium">
+        <div class="modal-header">
+            <h3>💬 Hubungi Dukungan</h3>
+            <button class="btn-close" onclick="closeModal('supportModal')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div style="text-align: center; padding: 20px 0;">
+                <div style="font-size: 48px; margin-bottom: 20px;">🎧</div>
+                <h4>Butuh Bantuan? Kami Siap Membantu</h4>
+                <p style="color: var(--text-muted); margin-bottom: 20px;">Tim Karsafin siap membantu Anda melalui
+                    WhatsApp:</p>
+                <div
+                    style="text-align: left; background: var(--bg-secondary); padding: 16px; border-radius: 12px; margin-bottom: 24px;">
+                    <ul style="margin: 0; padding-left: 20px; line-height: 1.6;">
+                        <li>Kendala teknis atau bug aplikasi</li>
+                        <li>Saran fitur baru</li>
+                        <li>Pertanyaan seputar penggunaan</li>
+                    </ul>
+                </div>
+                <p style="margin-bottom: 24px;">Klik tombol di bawah untuk langsung terhubung dengan tim dukungan kami
+                    via WhatsApp. Kami akan merespons secepat mungkin di jam kerja.</p>
+
+                <a href="https://wa.me/6281393591050" target="_blank" class="btn-primary btn-large"
+                    style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 8px; text-decoration: none;">
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
+                        <path
+                            d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                    </svg>
+                    Chat via WhatsApp
+                </a>
+                <p style="margin-top: 12px; font-size: var(--font-size-xs); color: var(--text-muted);">Nomor WA:
+                    +6281393591050</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Terms Modal -->
+<div class="modal" id="termsModal">
+    <div class="modal-overlay"></div>
+    <div class="modal-content modal-medium">
+        <div class="modal-header">
+            <h3>📄 Syarat & Ketentuan</h3>
+            <button class="btn-close" onclick="closeModal('termsModal')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body scrollable-y">
+            <h4 style="margin-bottom: 12px;">Kebijakan Penggunaan Aplikasi</h4>
+            <p style="margin-bottom: 16px;">Dengan menggunakan Karsafin (d/h Finansial-Ku), Anda menyetujui hal-hal
+                berikut:</p>
+
+            <ul style="padding-left: 20px; margin-bottom: 24px; line-height: 1.6;">
+                <li style="margin-bottom: 8px;">Data keuangan yang Anda input bersifat pribadi dan tidak dibagikan ke
+                    pihak ketiga.</li>
+                <li style="margin-bottom: 8px;">Pengguna bertanggung jawab atas kebenaran data yang dicatat.</li>
+                <li style="margin-bottom: 8px;">Aplikasi ini tidak memberikan nasihat keuangan profesional.</li>
+                <li style="margin-bottom: 8px;">Penggunaan aplikasi untuk tujuan ilegal atau merugikan pihak lain
+                    dilarang.</li>
+            </ul>
+
+            <div style="background: var(--bg-secondary); padding: 16px; border-radius: 8px;">
+                <p style="margin: 0; font-size: 14px;">Kami berkomitmen menjaga privasi dan keamanan data Anda sesuai
+                    standar terbaik.</p>
+            </div>
+        </div>
+    </div>
+</div>
 </body>
 
 </html>
