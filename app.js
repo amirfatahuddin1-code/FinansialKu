@@ -5001,11 +5001,11 @@ function initNavigationToggle() {
     // Load saved preference
     const isHidden = localStorage.getItem('finansialku_nav_hidden') === 'true';
     if (isHidden) {
-        mainNav.classList.add('nav-hidden');
+        document.body.classList.add('nav-hidden');
     }
 
     const toggleNav = () => {
-        const currentlyHidden = mainNav.classList.toggle('nav-hidden');
+        const currentlyHidden = document.body.classList.toggle('nav-hidden');
         localStorage.setItem('finansialku_nav_hidden', currentlyHidden);
     };
 

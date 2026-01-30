@@ -295,16 +295,16 @@ a:hover {
     transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.main-nav.nav-hidden {
+body.nav-hidden .main-nav {
     transform: translateY(100%);
 }
 
 /* Move FAB up when Navigation is visible */
-.main-nav:not(.nav-hidden)~.fab-container {
+body:not(.nav-hidden) .fab-container {
     bottom: calc(var(--space-8) + 75px) !important;
 }
 
-.main-nav.nav-hidden~.fab-container {
+body.nav-hidden .fab-container {
     bottom: var(--space-8);
 }
 
@@ -339,7 +339,7 @@ a:hover {
     transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.main-nav.nav-hidden~.nav-expand-btn {
+body.nav-hidden .nav-expand-btn {
     opacity: 1;
     pointer-events: auto;
     transform: translateY(0);
