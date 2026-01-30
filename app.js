@@ -472,10 +472,17 @@ function showToast(message, type = 'success') {
 // ========== Modal Management ==========
 function openModal(modalId) {
     document.getElementById(modalId).classList.add('active');
+    document.body.classList.add('modal-open');
 }
 
 function closeModal(modalId) {
     document.getElementById(modalId).classList.remove('active');
+
+    // Check if any other modals are still active
+    const activeModals = document.querySelectorAll('.modal.active');
+    if (activeModals.length === 0) {
+        document.body.classList.remove('modal-open');
+    }
 
     // If closing subscription modal and user has no active subscription, show overlay again
     if (modalId === 'subscriptionModal' && state.subscription && !state.subscription.is_active) {
@@ -485,6 +492,7 @@ function closeModal(modalId) {
 
 function closeAllModals() {
     document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
+    document.body.classList.remove('modal-open');
 
     // If user has no active subscription, ensure overlay is shown
     if (state.subscription && !state.subscription.is_active) {
