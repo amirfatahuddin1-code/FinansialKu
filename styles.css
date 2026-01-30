@@ -1640,6 +1640,12 @@ input:checked+.slider:before {
     padding-right: var(--space-1);
 }
 
+#homeTransactionsList {
+    margin-left: calc(-1 * var(--space-5));
+    margin-right: calc(-1 * var(--space-5));
+    margin-bottom: calc(-1 * var(--space-5));
+}
+
 /* Custom Scrollbar for Widgets */
 .widget-content.scrollable::-webkit-scrollbar {
     width: 4px;
@@ -1834,18 +1840,24 @@ input:checked+.slider:before {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: var(--space-4);
-    background: var(--bg-card);
-    border-radius: var(--radius-xl);
-    margin-bottom: var(--space-3);
-    box-shadow: var(--shadow-sm);
-    border: 1px solid var(--border-color);
-    transition: transform 0.2s, box-shadow 0.2s;
+    padding: var(--space-4) var(--space-6);
+    background: rgba(59, 130, 246, 0.08);
+    /* Biru muda tipis */
+    border: none;
+    border-bottom: 1px solid var(--border-color);
+    border-radius: 0;
+    margin-bottom: 0;
+    box-shadow: none;
+    transition: background 0.2s;
+    width: 100%;
 }
 
 .tx-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
+    background: rgba(59, 130, 246, 0.12);
+}
+
+.tx-card:last-child {
+    border-bottom: none;
 }
 
 .tx-card-left {
