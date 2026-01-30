@@ -1640,6 +1640,12 @@ input:checked+.slider:before {
     padding-right: var(--space-1);
 }
 
+#homeTransactionsList {
+    max-height: none;
+    flex: 1;
+    margin-bottom: var(--space-2);
+}
+
 /* Custom Scrollbar for Widgets */
 .widget-content.scrollable::-webkit-scrollbar {
     width: 4px;
