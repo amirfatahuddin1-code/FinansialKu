@@ -3557,32 +3557,39 @@ function initDebtEvents() {
     // Add Debt Button
     const addDebtBtn = document.getElementById('addDebtBtn');
     if (addDebtBtn) {
-        addDebtBtn.addEventListener('click', () => {
-            const form = document.getElementById('debtForm');
-            if (form) {
-                form.reset();
-                document.getElementById('debtId').value = '';
-                document.getElementById('debtModalTitle').textContent = 'Catat Hutang Baru';
-
-                // Set default type based on active tab
-                const activeTypeTab = document.querySelector('.calc-tab[data-debt-type].active');
-                const type = activeTypeTab ? activeTypeTab.dataset.debtType : 'payable';
-                document.getElementById('debtType').value = type;
-
-                document.querySelectorAll('.btn-group-item[data-type]').forEach(b => {
-                    b.classList.toggle('active', b.dataset.type === type);
-                });
-
-                // Update Label
-                const nameLabel = document.getElementById('debtNameLabel');
-                if (nameLabel) {
-                    nameLabel.textContent = type === 'payable' ? 'Nama Pemberi Pinjaman' : 'Nama Peminjam';
-                }
-
-                openModal('debtModal');
-            }
-        });
+        addDebtBtn.addEventListener('click', () => openShortcutDebtModal());
     }
+
+    // Global helper for opening debt modal from shortcuts
+    window.openShortcutDebtModal = function (forcedType = null) {
+        const form = document.getElementById('debtForm');
+        if (!form) return;
+
+        form.reset();
+        document.getElementById('debtId').value = '';
+        document.getElementById('debtModalTitle').textContent = 'Catat Hutang Baru';
+
+        // Set type: forced from shortcut OR based on active tab OR default payable
+        let type = forcedType;
+        if (!type) {
+            const activeTypeTab = document.querySelector('.calc-tab[data-debt-type].active');
+            type = activeTypeTab ? activeTypeTab.dataset.debtType : 'payable';
+        }
+
+        document.getElementById('debtType').value = type;
+
+        document.querySelectorAll('.btn-group-item[data-type]').forEach(b => {
+            b.classList.toggle('active', b.dataset.type === type);
+        });
+
+        // Update Label
+        const nameLabel = document.getElementById('debtNameLabel');
+        if (nameLabel) {
+            nameLabel.textContent = type === 'payable' ? 'Nama Pemberi Pinjaman' : 'Nama Peminjam';
+        }
+
+        openModal('debtModal');
+    };
 
     // Modal Close Buttons
     const closeDebtModalBtn = document.getElementById('closeDebtModal');
