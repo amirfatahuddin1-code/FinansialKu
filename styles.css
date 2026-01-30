@@ -310,10 +310,22 @@ body.nav-hidden .fab-container {
 
 /* Toggle buttons inside and outside nav */
 .nav-toggle-btn {
+    flex: 0 0 auto !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-3) var(--space-4);
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+    cursor: pointer;
     border-right: 1px solid var(--border-color-hover);
     margin-right: var(--space-2);
     border-radius: 0;
-    flex: 0 0 auto !important;
+    transition: all var(--transition-base);
 }
 
 .nav-expand-btn {
@@ -1575,7 +1587,7 @@ input:checked+.slider:before {
 }
 
 /* Move Modal up when Navigation is visible */
-.main-nav:not(.nav-hidden)~.modal.active .modal-content {
+body:not(.nav-hidden) .modal.active .modal-content {
     margin-bottom: 80px;
 }
 
@@ -3388,7 +3400,7 @@ form {
     }
 
     /* Mobile specific shift */
-    .main-nav:not(.nav-hidden)~.fab-container {
+    body:not(.nav-hidden) .fab-container {
         bottom: calc(var(--space-4) + 80px) !important;
     }
 
@@ -3404,7 +3416,7 @@ form {
     }
 
     /* Mobile specific shift for modals */
-    .main-nav:not(.nav-hidden)~.modal.active .modal-content {
+    body:not(.nav-hidden) .modal.active .modal-content {
         margin-bottom: 85px;
     }
 
