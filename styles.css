@@ -1558,6 +1558,8 @@ input:checked+.slider:before {
 /* Shortcuts Section */
 .home-shortcuts-container {
     margin-top: var(--space-2);
+    margin-bottom: var(--space-6);
+    /* Added spacing with widgets below */
     padding: var(--space-6) var(--space-4);
     background: #ffffff;
     border: 1px solid #e2e8f0;
