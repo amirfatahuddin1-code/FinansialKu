@@ -2515,17 +2515,39 @@ form {
     border-radius: var(--radius-lg);
     margin-top: var(--space-4);
     border: 1px dashed var(--border-color);
+    flex-wrap: nowrap;
+    /* Prevent wrapping */
+    gap: var(--space-2);
 }
 
 .budget-total-row .total-label {
     font-weight: 700;
     color: var(--text-secondary);
+    white-space: nowrap;
+    /* Keep on one line */
 }
 
 .budget-total-row .total-value {
     font-size: var(--font-size-lg);
     font-weight: 800;
     color: var(--accent-primary);
+    white-space: nowrap;
+    /* Keep on one line */
+    text-align: right;
+}
+
+@media (max-width: 480px) {
+    .budget-total-row {
+        padding: var(--space-3) var(--space-4);
+    }
+
+    .budget-total-row .total-label {
+        font-size: var(--font-size-sm);
+    }
+
+    .budget-total-row .total-value {
+        font-size: var(--font-size-base);
+    }
 }
 
 @media (max-width: 480px) {
