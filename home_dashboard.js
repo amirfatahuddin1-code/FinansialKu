@@ -199,8 +199,8 @@ function updateHomeTransactionsWidget() {
     const list = document.getElementById('homeTransactionsList');
     if (!list) return;
 
-    // Get top 8 recent transactions to fill the widget height
-    const recent = state.transactions.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 8);
+    // Get top 12 recent transactions to ensure the widget is fully occupied
+    const recent = state.transactions.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 12);
 
     if (recent.length === 0) {
         list.innerHTML = '<div class="empty-state small"><p>Belum ada transaksi</p></div>';
