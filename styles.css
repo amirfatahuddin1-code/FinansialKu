@@ -278,11 +278,12 @@ a:hover {
     gap: var(--space-2);
     background: var(--bg-glass);
     backdrop-filter: blur(20px);
-    padding: var(--space-2) var(--space-4);
-    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-    /* Rounded top only */
+    padding: 0 var(--space-2);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
     border-top: 1px solid var(--border-color);
-    box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.2);
+    align-items: stretch;
+    min-height: 70px;
 
     /* Fixed at very bottom edge */
     position: fixed;
@@ -322,8 +323,8 @@ body.nav-hidden .fab-container {
     font-size: var(--font-size-sm);
     font-weight: 700;
     cursor: pointer;
-    border-right: 1px solid var(--border-color-hover);
-    margin-right: var(--space-2);
+    border-right: 1px solid var(--border-color);
+    margin-right: 0;
     border-radius: 0;
     transition: all var(--transition-base);
 }
@@ -3368,14 +3369,38 @@ form {
         gap: var(--space-3);
     }
 
-    .main-nav {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
+    .nav-item,
+    .nav-toggle-btn {
+        min-width: 70px;
+        padding: var(--space-2) var(--space-2);
+        flex: 1;
+        justify-content: center;
+        border-right: none;
     }
 
-    .nav-item {
-        min-width: 80px;
-        padding: var(--space-2) var(--space-3);
+    .nav-toggle-btn {
+        flex: 0 0 auto;
+        min-width: 60px;
+    }
+
+    .main-nav {
+        padding: 0;
+        gap: 0;
+        min-height: 60px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        border-radius: 0;
+        /* Straight line as requested */
+    }
+
+    /* Hide scrollbar for cleaner look but keep functionality */
+    .main-nav::-webkit-scrollbar {
+        display: none;
+    }
+
+    .main-nav {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
     }
 
     .nav-item span {
