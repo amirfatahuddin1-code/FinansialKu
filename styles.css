@@ -1641,9 +1641,9 @@ input:checked+.slider:before {
 }
 
 #homeTransactionsList {
-    margin-left: calc(-1 * var(--space-5));
-    margin-right: calc(-1 * var(--space-5));
     margin-bottom: calc(-1 * var(--space-5));
+    max-height: none;
+    flex: 1;
 }
 
 /* Custom Scrollbar for Widgets */
@@ -1840,7 +1840,7 @@ input:checked+.slider:before {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: var(--space-4) var(--space-6);
+    padding: var(--space-4);
     background: rgba(59, 130, 246, 0.08);
     /* Biru muda tipis */
     border: none;
