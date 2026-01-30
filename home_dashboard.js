@@ -199,8 +199,8 @@ function updateHomeTransactionsWidget() {
     const list = document.getElementById('homeTransactionsList');
     if (!list) return;
 
-    // Get exactly 7 recent transactions
-    const recent = state.transactions.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 7);
+    // Get exactly 5 recent transactions
+    const recent = state.transactions.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
 
     if (recent.length === 0) {
         list.innerHTML = '<div class="empty-state small"><p>Belum ada transaksi</p></div>';
