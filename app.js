@@ -991,9 +991,47 @@ function checkBudgetWarnings() {
 function openBudgetModal() {
     const inputs = document.getElementById('budgetInputs');
     const expCats = state.categories.filter(c => c.type === 'expense');
-    inputs.innerHTML = expCats.map(c => `<div class="budget-input-item"><div class="category-info"><span>${c.icon}</span><span>${c.name}</span></div><div class="amount-input"><span class="currency">Rp</span><input type="text" id="budget_${c.id}" value="${state.budgets[c.id] ? state.budgets[c.id].toLocaleString('id-ID') : ''}" oninput="formatAmountInput(this)"></div></div>`).join('');
+
+    let html = expCats.map(c => `
+        <div class="budget-input-item">
+            <div class="category-info">
+                <span>${c.icon}</span>
+                <span>${c.name}</span>
+            </div>
+            <div class="amount-input">
+                <span class="currency">Rp</span>
+                <input type="text" id="budget_${c.id}" 
+                    class="budget-raw-input"
+                    value="${state.budgets[c.id] ? state.budgets[c.id].toLocaleString('id-ID') : ''}" 
+                    oninput="formatAmountInput(this); updateBudgetTotal()">
+            </div>
+        </div>
+    `).join('');
+
+    // Add Total Row
+    html += `
+        <div class="budget-total-row">
+            <div class="total-label">Total Anggaran</div>
+            <div class="total-value" id="modalBudgetTotal">Rp 0</div>
+        </div>
+    `;
+
+    inputs.innerHTML = html;
+    updateBudgetTotal();
     openModal('budgetModal');
 }
+
+window.updateBudgetTotal = function () {
+    const totalEl = document.getElementById('modalBudgetTotal');
+    if (!totalEl) return;
+
+    let total = 0;
+    document.querySelectorAll('.budget-raw-input').forEach(input => {
+        total += parseAmount(input.value);
+    });
+
+    totalEl.textContent = 'Rp ' + total.toLocaleString('id-ID');
+};
 
 async function saveBudget(e) {
     e.preventDefault();
@@ -3567,7 +3605,6 @@ function initDebtEvents() {
 
         form.reset();
         document.getElementById('debtId').value = '';
-        document.getElementById('debtModalTitle').textContent = 'Catat Hutang Baru';
 
         // Set type: forced from shortcut OR based on active tab OR default payable
         let type = forcedType;
@@ -3575,6 +3612,9 @@ function initDebtEvents() {
             const activeTypeTab = document.querySelector('.calc-tab[data-debt-type].active');
             type = activeTypeTab ? activeTypeTab.dataset.debtType : 'payable';
         }
+
+        // Dynamic Title
+        document.getElementById('debtModalTitle').textContent = type === 'payable' ? 'Catat Hutang Baru' : 'Catat Piutang Baru';
 
         document.getElementById('debtType').value = type;
 
