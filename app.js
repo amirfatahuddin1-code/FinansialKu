@@ -4993,9 +4993,10 @@ function getMessagingUsage() {
 // ========== Navigation Toggle Logic ==========
 function initNavigationToggle() {
     const navToggle = document.getElementById('navToggle');
+    const navExpand = document.getElementById('navExpand');
     const mainNav = document.querySelector('.main-nav');
 
-    if (!navToggle || !mainNav) return;
+    if (!mainNav) return;
 
     // Load saved preference
     const isHidden = localStorage.getItem('finansialku_nav_hidden') === 'true';
@@ -5003,14 +5004,26 @@ function initNavigationToggle() {
         mainNav.classList.add('nav-hidden');
     }
 
-    navToggle.addEventListener('click', () => {
+    const toggleNav = () => {
         const currentlyHidden = mainNav.classList.toggle('nav-hidden');
         localStorage.setItem('finansialku_nav_hidden', currentlyHidden);
+    };
 
-        // Visual feedback for the toggle button if needed
-        navToggle.style.transform = 'scale(0.9)';
-        setTimeout(() => navToggle.style.transform = '', 100);
-    });
+    if (navToggle) {
+        navToggle.addEventListener('click', () => {
+            toggleNav();
+            navToggle.style.transform = 'scale(0.9)';
+            setTimeout(() => navToggle.style.transform = '', 100);
+        });
+    }
+
+    if (navExpand) {
+        navExpand.addEventListener('click', () => {
+            toggleNav();
+            navExpand.style.transform = 'scale(0.9)';
+            setTimeout(() => navExpand.style.transform = '', 100);
+        });
+    }
 }
 
 // Fix for transaction form binding and v3 verification

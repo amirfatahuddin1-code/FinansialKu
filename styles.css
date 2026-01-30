@@ -304,9 +304,51 @@ a:hover {
     bottom: calc(var(--space-8) + 75px) !important;
 }
 
-/* Sibling selector for Fab container when nav is hidden */
 .main-nav.nav-hidden~.fab-container {
     bottom: var(--space-8);
+}
+
+/* Toggle buttons inside and outside nav */
+.nav-toggle-btn {
+    border-right: 1px solid var(--border-color-hover);
+    margin-right: var(--space-2);
+    border-radius: 0;
+    flex: 0 0 auto !important;
+}
+
+.nav-expand-btn {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    width: 44px;
+    height: 44px;
+    background: var(--bg-glass);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-full);
+    color: var(--accent-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: var(--shadow-lg);
+    z-index: 5001;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(20px);
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.main-nav.nav-hidden~.nav-expand-btn {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+
+.nav-expand-btn:hover {
+    background: var(--accent-primary);
+    color: white;
+    transform: scale(1.1);
 }
 
 .nav-item {
