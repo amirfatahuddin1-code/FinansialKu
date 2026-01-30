@@ -1521,14 +1521,20 @@ input:checked+.slider:before {
     position: relative;
     width: 100%;
     max-width: 480px;
-    max-height: 90vh;
+    max-height: 85vh;
+    /* Reduced slightly to account for nav bar */
     overflow-y: auto;
     background: var(--bg-secondary);
     border-radius: var(--radius-2xl);
     border: 1px solid var(--border-color);
     box-shadow: var(--shadow-xl);
     transform: scale(0.95) translateY(20px);
-    transition: transform var(--transition-base);
+    transition: transform var(--transition-base), margin-bottom 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Move Modal up when Navigation is visible */
+.main-nav:not(.nav-hidden)~.modal.active .modal-content {
+    margin-bottom: 80px;
 }
 
 .modal.active .modal-content {
@@ -3351,7 +3357,13 @@ form {
 
     .modal-content {
         margin: var(--space-4);
-        max-height: calc(100vh - var(--space-8));
+        max-height: calc(100vh - 160px);
+        /* Account for nav + header/spacing */
+    }
+
+    /* Mobile specific shift for modals */
+    .main-nav:not(.nav-hidden)~.modal.active .modal-content {
+        margin-bottom: 85px;
     }
 
     .events-grid,
