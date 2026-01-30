@@ -501,6 +501,17 @@ function closeAllModals() {
 }
 
 // ========== Navigation ==========
+function updateFabVisibility(tabId) {
+    const fabContainer = document.querySelector('.fab-container');
+    if (!fabContainer) return;
+
+    if (tabId === 'beranda' || tabId === 'dashboard') {
+        fabContainer.style.display = 'flex';
+    } else {
+        fabContainer.style.display = 'none';
+    }
+}
+
 function initNavigation() {
     const navItems = document.querySelectorAll('.nav-item');
     navItems.forEach(item => {
@@ -512,6 +523,7 @@ function initNavigation() {
             document.getElementById(item.dataset.tab).classList.add('active');
 
             updateCurrentTab(item.dataset.tab);
+            updateFabVisibility(item.dataset.tab);
         });
     });
 }
@@ -2102,7 +2114,11 @@ async function init() {
     // 1. Initialize UI components IMMEDIATELY (so buttons work event if data fails)
     // Wrap in try-catch to prevent one failure from stopping everything
     try { loadTheme(); } catch (e) { console.error('Theme init failed', e); }
-    try { initNavigation(); } catch (e) { console.error('Nav init failed', e); }
+    try {
+        initNavigation();
+        const activeTab = document.querySelector('.nav-item.active')?.dataset.tab || 'beranda';
+        updateFabVisibility(activeTab);
+    } catch (e) { console.error('Nav init failed', e); }
     try { initFAB(); } catch (e) { console.error('FAB init failed', e); }
     try { initSettings(); } catch (e) { console.error('Settings init failed', e); }
     try { initEventListeners(); } catch (e) { console.error('Listeners init failed', e); }
