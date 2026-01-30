@@ -4990,6 +4990,29 @@ function getMessagingUsage() {
     return state.subscription.messaging;
 }
 
+// ========== Navigation Toggle Logic ==========
+function initNavigationToggle() {
+    const navToggle = document.getElementById('navToggle');
+    const mainNav = document.querySelector('.main-nav');
+
+    if (!navToggle || !mainNav) return;
+
+    // Load saved preference
+    const isHidden = localStorage.getItem('finansialku_nav_hidden') === 'true';
+    if (isHidden) {
+        mainNav.classList.add('nav-hidden');
+    }
+
+    navToggle.addEventListener('click', () => {
+        const currentlyHidden = mainNav.classList.toggle('nav-hidden');
+        localStorage.setItem('finansialku_nav_hidden', currentlyHidden);
+
+        // Visual feedback for the toggle button if needed
+        navToggle.style.transform = 'scale(0.9)';
+        setTimeout(() => navToggle.style.transform = '', 100);
+    });
+}
+
 // Fix for transaction form binding and v3 verification
 document.addEventListener('DOMContentLoaded', () => {
     console.log('APP v3 FIX: Binding transaction form...');
@@ -5000,4 +5023,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         console.error('APP v3 FIX: Transaction form NOT found ❌');
     }
+
+    // Initialize Navigation Toggle
+    initNavigationToggle();
 });
