@@ -5063,11 +5063,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Bind Reset Password Form
+    // Bind Reset Password & Email Change Forms
     const resetPwForm = document.getElementById('resetPasswordConfirmForm');
-    if (resetPwForm) {
-        resetPwForm.onsubmit = handleSaveNewPassword;
-    }
+    if (resetPwForm) resetPwForm.onsubmit = handleSaveNewPassword;
+
+    const emailChangeForm = document.getElementById('changeEmailForm');
+    if (emailChangeForm) emailChangeForm.onsubmit = handleChangeEmailSubmit;
 });
 
 async function requestPasswordReset() {
@@ -5095,26 +5096,65 @@ async function requestPasswordReset() {
 }
 
 async function requestEmailChange() {
-    const newEmail = prompt('Masukkan alamat email baru Anda:');
+    openModal('changeEmailModal');
+    // Pre-fill if needed or just clear
+    document.getElementById('newEmailInput').value = '';
+    document.getElementById('currentPasswordForEmail').value = '';
+}
+
+async function handleChangeEmailSubmit(e) {
+    if (e) e.preventDefault();
+
+    const newEmail = document.getElementById('newEmailInput').value.trim();
+    const password = document.getElementById('currentPasswordForEmail').value;
+    const btn = document.getElementById('confirmEmailChangeBtn');
+
     if (!newEmail || !newEmail.includes('@')) {
-        if (newEmail !== null) showToast('Email tidak valid', 'warning');
+        showToast('Email tidak valid', 'warning');
         return;
     }
 
+    if (!password) {
+        showToast('Masukkan password untuk konfirmasi', 'warning');
+        return;
+    }
+
+    const originalText = btn.textContent;
+    btn.textContent = 'Memverifikasi...';
+    btn.disabled = true;
+
     try {
+        // 1. Get current user's email
+        const userRes = await window.FinansialKuAPI.auth.getUser();
+        const currentEmail = userRes?.data?.user?.email;
+
+        // 2. Verify password by re-signing in (silent check)
+        const { error: authError } = await window.FinansialKuAPI.auth.signIn(currentEmail, password);
+        if (authError) {
+            throw new Error('Password salah atau tidak valid');
+        }
+
+        // 3. Password verified, trigger email change
+        btn.textContent = 'Mengirim Link...';
         const { data, error } = await window.FinansialKuAPI.auth.updateUser({ email: newEmail });
         if (error) throw error;
 
         if (data.user && data.user.new_email) {
             showToast('Konfirmasi telah dikirim ke email baru Anda. Silakan verifikasi.', 'success');
+            closeModal('changeEmailModal');
             closeModal('editProfileModal');
         } else {
             showToast('Email berhasil diperbarui', 'success');
             loadProfileSettings();
             updateProfileHeader();
+            closeModal('changeEmailModal');
         }
+
     } catch (err) {
-        showToast('Gagal ganti email: ' + err.message, 'error');
+        showToast(err.message || 'Gagal ganti email', 'error');
+    } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
     }
 }
 
