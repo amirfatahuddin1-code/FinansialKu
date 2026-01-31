@@ -74,7 +74,7 @@ var state = {
     currentPeriod: 'daily',
     selectedCategory: null,
     currentEventId: null,
-    syncServerUrl: 'http://localhost:3001',
+    syncServerUrl: '', // URL server sinkronisasi (jika ada)
     syncEnabled: false,
     syncInterval: null,
     // AI State
