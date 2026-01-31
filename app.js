@@ -5036,6 +5036,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize Navigation Toggle
     initNavigationToggle();
+
+    // Listen for Auth Events (like Password Recovery)
+    if (window.FinansialKuAPI && window.FinansialKuAPI.auth) {
+        const supabase = window.FinansialKuAPI.getSupabaseClient();
+        if (supabase) {
+            supabase.auth.onAuthStateChange(async (event, session) => {
+                console.log('Auth Event:', event);
+                if (event === 'PASSWORD_RECOVERY') {
+                    console.log('Password recovery mode detected. Opening modal...');
+                    setTimeout(() => {
+                        openModal('resetPasswordConfirmModal');
+                    }, 1000); // Small delay to ensure UI is ready
+                }
+            });
+        }
+    }
+
+    // Bind Reset Password Form
+    const resetPwForm = document.getElementById('resetPasswordConfirmForm');
+    if (resetPwForm) {
+        resetPwForm.onsubmit = handleSaveNewPassword;
+    }
 });
 
 async function requestPasswordReset() {
@@ -5083,5 +5105,45 @@ async function requestEmailChange() {
         }
     } catch (err) {
         showToast('Gagal ganti email: ' + err.message, 'error');
+    }
+}
+
+async function handleSaveNewPassword(e) {
+    if (e) e.preventDefault();
+
+    const newPassword = document.getElementById('confirmNewPassword').value;
+    const confirmPassword = document.getElementById('confirmConfirmPassword').value;
+    const btn = document.getElementById('saveNewPasswordBtn');
+
+    if (!newPassword || newPassword.length < 6) {
+        showToast('Password minimal 6 karakter', 'warning');
+        return;
+    }
+
+    if (newPassword !== confirmPassword) {
+        showToast('Konfirmasi password tidak cocok', 'warning');
+        return;
+    }
+
+    const originalText = btn.textContent;
+    btn.textContent = 'Menyimpan...';
+    btn.disabled = true;
+
+    try {
+        const { error } = await window.FinansialKuAPI.auth.updateUser({ password: newPassword });
+        if (error) throw error;
+
+        showToast('Password berhasil diperbarui! Silakan gunakan password baru Anda.', 'success');
+        closeModal('resetPasswordConfirmModal');
+
+        // Clear fields
+        document.getElementById('confirmNewPassword').value = '';
+        document.getElementById('confirmConfirmPassword').value = '';
+
+    } catch (err) {
+        showToast('Gagal mereset password: ' + err.message, 'error');
+    } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
     }
 }
