@@ -313,6 +313,10 @@
                     <label for="nameInput">Nama Lengkap</label>
                     <input type="text" id="nameInput" placeholder="Masukkan nama Anda">
                 </div>
+                <div class="form-group" id="phoneGroup" style="display: none;">
+                    <label for="phoneInput">Nomor HP</label>
+                    <input type="tel" id="phoneInput" placeholder="08xxxxxxxxxx">
+                </div>
                 <div class="form-group">
                     <label for="emailInput">Email</label>
                     <input type="email" id="emailInput" placeholder="nama@email.com" required>
@@ -429,17 +433,20 @@
 
             function updateFormMode() {
                 const nameGroup = document.getElementById('nameGroup');
+                const phoneGroup = document.getElementById('phoneGroup');
                 const confirmGroup = document.getElementById('confirmGroup');
                 const subtitle = document.getElementById('loginSubtitle');
                 const submitBtn = document.getElementById('submitBtn');
 
                 if (mode === 'register') {
                     nameGroup.style.display = 'block';
+                    phoneGroup.style.display = 'block';
                     confirmGroup.style.display = 'block';
                     subtitle.textContent = 'Buat akun baru';
                     submitBtn.querySelector('span').textContent = 'Daftar';
                 } else {
                     nameGroup.style.display = 'none';
+                    phoneGroup.style.display = 'none';
                     confirmGroup.style.display = 'none';
                     subtitle.textContent = 'Masuk ke akun Anda';
                     submitBtn.querySelector('span').textContent = 'Masuk';
@@ -473,10 +480,16 @@
 
             async function handleRegister(email, password) {
                 const name = document.getElementById('nameInput').value.trim();
+                const phone = document.getElementById('phoneInput').value.trim();
                 const confirm = document.getElementById('confirmInput').value;
 
                 if (!name) {
                     showError('Masukkan nama Anda');
+                    return;
+                }
+
+                if (!phone) {
+                    showError('Masukkan nomor HP Anda');
                     return;
                 }
 
@@ -490,7 +503,7 @@
                     return;
                 }
 
-                const { data, error } = await authAPI.signUp(email, password, name);
+                const { data, error } = await authAPI.signUp(email, password, name, phone);
 
                 if (error) {
                     showError(error.message);

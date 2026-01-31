@@ -44,11 +44,16 @@
             }
         },
 
-        async signUp(email, password, name) {
+        async signUp(email, password, name, phone) {
             const { data, error } = await supabaseClient.auth.signUp({
                 email,
                 password,
-                options: { data: { name } }
+                options: {
+                    data: {
+                        name,
+                        phone
+                    }
+                }
             });
             return { data, error };
         },

@@ -4150,14 +4150,18 @@ async function loadProfileSettings() {
         // Populate Read-Only View
         const viewName = document.getElementById('viewProfileName');
         const viewEmail = document.getElementById('viewProfileEmail');
+        const viewPhone = document.getElementById('viewProfilePhone');
 
         const metaName = user.user_metadata?.name || '';
+        const metaPhone = user.user_metadata?.phone || '';
         if (viewName) viewName.textContent = metaName;
         if (viewEmail) viewEmail.textContent = user.email;
+        if (viewPhone) viewPhone.textContent = metaPhone || '-';
 
         // Populate Edit Modal Inputs
-        document.getElementById('settingsProfileEmail').value = user.email || '';
-        document.getElementById('settingsProfileName').value = metaName;
+        if (document.getElementById('settingsProfileEmail')) document.getElementById('settingsProfileEmail').value = user.email || '';
+        if (document.getElementById('settingsProfileName')) document.getElementById('settingsProfileName').value = metaName;
+        if (document.getElementById('settingsProfilePhone')) document.getElementById('settingsProfilePhone').value = metaPhone;
 
         // Load Avatar
         const avatarUrl = user.user_metadata?.avatar_url;
@@ -4222,14 +4226,18 @@ async function saveProfileSettings() {
     try {
         const name = document.getElementById('settingsProfileName').value;
         const email = document.getElementById('settingsProfileEmail').value;
+        const phone = document.getElementById('settingsProfilePhone').value;
 
         const updates = {
             email: email,
-            data: { name: name }
+            data: {
+                name: name,
+                phone: phone
+            }
         };
 
         // Include avatar if changed
-        if (tempAvatarFile) {
+        if (typeof tempAvatarFile !== 'undefined' && tempAvatarFile) {
             updates.data.avatar_url = tempAvatarFile;
         }
 
@@ -4247,7 +4255,7 @@ async function saveProfileSettings() {
         closeModal('editProfileModal');
 
         // Clear temp file
-        tempAvatarFile = null;
+        if (typeof tempAvatarFile !== 'undefined') tempAvatarFile = null;
 
     } catch (err) {
         showToast('Gagal update profil: ' + err.message, 'error');
