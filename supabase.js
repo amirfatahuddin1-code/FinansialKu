@@ -96,6 +96,13 @@
             return { data, error };
         },
 
+        async resetPassword(email) {
+            const { data, error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+                redirectTo: window.location.origin + '/login.html',
+            });
+            return { data, error };
+        },
+
         onAuthStateChange(callback) {
             return supabaseClient.auth.onAuthStateChange(callback);
         }

@@ -4225,29 +4225,16 @@ async function saveProfileSettings() {
 
     try {
         const name = document.getElementById('settingsProfileName').value.trim();
-        const email = document.getElementById('settingsProfileEmail').value.trim();
         const phone = document.getElementById('settingsProfilePhone').value.trim();
-        const newPassword = document.getElementById('settingsNewPassword').value;
-        const confirmPassword = document.getElementById('settingsConfirmPassword').value;
 
         const updates = {
-            email: email,
             data: {
                 name: name,
                 phone: phone
             }
         };
 
-        // Pasword processing
-        if (newPassword) {
-            if (newPassword.length < 6) {
-                throw new Error('Password baru minimal 6 karakter');
-            }
-            if (newPassword !== confirmPassword) {
-                throw new Error('Konfirmasi password tidak cocok');
-            }
-            updates.password = newPassword;
-        }
+
 
         // Include avatar if changed
         if (typeof tempAvatarFile !== 'undefined' && tempAvatarFile) {
@@ -4274,9 +4261,7 @@ async function saveProfileSettings() {
         // Close Modal
         closeModal('editProfileModal');
 
-        // Clear password fields
-        document.getElementById('settingsNewPassword').value = '';
-        document.getElementById('settingsConfirmPassword').value = '';
+
 
         // Clear temp file
         if (typeof tempAvatarFile !== 'undefined') tempAvatarFile = null;
@@ -4289,26 +4274,7 @@ async function saveProfileSettings() {
     }
 }
 
-async function updatePasswordSettings() {
-    const password = document.getElementById('settingsNewPassword').value;
-    if (!password) { showToast('Masukkan password baru', 'warning'); return; }
 
-    const btn = document.getElementById('updatePasswordBtn');
-    btn.textContent = 'Updating...';
-    btn.disabled = true;
-
-    try {
-        const { error } = await window.FinansialKuAPI.auth.updateUser({ password: password });
-        if (error) throw error;
-        showToast('Password diperbarui', 'success');
-        document.getElementById('settingsNewPassword').value = '';
-    } catch (err) {
-        showToast('Gagal update password: ' + err.message, 'error');
-    } finally {
-        btn.textContent = 'Update Password';
-        btn.disabled = false;
-    }
-}
 
 function renderSettingsCategories() {
     const list = document.getElementById('settingsCategoriesList');
@@ -5071,3 +5037,51 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize Navigation Toggle
     initNavigationToggle();
 });
+
+async function requestPasswordReset() {
+    try {
+        const response = await window.FinansialKuAPI.auth.getUser();
+        const email = response?.data?.user?.email;
+
+        if (!email) {
+            showToast('Email tidak ditemukan', 'error');
+            return;
+        }
+
+        const confirmed = confirm(`Kirim link atur ulang password ke ${email}?`);
+        if (!confirmed) return;
+
+        const { error } = await window.FinansialKuAPI.auth.resetPassword(email);
+        if (error) throw error;
+
+        showToast('Link reset password telah dikirim ke email Anda', 'success');
+        closeModal('editProfileModal');
+
+    } catch (err) {
+        showToast('Gagal mengirim link: ' + err.message, 'error');
+    }
+}
+
+async function requestEmailChange() {
+    const newEmail = prompt('Masukkan alamat email baru Anda:');
+    if (!newEmail || !newEmail.includes('@')) {
+        if (newEmail !== null) showToast('Email tidak valid', 'warning');
+        return;
+    }
+
+    try {
+        const { data, error } = await window.FinansialKuAPI.auth.updateUser({ email: newEmail });
+        if (error) throw error;
+
+        if (data.user && data.user.new_email) {
+            showToast('Konfirmasi telah dikirim ke email baru Anda. Silakan verifikasi.', 'success');
+            closeModal('editProfileModal');
+        } else {
+            showToast('Email berhasil diperbarui', 'success');
+            loadProfileSettings();
+            updateProfileHeader();
+        }
+    } catch (err) {
+        showToast('Gagal ganti email: ' + err.message, 'error');
+    }
+}
