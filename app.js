@@ -5037,6 +5037,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize Navigation Toggle
     initNavigationToggle();
 
+    // IMMEDIATE HASH CHECK (Backup for Auth State Events)
+    const isRecovery = window.location.hash.includes('type=recovery') || window.location.hash.includes('error_code=404'); // sometimes error happens if token used
+    if (isRecovery) {
+        console.log('Recovery state found in URL Hash');
+        setTimeout(() => {
+            console.log('Show recovery modal via Hash Check');
+            openModal('resetPasswordConfirmModal');
+        }, 1500);
+    }
+
     // Listen for Auth Events (like Password Recovery)
     if (window.FinansialKuAPI && window.FinansialKuAPI.auth) {
         const supabase = window.FinansialKuAPI.getSupabaseClient();
@@ -5047,7 +5057,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.log('Password recovery mode detected. Opening modal...');
                     setTimeout(() => {
                         openModal('resetPasswordConfirmModal');
-                    }, 1000); // Small delay to ensure UI is ready
+                    }, 1000);
                 }
             });
         }
