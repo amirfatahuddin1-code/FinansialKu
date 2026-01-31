@@ -506,7 +506,11 @@
                 const { data, error } = await authAPI.signUp(email, password, name, phone);
 
                 if (error) {
-                    showError(error.message);
+                    console.error('Registration failed:', error);
+                    let errMsg = error.message || 'Terjadi kesalahan saat pendaftaran. Silakan coba lagi.';
+                    // Handle obscure error formats
+                    if (typeof errMsg === 'object') errMsg = JSON.stringify(errMsg);
+                    showError(errMsg);
                     return;
                 }
 

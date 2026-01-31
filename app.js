@@ -4224,9 +4224,11 @@ async function saveProfileSettings() {
     btn.disabled = true;
 
     try {
-        const name = document.getElementById('settingsProfileName').value;
-        const email = document.getElementById('settingsProfileEmail').value;
-        const phone = document.getElementById('settingsProfilePhone').value;
+        const name = document.getElementById('settingsProfileName').value.trim();
+        const email = document.getElementById('settingsProfileEmail').value.trim();
+        const phone = document.getElementById('settingsProfilePhone').value.trim();
+        const newPassword = document.getElementById('settingsNewPassword').value;
+        const confirmPassword = document.getElementById('settingsConfirmPassword').value;
 
         const updates = {
             email: email,
@@ -4236,16 +4238,34 @@ async function saveProfileSettings() {
             }
         };
 
+        // Pasword processing
+        if (newPassword) {
+            if (newPassword.length < 6) {
+                throw new Error('Password baru minimal 6 karakter');
+            }
+            if (newPassword !== confirmPassword) {
+                throw new Error('Konfirmasi password tidak cocok');
+            }
+            updates.password = newPassword;
+        }
+
         // Include avatar if changed
         if (typeof tempAvatarFile !== 'undefined' && tempAvatarFile) {
             updates.data.avatar_url = tempAvatarFile;
         }
 
-        const { error } = await window.FinansialKuAPI.auth.updateUser(updates);
+        const { data, error } = await window.FinansialKuAPI.auth.updateUser(updates);
 
         if (error) throw error;
 
-        showToast('Profil diperbarui', 'success');
+        let successMsg = 'Profil berhasil diperbarui';
+
+        // Check if email was updated (Supabase sends confirmation if email changes)
+        if (data.user && data.user.new_email) {
+            successMsg = 'Profil diperbarui. Cek email baru Anda untuk konfirmasi perubahan email.';
+        }
+
+        showToast(successMsg, 'success');
 
         // Refresh UI
         loadProfileSettings();
@@ -4254,11 +4274,15 @@ async function saveProfileSettings() {
         // Close Modal
         closeModal('editProfileModal');
 
+        // Clear password fields
+        document.getElementById('settingsNewPassword').value = '';
+        document.getElementById('settingsConfirmPassword').value = '';
+
         // Clear temp file
         if (typeof tempAvatarFile !== 'undefined') tempAvatarFile = null;
 
     } catch (err) {
-        showToast('Gagal update profil: ' + err.message, 'error');
+        showToast(err.message || 'Gagal update profil', 'error');
     } finally {
         btn.textContent = originalText;
         btn.disabled = false;

@@ -45,17 +45,27 @@
         },
 
         async signUp(email, password, name, phone) {
-            const { data, error } = await supabaseClient.auth.signUp({
-                email,
-                password,
-                options: {
-                    data: {
-                        name,
-                        phone
+            try {
+                const { data, error } = await supabaseClient.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        data: {
+                            name,
+                            phone
+                        }
                     }
+                });
+
+                if (error) {
+                    console.error('Registration error detail:', error);
                 }
-            });
-            return { data, error };
+
+                return { data, error };
+            } catch (err) {
+                console.error('Registration exception:', err);
+                return { data: null, error: err };
+            }
         },
 
         async signIn(email, password) {
