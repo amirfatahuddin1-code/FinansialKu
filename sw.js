@@ -1,31 +1,60 @@
-// Karsafin Service Worker v1.1 - Optimized
-const CACHE_NAME = 'karsafin-v1.1';
+// Karsafin Service Worker v1.2 - Progress Tracking
+const CACHE_NAME = 'karsafin-v1.2';
 const OFFLINE_URL = '/index.html';
 
-// Minimal assets to cache on install (fast install)
+// Assets to precache (essential for a good PWA experience)
 const PRECACHE_ASSETS = [
+    '/',
+    '/index.html',
+    '/login.html',
+    '/landing.html',
+    '/styles.css',
+    '/app.js',
+    '/supabase.js',
     '/manifest.json',
-    '/assets/img/logo.png'
+    '/assets/img/logo.png',
+    '/assets/lib/chart.min.js',
+    '/assets/lib/supabase.min.js'
 ];
 
-// Install event - minimal cache for fast install
+// Helper to broadcast progress to all clients
+async function broadcastProgress(progress, status) {
+    const clients = await self.clients.matchAll();
+    clients.forEach(client => {
+        client.postMessage({
+            type: 'INSTALL_PROGRESS',
+            progress: progress,
+            status: status
+        });
+    });
+}
+
+// Install event with progress tracking
 self.addEventListener('install', (event) => {
     console.log('[SW] Installing Service Worker...');
     event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then((cache) => {
-                console.log('[SW] Caching minimal assets');
-                // Use addAll with error handling for each
-                return Promise.allSettled(
-                    PRECACHE_ASSETS.map(url =>
-                        cache.add(url).catch(err => console.warn('[SW] Failed to cache:', url, err))
-                    )
-                );
-            })
-            .then(() => {
-                console.log('[SW] Pre-caching complete');
-                return self.skipWaiting();
-            })
+        (async () => {
+            const cache = await caches.open(CACHE_NAME);
+            let total = PRECACHE_ASSETS.length;
+            let loaded = 0;
+
+            // Sequential precache to track progress
+            for (const url of PRECACHE_ASSETS) {
+                try {
+                    await cache.add(url);
+                    loaded++;
+                    const percent = Math.round((loaded / total) * 100);
+                    broadcastProgress(percent, `Mengunduh aset: ${loaded}/${total}`);
+                } catch (err) {
+                    console.warn(`[SW] Gagal cache: ${url}`, err);
+                    loaded++; // Count as "done" (even if failed) to keep progress moving
+                }
+            }
+
+            console.log('[SW] Pre-caching complete');
+            broadcastProgress(100, 'Aplikasi siap diinstal!');
+            return self.skipWaiting();
+        })()
     );
 });
 
@@ -51,23 +80,18 @@ self.addEventListener('activate', (event) => {
     );
 });
 
-// Fetch event - Cache on demand (lazy caching)
+// Fetch event - Network first, fallback to cache
 self.addEventListener('fetch', (event) => {
-    // Skip non-GET requests
     if (event.request.method !== 'GET') return;
 
-    // Skip external requests
     const requestUrl = new URL(event.request.url);
     if (requestUrl.origin !== self.location.origin) return;
-
-    // Skip API and data requests
     if (event.request.url.includes('supabase.co')) return;
     if (event.request.url.includes('/api/')) return;
 
     event.respondWith(
         fetch(event.request)
             .then((response) => {
-                // Only cache successful responses for static assets
                 if (response.ok && isStaticAsset(event.request.url)) {
                     const responseClone = response.clone();
                     caches.open(CACHE_NAME)
@@ -76,11 +100,9 @@ self.addEventListener('fetch', (event) => {
                 return response;
             })
             .catch(async () => {
-                // Network failed, try cache
                 const cachedResponse = await caches.match(event.request);
                 if (cachedResponse) return cachedResponse;
 
-                // For navigation, return cached index.html
                 if (event.request.mode === 'navigate') {
                     const offlineResponse = await caches.match(OFFLINE_URL);
                     if (offlineResponse) return offlineResponse;
@@ -91,13 +113,11 @@ self.addEventListener('fetch', (event) => {
     );
 });
 
-// Helper to check if URL is a static asset worth caching
 function isStaticAsset(url) {
     const staticExtensions = ['.html', '.css', '.js', '.png', '.jpg', '.svg', '.woff2'];
     return staticExtensions.some(ext => url.includes(ext));
 }
 
-// Handle messages
 self.addEventListener('message', (event) => {
     if (event.data?.type === 'SKIP_WAITING') {
         self.skipWaiting();

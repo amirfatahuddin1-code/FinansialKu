@@ -2933,12 +2933,19 @@
         <img src="/assets/img/logo.png" alt="Karsafin" class="pwa-install-icon">
         <div class="pwa-install-text">
             <strong>Install Karsafin</strong>
-            <span>Akses lebih cepat dari home screen HP Anda</span>
+            <span id="pwaInstallStatus">Akses lebih cepat dari home screen HP Anda</span>
         </div>
     </div>
-    <div class="pwa-install-actions">
+    <!-- Progress Bar (Hidden by default) -->
+    <div id="pwaProgressContainer" class="pwa-progress-container" style="display: none;">
+        <div class="pwa-progress-bar">
+            <div id="pwaProgressBarFill" class="pwa-progress-fill" style="width: 0%;"></div>
+        </div>
+        <span id="pwaProgressPercent" class="pwa-progress-percent">0%</span>
+    </div>
+    <div class="pwa-install-actions" id="pwaInstallActions">
         <button id="pwaInstallDismiss" class="pwa-dismiss-btn">Nanti</button>
-        <button id="pwaInstallBtn" class="pwa-install-btn">Install</button>
+        <button id="pwaInstallBtn" class="pwa-install-btn">Install Sekarang</button>
     </div>
 </div>
 
@@ -3001,6 +3008,36 @@
         color: var(--text-secondary);
     }
 
+    /* Progress Bar Styles */
+    .pwa-progress-container {
+        margin: var(--space-3) 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .pwa-progress-bar {
+        width: 100%;
+        height: 8px;
+        background: var(--bg-secondary);
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .pwa-progress-fill {
+        height: 100%;
+        background: var(--accent-gradient);
+        width: 0%;
+        transition: width 0.3s ease;
+    }
+
+    .pwa-progress-percent {
+        font-size: 10px;
+        color: var(--text-muted);
+        text-align: right;
+        font-weight: 600;
+    }
+
     .pwa-install-actions {
         display: flex;
         gap: var(--space-2);
@@ -3031,12 +3068,29 @@
 
 <!-- Service Worker Registration & PWA Install -->
 <script>
+    // UI Elements
+    const installBanner = document.getElementById('pwaInstallBanner');
+    const installBtn = document.getElementById('pwaInstallBtn');
+    const dismissBtn = document.getElementById('pwaInstallDismiss');
+    const installStatus = document.getElementById('pwaInstallStatus');
+    const installActions = document.getElementById('pwaInstallActions');
+    const progressContainer = document.getElementById('pwaProgressContainer');
+    const progressBarFill = document.getElementById('pwaProgressBarFill');
+    const progressPercent = document.getElementById('pwaProgressPercent');
+
     // Register Service Worker
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', async () => {
             try {
                 const registration = await navigator.serviceWorker.register('/sw.js');
                 console.log('[PWA] Service Worker registered:', registration.scope);
+
+                // Listen for progress messages from SW
+                navigator.serviceWorker.addEventListener('message', (event) => {
+                    if (event.data && event.data.type === 'INSTALL_PROGRESS') {
+                        updateInstallProgress(event.data.progress, event.data.status);
+                    }
+                });
 
                 // Check for updates
                 registration.addEventListener('updatefound', () => {
@@ -3053,11 +3107,27 @@
         });
     }
 
+    function updateInstallProgress(percent, status) {
+        if (progressContainer && progressContainer.style.display !== 'none') {
+            if (progressBarFill) progressBarFill.style.width = percent + '%';
+            if (progressPercent) progressPercent.textContent = percent + '%';
+            if (installStatus) installStatus.textContent = status;
+
+            if (percent >= 100) {
+                setTimeout(() => {
+                    if (installStatus) installStatus.textContent = 'Mulai menginstal ke perangkat...';
+                    // Trigger actual prompt if deferredPrompt exists
+                    if (deferredPrompt) {
+                        deferredPrompt.prompt();
+                        deferredPrompt = null;
+                    }
+                }, 1000);
+            }
+        }
+    }
+
     // PWA Install Prompt
     let deferredPrompt;
-    const installBanner = document.getElementById('pwaInstallBanner');
-    const installBtn = document.getElementById('pwaInstallBtn');
-    const dismissBtn = document.getElementById('pwaInstallDismiss');
 
     // Check if already installed or dismissed
     const isInstalled = window.matchMedia('(display-mode: standalone)').matches ||
@@ -3073,31 +3143,54 @@
         // Show install banner if not dismissed recently (7 days)
         if (!isInstalled && daysSinceDismiss > 7) {
             setTimeout(() => {
-                if (installBanner) installBanner.style.display = 'block';
+                if (installBanner && installBanner.style.display === 'none') {
+                    installBanner.style.display = 'block';
+                }
             }, 3000); // Show after 3 seconds
         }
     });
 
     if (installBtn) {
         installBtn.addEventListener('click', async () => {
-            if (!deferredPrompt) return;
+            // Show progress UI
+            installActions.style.display = 'none';
+            progressContainer.style.display = 'flex';
+            installStatus.textContent = 'Menyiapkan aset aplikasi...';
 
-            deferredPrompt.prompt();
-            const { outcome } = await deferredPrompt.userChoice;
+            // If already cached 100% or prompt ready, trigger it
+            // Note: Actual caching happens during SW install, we just show fake progress if it's already done
+            // for better UX, or wait for SW message.
 
-            console.log('[PWA] Install prompt outcome:', outcome);
-            deferredPrompt = null;
-            installBanner.style.display = 'none';
+            // If SW is not active or no prompt, fallback to native if available
+            if (!deferredPrompt) {
+                installStatus.textContent = 'Klik menu (titik tiga) lalu pilih "Install App" jika tombol ini tidak merespon.';
+                setTimeout(() => {
+                    installActions.style.display = 'flex';
+                    progressContainer.style.display = 'none';
+                }, 5000);
+            } else {
+                // Trigger the native prompt
+                // browser might show its own dialog here
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log('[PWA] Install prompt outcome:', outcome);
+                deferredPrompt = null;
 
-            if (outcome === 'accepted') {
-                localStorage.removeItem('pwa-install-dismissed');
+                if (outcome === 'accepted') {
+                    installStatus.textContent = 'Sedang menginstal... Silakan cek home screen Anda.';
+                    localStorage.removeItem('pwa-install-dismissed');
+                } else {
+                    installActions.style.display = 'flex';
+                    progressContainer.style.display = 'none';
+                    installStatus.textContent = 'Instalasi dibatalkan.';
+                }
             }
         });
     }
 
     if (dismissBtn) {
         dismissBtn.addEventListener('click', () => {
-            installBanner.style.display = 'none';
+            if (installBanner) installBanner.style.display = 'none';
             localStorage.setItem('pwa-install-dismissed', Date.now().toString());
         });
     }
@@ -3107,6 +3200,7 @@
         console.log('[PWA] App installed successfully');
         if (installBanner) installBanner.style.display = 'none';
         deferredPrompt = null;
+        alert('Karsafin berhasil diinstal ke Home Screen! 🎉');
     });
 </script>
 </body>
