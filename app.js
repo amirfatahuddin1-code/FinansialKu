@@ -5139,8 +5139,8 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('APP v3 FIX: Binding transaction form...');
     const txForm = document.getElementById('transactionForm');
     if (txForm) {
-        txForm.onsubmit = handleTransactionFormSubmit; // Override any previous binding
-        console.log('APP v3 FIX: Transaction form bound to handleTransactionFormSubmit ✅');
+        // txForm.onsubmit = handleTransactionFormSubmit; // REMOVED TO PREVENT DUPLICATION
+        console.log('APP v3 FIX: Transaction form check passed ✅');
     } else {
         console.error('APP v3 FIX: Transaction form NOT found ❌');
     }
