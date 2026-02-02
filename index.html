@@ -7,6 +7,22 @@
     <title>Karsafin - Atur Keuangan, Wujudkan Mimpi</title>
     <meta name="description"
         content="Aplikasi keuangan pribadi yang intuitif untuk mencatat, merencanakan, dan mencapai tujuan keuangan Anda.">
+
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#7c3aed">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Karsafin">
+
+    <!-- PWA Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/assets/icons/icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/assets/icons/icon-512x512.png">
+    <link rel="apple-touch-icon" href="/assets/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/assets/icons/icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="/assets/icons/icon-192x192.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
@@ -2910,6 +2926,189 @@
         </div>
     </div>
 </div>
+
+<!-- PWA Install Prompt Banner -->
+<div id="pwaInstallBanner" class="pwa-install-banner" style="display: none;">
+    <div class="pwa-install-content">
+        <img src="/assets/icons/icon-72x72.png" alt="Karsafin" class="pwa-install-icon">
+        <div class="pwa-install-text">
+            <strong>Install Karsafin</strong>
+            <span>Akses lebih cepat dari home screen HP Anda</span>
+        </div>
+    </div>
+    <div class="pwa-install-actions">
+        <button id="pwaInstallDismiss" class="pwa-dismiss-btn">Nanti</button>
+        <button id="pwaInstallBtn" class="pwa-install-btn">Install</button>
+    </div>
+</div>
+
+<!-- PWA Install Prompt Styles -->
+<style>
+    .pwa-install-banner {
+        position: fixed;
+        bottom: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-xl);
+        padding: var(--space-4);
+        box-shadow: var(--shadow-xl);
+        z-index: 10000;
+        max-width: 380px;
+        width: calc(100% - 32px);
+        animation: slideUp 0.3s ease-out;
+    }
+
+    @keyframes slideUp {
+        from {
+            transform: translateX(-50%) translateY(100%);
+            opacity: 0;
+        }
+
+        to {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+    }
+
+    .pwa-install-content {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        margin-bottom: var(--space-3);
+    }
+
+    .pwa-install-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: var(--radius-lg);
+    }
+
+    .pwa-install-text {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .pwa-install-text strong {
+        font-size: var(--font-size-base);
+        color: var(--text-primary);
+    }
+
+    .pwa-install-text span {
+        font-size: var(--font-size-sm);
+        color: var(--text-secondary);
+    }
+
+    .pwa-install-actions {
+        display: flex;
+        gap: var(--space-2);
+        justify-content: flex-end;
+    }
+
+    .pwa-dismiss-btn {
+        padding: var(--space-2) var(--space-4);
+        background: transparent;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        color: var(--text-secondary);
+        cursor: pointer;
+        font-size: var(--font-size-sm);
+    }
+
+    .pwa-install-btn {
+        padding: var(--space-2) var(--space-4);
+        background: var(--accent-gradient);
+        border: none;
+        border-radius: var(--radius-md);
+        color: white;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: var(--font-size-sm);
+    }
+</style>
+
+<!-- Service Worker Registration & PWA Install -->
+<script>
+    // Register Service Worker
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', async () => {
+            try {
+                const registration = await navigator.serviceWorker.register('/sw.js');
+                console.log('[PWA] Service Worker registered:', registration.scope);
+
+                // Check for updates
+                registration.addEventListener('updatefound', () => {
+                    const newWorker = registration.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            console.log('[PWA] New version available');
+                        }
+                    });
+                });
+            } catch (error) {
+                console.error('[PWA] Service Worker registration failed:', error);
+            }
+        });
+    }
+
+    // PWA Install Prompt
+    let deferredPrompt;
+    const installBanner = document.getElementById('pwaInstallBanner');
+    const installBtn = document.getElementById('pwaInstallBtn');
+    const dismissBtn = document.getElementById('pwaInstallDismiss');
+
+    // Check if already installed or dismissed
+    const isInstalled = window.matchMedia('(display-mode: standalone)').matches ||
+        window.navigator.standalone === true;
+    const isDismissed = localStorage.getItem('pwa-install-dismissed');
+    const dismissedTime = isDismissed ? parseInt(isDismissed) : 0;
+    const daysSinceDismiss = (Date.now() - dismissedTime) / (1000 * 60 * 60 * 24);
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+
+        // Show install banner if not dismissed recently (7 days)
+        if (!isInstalled && daysSinceDismiss > 7) {
+            setTimeout(() => {
+                if (installBanner) installBanner.style.display = 'block';
+            }, 3000); // Show after 3 seconds
+        }
+    });
+
+    if (installBtn) {
+        installBtn.addEventListener('click', async () => {
+            if (!deferredPrompt) return;
+
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+
+            console.log('[PWA] Install prompt outcome:', outcome);
+            deferredPrompt = null;
+            installBanner.style.display = 'none';
+
+            if (outcome === 'accepted') {
+                localStorage.removeItem('pwa-install-dismissed');
+            }
+        });
+    }
+
+    if (dismissBtn) {
+        dismissBtn.addEventListener('click', () => {
+            installBanner.style.display = 'none';
+            localStorage.setItem('pwa-install-dismissed', Date.now().toString());
+        });
+    }
+
+    // Hide banner if app is installed
+    window.addEventListener('appinstalled', () => {
+        console.log('[PWA] App installed successfully');
+        if (installBanner) installBanner.style.display = 'none';
+        deferredPrompt = null;
+    });
+</script>
 </body>
 
 </html>
