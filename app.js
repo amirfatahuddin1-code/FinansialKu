@@ -655,9 +655,7 @@ function initSettings() {
     // Bind Tabs
     document.querySelectorAll('.settings-tab[data-tab]').forEach(tab => {
         tab.addEventListener('click', () => {
-            const tabId = tab.dataset.tab;
-            switchSettingsTab(tabId);
-            if (tabId === 'members') renderMembersList();
+            switchSettingsTab(tab.dataset.tab);
         });
     });
 
@@ -2486,41 +2484,28 @@ function switchSettingsTab(tabId) {
 
     // Update active tab button
     const buttons = document.querySelectorAll('.settings-tab');
-    let btnFound = false;
-
     buttons.forEach(t => {
-        if (t.dataset.tab === tabId) {
-            t.classList.add('active');
-            btnFound = true;
-        } else {
-            t.classList.remove('active');
-        }
+        t.classList.toggle('active', t.dataset.tab === tabId);
     });
-
-    if (!btnFound) console.warn(`No sidebar button found for tab: ${tabId}`);
 
     // Update active panel
     document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
 
-    const targetId = `settings-${tabId}`;
-    const targetPanel = document.getElementById(targetId);
-
+    const targetPanel = document.getElementById(`settings-${tabId}`);
     if (targetPanel) {
         targetPanel.classList.add('active');
+
         // Special init for specific tabs
-        if (tabId === 'telegramGroup' && typeof checkTelegramGroupStatus === 'function') {
-            // checkTelegramGroupStatus(); // Uncomment if function exists
+        if (tabId === 'whatsapp' && typeof initWhatsAppSettings === 'function') {
+            initWhatsAppSettings();
+        } else if (tabId === 'members' && typeof renderMembersList === 'function') {
+            renderMembersList();
+        } else if (tabId === 'telegramGroup') {
+            if (typeof loadLinkedGroups === 'function') loadLinkedGroups();
+            if (typeof checkTelegramLinkStatus === 'function') checkTelegramLinkStatus();
         }
     } else {
-        console.error(`Target panel not found: #${targetId}`);
-        // Fallback: Try kebab-case if camelCase fails
-        if (tabId === 'telegramGroup') {
-            const fallbackPanel = document.getElementById('settings-telegram-group');
-            if (fallbackPanel) {
-                console.log('Found fallback panel (kebab-case)');
-                fallbackPanel.classList.add('active');
-            }
-        }
+        console.warn(`Target panel not found: #settings-${tabId}`);
     }
 }
 
@@ -4236,21 +4221,6 @@ function openSettingsModal() {
     openModal('settingsModal');
 }
 
-function switchSettingsTab(tabName) {
-    // Update Sidebar
-    document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
-    document.querySelector(`.settings-tab[data-tab="${tabName}"]`).classList.add('active');
-
-    // Update Content
-    document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
-    document.getElementById(`settings-${tabName}`).classList.add('active');
-
-    // Load tab-specific data
-    if (tabName === 'telegramGroup') {
-        loadLinkedGroups();
-        checkTelegramLinkStatus();
-    }
-}
 
 async function loadProfileSettings() {
     try {
