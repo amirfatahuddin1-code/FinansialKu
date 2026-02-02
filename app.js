@@ -98,7 +98,8 @@ var state = {
             used: 0,
             remaining: null
         }
-    }
+    },
+    members: []
 };
 
 // ========== Utility Functions ==========
@@ -219,15 +220,25 @@ async function loadData() {
             budgetsRes,
             savingsRes,
             eventsRes,
-            debtsRes
+            debtsRes,
+            membersRes,
+            profilesRes
         ] = await Promise.all([
             API.categories.getAll(),
             API.transactions.getAll(),
             API.budgets.getByMonth(now.getFullYear(), now.getMonth() + 1),
             API.savings.getAll(),
             API.events.getAll(true),
-            API.debts.getAll()
+            API.debts.getAll(),
+            API.members.getAll(),
+            API.profiles.get()
         ]);
+
+        // Process profile
+        state.profile = profilesRes.data || null;
+
+        // Process Members
+        state.members = membersRes.data || [];
 
         // Process Categories
         state.categories = categoriesRes.data || [];
@@ -644,7 +655,9 @@ function initSettings() {
     // Bind Tabs
     document.querySelectorAll('.settings-tab[data-tab]').forEach(tab => {
         tab.addEventListener('click', () => {
-            switchSettingsTab(tab.dataset.tab);
+            const tabId = tab.dataset.tab;
+            switchSettingsTab(tabId);
+            if (tabId === 'members') renderMembersList();
         });
     });
 
@@ -716,6 +729,79 @@ function initSettings() {
 
     // Telegram Group Init
     try { initTelegramGroupSettings(); } catch (e) { console.error('Telegram Group Init failed', e); }
+
+    // Members Init
+    try { initMembersSettings(); } catch (e) { console.error('Members Init failed', e); }
+}
+
+// ========== Members Management ==========
+
+function initMembersSettings() {
+    const memberForm = document.getElementById('memberForm');
+    if (memberForm) {
+        memberForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('memberNameInput').value;
+            if (!name) return;
+
+            const API = window.FinansialKuAPI;
+            const { data, error } = await API.members.create(name);
+            if (error) {
+                showToast(error.message, 'error');
+            } else {
+                state.members.push(data);
+                renderMembersList();
+                closeModal('memberModal');
+                document.getElementById('memberNameInput').value = '';
+                showToast('Anggota ditambahkan', 'success');
+            }
+        };
+    }
+}
+
+function openAddMemberModal() {
+    openModal('memberModal');
+}
+
+function renderMembersList() {
+    const list = document.getElementById('membersList');
+    if (!list) return;
+
+    if (state.members.length === 0) {
+        list.innerHTML = '<div class="empty-state small"><p>Belum ada anggota keluarga ditambahkan</p></div>';
+        return;
+    }
+
+    list.innerHTML = state.members.map(m => `
+        <div class="member-item" style="display: flex; justify-content: space-between; align-items: center; padding: var(--space-3) 0; border-bottom: 1px solid var(--border-color);">
+            <div style="display: flex; align-items: center; gap: var(--space-3);">
+                <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--accent-gradient); color: white; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700;">
+                    ${m.name.charAt(0).toUpperCase()}
+                </div>
+                <span style="font-weight: 500;">${m.name}</span>
+            </div>
+            <button class="btn-icon" onclick="deleteMember('${m.id}')" style="color: var(--danger);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+            </button>
+        </div>
+    `).join('');
+}
+
+async function deleteMember(id) {
+    if (!confirm('Hapus anggota ini?')) return;
+
+    const API = window.FinansialKuAPI;
+    const { error } = await API.members.delete(id);
+    if (error) {
+        showToast(error.message, 'error');
+    } else {
+        state.members = state.members.filter(m => m.id !== id);
+        renderMembersList();
+        showToast('Anggota dihapus', 'success');
+    }
 }
 
 // ========== Transaction Management ==========
@@ -749,7 +835,30 @@ function openTransactionModal(type, transaction = null) {
     } else {
         state.selectedCategory = null;
     }
+
+    populateSenderSelect(transaction ? transaction.senderName : null);
+
     openModal('transactionModal');
+}
+
+function populateSenderSelect(selectedMemberName) {
+    const select = document.getElementById('transactionSenderName');
+    if (!select) return;
+
+    // Get primary name from profile
+    const primaryName = state.profile?.name || 'Saya';
+
+    let options = `<option value="${primaryName}">${primaryName} (Utama)</option>`;
+    options += state.members.map(m => `
+        <option value="${m.name}" ${selectedMemberName === m.name ? 'selected' : ''}>${m.name}</option>
+    `).join('');
+
+    select.innerHTML = options;
+
+    // If no specific member selected and we have members, maybe we should not default or default to "Saya"
+    if (!selectedMemberName) {
+        select.value = primaryName;
+    }
 }
 
 function renderCategoryGrid(type) {
@@ -829,6 +938,7 @@ async function handleTransactionFormSubmit(e) {
 
         const dateVal = document.getElementById('transactionDate').value;
         const descVal = document.getElementById('transactionDescription').value;
+        const senderVal = document.getElementById('transactionSenderName')?.value || null;
 
         // Payload untuk Database (snake_case)
         const dbPayload = {
@@ -836,7 +946,8 @@ async function handleTransactionFormSubmit(e) {
             amount: amount,
             category_id: state.selectedCategory,
             description: descVal,
-            date: dateVal
+            date: dateVal,
+            sender_name: senderVal
             // created_at: new Date().toISOString() // REMOVED: Let DB handle default, don't overwrite on update
         };
 

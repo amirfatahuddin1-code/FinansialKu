@@ -698,6 +698,44 @@
         }
     };
 
+    // ========== MEMBERS API ==========
+
+    const membersAPI = {
+        async getAll() {
+            const { data: authData, error: authError } = await authAPI.getUser();
+            const user = authData?.user;
+            if (authError || !user) return { data: [], error: authError || 'Not authenticated' };
+
+            const { data, error } = await supabaseClient
+                .from('account_members')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('name');
+            return { data: data || [], error };
+        },
+
+        async create(name) {
+            const { data: authData, error: authError } = await authAPI.getUser();
+            const user = authData?.user;
+            if (authError || !user) return { data: null, error: authError || 'Not authenticated' };
+
+            const { data, error } = await supabaseClient
+                .from('account_members')
+                .insert({ user_id: user.id, name: name })
+                .select()
+                .single();
+            return { data, error };
+        },
+
+        async delete(id) {
+            const { error } = await supabaseClient
+                .from('account_members')
+                .delete()
+                .eq('id', id);
+            return { error };
+        }
+    };
+
 
     const debtsAPI = {
         async getAll() {
@@ -900,7 +938,8 @@
         telegramGroup: telegramGroupAPI,
         whatsapp: whatsappAPI,
         debts: debtsAPI,
-        subscription: subscriptionAPI
+        subscription: subscriptionAPI,
+        members: membersAPI
     };
 
     console.log('FinansialKu Supabase API loaded');
