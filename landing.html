@@ -79,6 +79,23 @@
                 display: none;
             }
         }
+
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .material-symbols-outlined.fill-current {
+            font-variation-settings:
+                'FILL' 1,
+                'wght' 400,
+                'GRAD' 0,
+                'opsz' 24
+        }
     </style>
 </head>
 
@@ -289,6 +306,174 @@
         </div>
     </section>
 
+    <section class="py-24 px-6 relative overflow-hidden" id="testimonials">
+        <!-- Background Elements -->
+        <div class="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+            <div class="absolute top-1/4 -left-64 w-96 h-96 bg-primary/5 rounded-full blur-3xl"></div>
+            <div class="absolute bottom-1/4 -right-64 w-96 h-96 bg-accent/5 rounded-full blur-3xl"></div>
+        </div>
+
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16 space-y-4">
+                <span
+                    class="px-4 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 rounded-full text-xs font-bold uppercase tracking-widest">Testimoni</span>
+                <h2 class="text-4xl md:text-5xl font-display font-bold text-slate-900 dark:text-white">Apa Kata Mereka?
+                </h2>
+                <p class="text-slate-600 dark:text-slate-400 max-w-2xl mx-auto text-lg">Bergabunglah dengan ribuan
+                    pengguna yang telah mencapai kebebasan finansial.</p>
+            </div>
+
+            <!-- Slider Container -->
+            <div class="relative group px-4 md:px-12">
+                <!-- Navigation Buttons -->
+                <button onclick="scrollTestimonials('left')"
+                    class="absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-white dark:bg-slate-800 p-3 rounded-full shadow-lg text-primary border border-slate-100 dark:border-slate-700 hover:scale-110 transition-all opacity-0 group-hover:opacity-100 hidden md:block">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </button>
+                <button onclick="scrollTestimonials('right')"
+                    class="absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-white dark:bg-slate-800 p-3 rounded-full shadow-lg text-primary border border-slate-100 dark:border-slate-700 hover:scale-110 transition-all opacity-0 group-hover:opacity-100 hidden md:block">
+                    <span class="material-symbols-outlined">arrow_forward</span>
+                </button>
+
+                <!-- Testimonials Wrapper -->
+                <div id="testimonial-container"
+                    class="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-8 hide-scrollbar scroll-smooth">
+
+                    <!-- Testimonial 1 -->
+                    <div
+                        class="snap-center shrink-0 w-[85vw] md:w-[400px] glass p-8 rounded-[2rem] border-slate-100 dark:border-slate-800 flex flex-col relative group hover:translate-y-[-4px] transition-transform duration-300">
+                        <div class="flex items-center gap-1 text-yellow-500 mb-6">
+                            <span class="material-symbols-outlined fill-current text-xl">star</span>
+                            <span class="material-symbols-outlined fill-current text-xl">star</span>
+                            <span class="material-symbols-outlined fill-current text-xl">star</span>
+                            <span class="material-symbols-outlined fill-current text-xl">star</span>
+                            <span class="material-symbols-outlined fill-current text-xl">star</span>
+                        </div>
+                        <p class="text-slate-700 dark:text-slate-300 text-lg leading-relaxed mb-8 flex-grow">
+                            "Sejak pakai Karsafin, cashflow saya jadi jauh lebih teratur. Fitur catat via WA-nya juara
+                            banget, ga ribet lagi kalau mau catat pengeluaran kecil!"
+                        </p>
+                        <div class="flex items-center gap-4 mt-auto">
+                            <div
+                                class="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center text-primary font-bold text-xl">
+                                A
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-900 dark:text-white">Andi Pratama</h4>
+                                <p class="text-sm text-slate-500 dark:text-slate-400">Freelancer</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Testimonial 2 -->
+                    <div
+                        class="snap-center shrink-0 w-[85vw] md:w-[400px] glass p-8 rounded-[2rem] border-slate-100 dark:border-slate-800 flex flex-col relative group hover:translate-y-[-4px] transition-transform duration-300">
+                        <div class="flex items-center gap-1 text-yellow-500 mb-6">
+                            <span class="material-symbols-outlined fill-current text-xl">star</span>
+                            <span class="material-symbols-outlined fill-current text-xl">star</span>
+                            <span class="material-symbols-outlined fill-current text-xl">star</span>
+                            <span class="material-symbols-outlined fill-current text-xl">star</span>
+                            <span class="material-symbols-outlined fill-current text-xl">star</span>
+                        </div>
+                        <p class="text-slate-700 dark:text-slate-300 text-lg leading-relaxed mb-8 flex-grow">
+                            "Anggaran belanja bulanan jadi terkontrol. Suami juga seneng karena transparan, makasih
+                            Karsafin sudah bantu atur keuangan keluarga kami!"
+                        </p>
+                        <div class="flex items-center gap-4 mt-auto">
+                            <div
+                                class="w-12 h-12 bg-pink-100 dark:bg-pink-900/50 rounded-full flex items-center justify-center text-pink-600 font-bold text-xl">
+                                S
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-900 dark:text-white">Sarah Larasati</h4>
+                                <p class="text-sm text-slate-500 dark:text-slate-400">Ibu Rumah Tangga</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Testimonial 3 -->
+                    <div
+                        class="snap-center shrink-0 w-[85vw] md:w-[400px] glass p-8 rounded-[2rem] border-slate-100 dark:border-slate-800 flex flex-col relative group hover:translate-y-[-4px] transition-transform duration-300">
+                        <div class="flex items-center gap-1 text-yellow-500 mb-6">
+                            <span class="material-symbols-outlined fill-current text-xl">star</span>
+                            <span class="material-symbols-outlined fill-current text-xl">star</span>
+                            <span class="material-symbols-outlined fill-current text-xl">star</span>
+                            <span class="material-symbols-outlined fill-current text-xl">star</span>
+                            <span class="material-symbols-outlined fill-current text-xl">star</span>
+                        </div>
+                        <p class="text-slate-700 dark:text-slate-300 text-lg leading-relaxed mb-8 flex-grow">
+                            "Anak kos wajib punya ini. Bener-bener ngebantu buat tau duit abis kemana aja. Tampilan
+                            UI-nya juga kece parah, dark mode-nya nyaman di mata."
+                        </p>
+                        <div class="flex items-center gap-4 mt-auto">
+                            <div
+                                class="w-12 h-12 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center text-blue-600 font-bold text-xl">
+                                B
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-900 dark:text-white">Budi Santoso</h4>
+                                <p class="text-sm text-slate-500 dark:text-slate-400">Mahasiswa</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Testimonial 4 -->
+                    <div
+                        class="snap-center shrink-0 w-[85vw] md:w-[400px] glass p-8 rounded-[2rem] border-slate-100 dark:border-slate-800 flex flex-col relative group hover:translate-y-[-4px] transition-transform duration-300">
+                        <div class="flex items-center gap-1 text-yellow-500 mb-6">
+                            <span class="material-symbols-outlined fill-current text-xl">star</span>
+                            <span class="material-symbols-outlined fill-current text-xl">star</span>
+                            <span class="material-symbols-outlined fill-current text-xl">star</span>
+                            <span class="material-symbols-outlined fill-current text-xl">star</span>
+                            <span class="material-symbols-outlined fill-current text-xl">star</span>
+                        </div>
+                        <p class="text-slate-700 dark:text-slate-300 text-lg leading-relaxed mb-8 flex-grow">
+                            "Fitur laporan keuangannya sangat membantu bisnis kecil saya. Analisa AI-nya juga kasih
+                            insight yang gak kepikiran sebelumnya."
+                        </p>
+                        <div class="flex items-center gap-4 mt-auto">
+                            <div
+                                class="w-12 h-12 bg-purple-100 dark:bg-purple-900/50 rounded-full flex items-center justify-center text-purple-600 font-bold text-xl">
+                                D
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-900 dark:text-white">Diana Putri</h4>
+                                <p class="text-sm text-slate-500 dark:text-slate-400">Pemilik UMKM</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Testimonial 5 -->
+                    <div
+                        class="snap-center shrink-0 w-[85vw] md:w-[400px] glass p-8 rounded-[2rem] border-slate-100 dark:border-slate-800 flex flex-col relative group hover:translate-y-[-4px] transition-transform duration-300">
+                        <div class="flex items-center gap-1 text-yellow-500 mb-6">
+                            <span class="material-symbols-outlined fill-current text-xl">star</span>
+                            <span class="material-symbols-outlined fill-current text-xl">star</span>
+                            <span class="material-symbols-outlined fill-current text-xl">star</span>
+                            <span class="material-symbols-outlined fill-current text-xl">star</span>
+                            <span class="material-symbols-outlined fill-current text-xl">star</span>
+                        </div>
+                        <p class="text-slate-700 dark:text-slate-300 text-lg leading-relaxed mb-8 flex-grow">
+                            "Target beli rumah makin kerasa nyata karena progress tabungan terpantau terus. Aplikasinya
+                            ringan dan user friendly banget."
+                        </p>
+                        <div class="flex items-center gap-4 mt-auto">
+                            <div
+                                class="w-12 h-12 bg-green-100 dark:bg-green-900/50 rounded-full flex items-center justify-center text-green-600 font-bold text-xl">
+                                R
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-900 dark:text-white">Rizky Ramadhan</h4>
+                                <p class="text-sm text-slate-500 dark:text-slate-400">Karyawan Swasta</p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </section>
+
     <section class="py-24 px-6 bg-slate-50 dark:bg-slate-900/50" id="pricing">
         <div class="max-w-7xl mx-auto">
             <div class="text-center mb-16 space-y-4">
@@ -439,6 +624,17 @@
         </div>
     </footer>
 
+    <script>
+        function scrollTestimonials(direction) {
+            const container = document.getElementById('testimonial-container');
+            const scrollAmount = 420; // card width + gap
+            if (direction === 'left') {
+                container.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+            } else {
+                container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+            }
+        }
+    </script>
 </body>
 
 </html>
