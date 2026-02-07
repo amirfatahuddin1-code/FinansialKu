@@ -17,7 +17,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <!-- Midtrans Snap.js - Sandbox Mode -->
+    <script type="text/javascript" src="https://app.sandbox.midtrans.com/snap/snap.js"
+        data-client-key="SB-Mid-client-oyEZCx5m9JggMLEk"></script>
     <style>
         /* Login Page Specific Styles */
         .login-page {
@@ -289,6 +291,41 @@
         .btn-login.loading span {
             display: none;
         }
+
+        /* Plan Banner */
+        .plan-banner {
+            background: var(--accent-gradient-soft);
+            border: 1px solid var(--accent-primary-light);
+            border-radius: var(--radius-lg);
+            padding: var(--space-3);
+            margin-bottom: var(--space-6);
+            display: none;
+        }
+
+        .plan-banner.show {
+            display: flex;
+            align-items: flex-start;
+            gap: var(--space-3);
+        }
+
+        .plan-banner-icon {
+            color: var(--accent-primary);
+            font-size: 1.25rem;
+        }
+
+        .plan-banner-content h4 {
+            font-size: var(--font-size-sm);
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+
+        .plan-banner-content p {
+            font-size: var(--font-size-xs);
+            color: var(--text-secondary);
+            margin: 0;
+            line-height: 1.4;
+        }
     </style>
 </head>
 
@@ -306,6 +343,14 @@
                         Datang</h3>
                     <p id="loginSubtitle" style="color: var(--text-secondary); font-size: 1rem;">Silahkan lengkapi data
                         untuk masuk</p>
+                </div>
+            </div>
+
+            <div id="planBanner" class="plan-banner">
+                <div class="plan-banner-icon">💎</div>
+                <div class="plan-banner-content">
+                    <h4>Anda memilih paket <span id="planName">Premium</span></h4>
+                    <p>Silakan masuk atau daftar untuk melanjutkan pembayaran.</p>
                 </div>
             </div>
 
@@ -383,7 +428,9 @@
         // Use IIFE to avoid global scope conflicts
         (function () {
             let authAPI;
+            let subscriptionAPI;
             let mode = 'login';
+            let selectedPlan = null;
 
             // Initialize
             document.addEventListener('DOMContentLoaded', async () => {
@@ -396,6 +443,18 @@
                 }
 
                 authAPI = window.FinansialKuAPI.auth;
+                subscriptionAPI = window.FinansialKuAPI.subscription;
+
+                // Check URL Params for Plan and Mode
+                const urlParams = new URLSearchParams(window.location.search);
+                const planParam = urlParams.get('plan');
+
+                if (planParam) {
+                    selectedPlan = planParam;
+                    handlePlanSelection(selectedPlan);
+                    // If plan selected, default to register
+                    document.querySelector('.login-tab[data-mode="register"]').click();
+                }
 
                 // ALWAYS initialize event listeners first
                 // Tab switching
@@ -415,7 +474,6 @@
                 document.getElementById('googleBtn').addEventListener('click', handleGoogleLogin);
 
                 // Check for logout parameter - if present, sign out first
-                const urlParams = new URLSearchParams(window.location.search);
                 if (urlParams.get('logout') === 'true') {
                     try {
                         await authAPI.signOut();
@@ -433,6 +491,12 @@
                     const response = await authAPI.getSession();
                     const session = response?.data?.session;
                     if (session) {
+                        // If plan selected, trigger payment flow directly
+                        if (selectedPlan) {
+                            await executePlanPayment(selectedPlan);
+                            return;
+                        }
+
                         // Show option to continue or logout
                         const userEmail = session.user?.email || 'akun sebelumnya';
                         const continueSession = confirm(`Anda sudah login sebagai ${userEmail}.\n\nKlik OK untuk melanjutkan ke dashboard.\nKlik Cancel untuk logout dan buat akun baru.`);
@@ -449,6 +513,19 @@
                     console.warn('Session check error:', err);
                 }
             });
+
+            function handlePlanSelection(plan) {
+                const banner = document.getElementById('planBanner');
+                const planNameEl = document.getElementById('planName');
+
+                let planDisplay = 'Premium';
+                if (plan === 'lifetime') planDisplay = 'Lifetime Deal';
+                if (plan === 'pro') planDisplay = 'Tahunan Pro';
+                if (plan === 'basic') planDisplay = 'Bulanan Basic';
+
+                planNameEl.textContent = planDisplay;
+                banner.classList.add('show');
+            }
 
             function updateFormMode() {
                 const nameGroup = document.getElementById('nameGroup');
@@ -533,13 +610,26 @@
                     return;
                 }
 
-                if (data.user && !data.session) {
-                    showSuccess('Akun berhasil dibuat! Cek email untuk verifikasi.');
-                } else {
-                    showSuccess('Akun berhasil dibuat! Mengalihkan...');
-                    setTimeout(() => {
-                        window.location.href = 'index.html';
-                    }, 1000);
+                if (data.user) {
+                    // Check if session exists (auto confirm enabled?)
+                    // OR if we need to wait for email confirm.
+                    // IMPORTANT: If 'confirm email' is required, we can't pay yet.
+                    // Assuming auto-confirm or session is created:
+
+                    if (data.session) {
+                        if (selectedPlan) {
+                            showSuccess('Akun dibuat! Memproses pembayaran...');
+                            await executePlanPayment(selectedPlan);
+                        } else {
+                            showSuccess('Akun berhasil dibuat! Mengalihkan...');
+                            setTimeout(() => {
+                                window.location.href = 'index.html';
+                            }, 1000);
+                        }
+                    } else {
+                        // Email confirmation needed
+                        showSuccess('Akun dibuat! Silakan cek email untuk verifikasi, lalu login kembali untuk pembayaran.');
+                    }
                 }
             }
 
@@ -555,16 +645,66 @@
                     return;
                 }
 
-                showSuccess('Login berhasil! Mengalihkan...');
-                setTimeout(() => {
-                    window.location.href = 'index.html';
-                }, 1000);
+                if (selectedPlan) {
+                    showSuccess('Login berhasil! Memproses pembayaran...');
+                    await executePlanPayment(selectedPlan);
+                } else {
+                    showSuccess('Login berhasil! Mengalihkan...');
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1000);
+                }
             }
 
             async function handleGoogleLogin() {
+                // If plan selected, we might want to store it in localStorage 
+                // to handle it after the redirect callback (not handled in this simple flow yet, 
+                // but standard redirect would go to index.html as per authAPI.settings)
+                if (selectedPlan) {
+                    localStorage.setItem('pendingPlan', selectedPlan);
+                }
+
                 const { error } = await authAPI.signInWithGoogle();
                 if (error) {
                     showError(error.message);
+                }
+            }
+
+            async function executePlanPayment(plan) {
+                try {
+                    // Call API to create payment
+                    const result = await subscriptionAPI.createPayment(plan);
+
+                    if (result.error) {
+                        showError('Gagal membuat pembayaran: ' + result.error.message);
+                        return;
+                    }
+
+                    if (!result.data || !result.data.token) {
+                        showError('Gagal mendapatkan token pembayaran.');
+                        return;
+                    }
+
+                    // Trigger Snap
+                    window.snap.pay(result.data.token, {
+                        onSuccess: function (result) {
+                            showSuccess('Pembayaran berhasil! Mengalihkan ke dashboard...');
+                            setTimeout(() => { window.location.href = 'index.html'; }, 2000);
+                        },
+                        onPending: function (result) {
+                            showSuccess('Menunggu pembayaran... Cek email Anda.');
+                            setTimeout(() => { window.location.href = 'index.html'; }, 2000);
+                        },
+                        onError: function (result) {
+                            showError('Pembayaran gagal or dibatalkan.');
+                        },
+                        onClose: function () {
+                            // do nothing or show warning
+                        }
+                    });
+                } catch (err) {
+                    console.error('Payment flow error:', err);
+                    showError('Terjadi kesalahan sistem pembayaran.');
                 }
             }
 
