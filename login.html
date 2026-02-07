@@ -363,6 +363,17 @@
             <div class="login-error" id="loginError"></div>
             <div class="login-success" id="loginSuccess"></div>
 
+            <!-- Retry Payment Container -->
+            <div id="retryPaymentContainer" style="display: none; text-align: center; margin-bottom: var(--space-4);">
+                <p style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: var(--space-2);">
+                    Popup pembayaran tidak muncul?
+                </p>
+                <button id="retryPaymentBtn" class="btn-primary"
+                    style="width: 100%; background: var(--success); border-color: var(--success);">
+                    Buka Pembayaran
+                </button>
+            </div>
+
             <form class="login-form" id="loginForm">
                 <div class="form-group" id="nameGroup" style="display: none;">
                     <label for="nameInput">Nama Lengkap</label>
@@ -432,9 +443,15 @@
             let subscriptionAPI;
             let mode = 'login';
             let selectedPlan = null;
+            let currentToken = null;
 
             // Initialize
             document.addEventListener('DOMContentLoaded', async () => {
+                // Warning for file:// protocol
+                if (window.location.protocol === 'file:') {
+                    alert('PERHATIAN: Fitur pembayaran mungkin tidak berjalan dengan baik jika file dibuka langsung. Mohon gunakan local server atau Vercel.');
+                }
+
                 // Check if API is loaded
                 if (!window.FinansialKuAPI) {
                     console.error('FinansialKuAPI not loaded!');
@@ -473,6 +490,15 @@
 
                 // Google login
                 document.getElementById('googleBtn').addEventListener('click', handleGoogleLogin);
+
+                // Retry payment button
+                document.getElementById('retryPaymentBtn').addEventListener('click', () => {
+                    if (currentToken) {
+                        triggerSnap(currentToken);
+                    } else if (selectedPlan) {
+                        executePlanPayment(selectedPlan);
+                    }
+                });
 
                 // Check for logout parameter - if present, sign out first
                 if (urlParams.get('logout') === 'true') {
@@ -605,18 +631,12 @@
                 if (error) {
                     console.error('Registration failed:', error);
                     let errMsg = error.message || 'Terjadi kesalahan saat pendaftaran. Silakan coba lagi.';
-                    // Handle obscure error formats
                     if (typeof errMsg === 'object') errMsg = JSON.stringify(errMsg);
                     showError(errMsg);
                     return;
                 }
 
                 if (data.user) {
-                    // Check if session exists (auto confirm enabled?)
-                    // OR if we need to wait for email confirm.
-                    // IMPORTANT: If 'confirm email' is required, we can't pay yet.
-                    // Assuming auto-confirm or session is created:
-
                     if (data.session) {
                         if (selectedPlan) {
                             showSuccess('Akun dibuat! Memproses pembayaran...');
@@ -628,7 +648,6 @@
                             }, 1000);
                         }
                     } else {
-                        // Email confirmation needed
                         showSuccess('Akun dibuat! Silakan cek email untuk verifikasi, lalu login kembali untuk pembayaran.');
                     }
                 }
@@ -658,9 +677,6 @@
             }
 
             async function handleGoogleLogin() {
-                // If plan selected, we might want to store it in localStorage 
-                // to handle it after the redirect callback (not handled in this simple flow yet, 
-                // but standard redirect would go to index.html as per authAPI.settings)
                 if (selectedPlan) {
                     localStorage.setItem('pendingPlan', selectedPlan);
                 }
@@ -686,8 +702,18 @@
                         return;
                     }
 
-                    // Trigger Snap
-                    window.snap.pay(result.data.token, {
+                    currentToken = result.data.token;
+                    triggerSnap(currentToken);
+
+                } catch (err) {
+                    console.error('Payment flow error:', err);
+                    showError('Terjadi kesalahan sistem pembayaran.');
+                }
+            }
+
+            function triggerSnap(token) {
+                try {
+                    window.snap.pay(token, {
                         onSuccess: function (result) {
                             showSuccess('Pembayaran berhasil! Mengalihkan ke dashboard...');
                             setTimeout(() => { window.location.href = 'index.html'; }, 2000);
@@ -698,32 +724,49 @@
                         },
                         onError: function (result) {
                             showError('Pembayaran gagal or dibatalkan.');
+                            showRetryButton();
                         },
                         onClose: function () {
-                            // do nothing or show warning
+                            // User closed popup without finishing
+                            showError('Pembayaran belum selesai.');
+                            showRetryButton();
                         }
                     });
-                } catch (err) {
-                    console.error('Payment flow error:', err);
-                    showError('Terjadi kesalahan sistem pembayaran.');
+                } catch (snapErr) {
+                    console.warn('Snap error:', snapErr);
+                    // This catches the 'Invalid state transition'
+                    showError('Silakan klik tombol di bawah untuk membuka pembayaran.');
+                    showRetryButton();
                 }
+            }
+
+            function showRetryButton() {
+                const retryContainer = document.getElementById('retryPaymentContainer');
+                retryContainer.style.display = 'block';
             }
 
             function showError(message) {
                 const el = document.getElementById('loginError');
                 el.textContent = message;
                 el.classList.add('show');
+
+                // Keep UI clean: hide success if showing error
+                document.getElementById('loginSuccess').classList.remove('show');
             }
 
             function showSuccess(message) {
                 const el = document.getElementById('loginSuccess');
                 el.textContent = message;
                 el.classList.add('show');
+
+                // Keep UI clean: hide error if showing success
+                document.getElementById('loginError').classList.remove('show');
             }
 
             function hideMessages() {
                 document.getElementById('loginError').classList.remove('show');
                 document.getElementById('loginSuccess').classList.remove('show');
+                document.getElementById('retryPaymentContainer').style.display = 'none';
             }
         })(); // Close IIFE
     </script>
