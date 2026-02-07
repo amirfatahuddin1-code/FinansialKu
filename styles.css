@@ -6221,3 +6221,9 @@ details[open] summary {
     background-size: 16px;
     padding-right: var(--space-10);
 }
+
+/* ========== Patterns ========== */
+.pattern-grid-lg {
+    background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+    background-size: 32px 32px;
+}
