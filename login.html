@@ -467,7 +467,7 @@
                 const urlParams = new URLSearchParams(window.location.search);
                 const planParam = urlParams.get('plan');
 
-                if (planParam) {
+                if (planParam && planParam !== 'trial') {
                     selectedPlan = planParam;
                     handlePlanSelection(selectedPlan);
                     // If plan selected, default to register
@@ -547,7 +547,7 @@
 
                 let planDisplay = 'Premium';
                 if (plan === 'lifetime') planDisplay = 'Lifetime Deal';
-                if (plan === 'pro') planDisplay = 'Tahunan Pro';
+                if (plan === 'pro') planDisplay = 'Bulanan Pro';
                 if (plan === 'basic') planDisplay = 'Bulanan Basic';
 
                 planNameEl.textContent = planDisplay;
