@@ -546,15 +546,18 @@
 
                         // No plan selected: Standard "Already Logged In" flow
                         const userEmail = session.user?.email || 'akun sebelumnya';
-                        const continueSession = confirm(`Anda sudah login sebagai ${userEmail}.\n\nKlik OK untuk melanjutkan ke dashboard.\nKlik Cancel untuk logout dan buat akun baru.`);
+                        // No plan selected: Standard "Already Logged In" flow
+                        // DEBUG MODE: Disable auto-redirect to allow inspection
+                        console.log('DEBUG: Session exists but no plan to process. User might be stuck.');
 
-                        if (continueSession) {
-                            window.location.href = 'index.html';
-                            return;
-                        } else {
-                            await authAPI.signOut();
-                            showSuccess('Berhasil logout. Silakan daftar akun baru.');
-                        }
+                        const dashboardBtn = document.createElement('button');
+                        dashboardBtn.className = 'btn-primary w-full mt-4';
+                        dashboardBtn.textContent = 'Lanjut ke Dashboard';
+                        dashboardBtn.onclick = () => window.location.href = 'index.html';
+
+                        document.querySelector('.login-header').appendChild(dashboardBtn);
+                        showError('Sesi aktif terdeteksi. Silakan klik tombol di bawah untuk lanjut.');
+                        // STOP HERE for debugging
                     } else {
                         console.log('DEBUG: No active session found.');
                     }

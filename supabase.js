@@ -935,6 +935,7 @@
 
     window.FinansialKuAPI = {
         supabase: supabaseClient,
+        getSupabaseClient: () => supabaseClient, // Helper for app.js
         auth: authAPI,
         profiles: profilesAPI,
         categories: categoriesAPI,
