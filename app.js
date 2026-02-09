@@ -4763,6 +4763,9 @@ function updateSubscriptionUI() {
         if (sub.status === 'trial') {
             badgeMini.textContent = 'Trial';
             badgeMini.classList.add('trial');
+        } else if (sub.status === 'active' && sub.plan_id === 'lifetime') {
+            badgeMini.textContent = 'Lifetime';
+            badgeMini.classList.add('lifetime');
         } else if (sub.status === 'active' && sub.plan_id && sub.plan_id.startsWith('basic')) {
             badgeMini.textContent = 'Basic';
             badgeMini.classList.add('basic');

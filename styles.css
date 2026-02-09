@@ -5682,6 +5682,11 @@ details[open] summary {
     color: var(--danger);
 }
 
+.subscription-badge-mini.lifetime {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+}
+
 /* Upgrade menu item styling */
 .dropdown-item.upgrade {
     display: flex;
