@@ -518,9 +518,15 @@
                     const response = await authAPI.getSession();
                     const session = response?.data?.session;
 
+                    // DEBUG: Check session & pending plan
+                    console.log('DEBUG: Session Check', { session });
+
                     // Check for pending plan from Google Auth redirect
                     const pendingPlan = localStorage.getItem('pendingPlan');
+                    console.log('DEBUG: Pending Plan', pendingPlan);
+
                     const planToProcess = selectedPlan || pendingPlan;
+                    console.log('DEBUG: Plan to Process', planToProcess);
 
                     if (session) {
                         // User is logged in (e.g. returned from Google)
@@ -549,6 +555,8 @@
                             await authAPI.signOut();
                             showSuccess('Berhasil logout. Silakan daftar akun baru.');
                         }
+                    } else {
+                        console.log('DEBUG: No active session found.');
                     }
                 } catch (err) {
                     console.warn('Session check error:', err);
