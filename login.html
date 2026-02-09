@@ -517,14 +517,28 @@
                     // Check if already logged in
                     const response = await authAPI.getSession();
                     const session = response?.data?.session;
+
+                    // Check for pending plan from Google Auth redirect
+                    const pendingPlan = localStorage.getItem('pendingPlan');
+                    const planToProcess = selectedPlan || pendingPlan;
+
                     if (session) {
-                        // If plan selected, trigger payment flow directly
-                        if (selectedPlan) {
-                            await executePlanPayment(selectedPlan);
-                            return;
+                        // User is logged in (e.g. returned from Google)
+
+                        if (planToProcess) {
+                            // Found a plan + active session
+                            // Execute payment flow immediately on this page
+                            console.log('Resuming payment for plan:', planToProcess);
+
+                            // Consume the pending plan so it doesn't persist forever
+                            if (pendingPlan) localStorage.removeItem('pendingPlan');
+
+                            // Pass session.user to ensure correct user mapping
+                            await executePlanPayment(planToProcess, session.user);
+                            return; // STOP here, do not show continue dialog or redirect
                         }
 
-                        // Show option to continue or logout
+                        // No plan selected: Standard "Already Logged In" flow
                         const userEmail = session.user?.email || 'akun sebelumnya';
                         const continueSession = confirm(`Anda sudah login sebagai ${userEmail}.\n\nKlik OK untuk melanjutkan ke dashboard.\nKlik Cancel untuk logout dan buat akun baru.`);
 

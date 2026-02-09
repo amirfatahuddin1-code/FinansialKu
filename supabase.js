@@ -80,7 +80,7 @@
             const { data, error } = await supabaseClient.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    redirectTo: window.location.origin + '/index.html'
+                    redirectTo: window.location.origin + '/login.html'
                 }
             });
             return { data, error };
