@@ -830,21 +830,30 @@
         },
 
         // Create payment for a plan (returns Midtrans token)
-        async createPayment(planId) {
+        async createPayment(planId, explicitUser = null) {
             try {
-                const { data: { session } } = await supabaseClient.auth.getSession();
-                if (!session) {
-                    return { data: null, error: new Error('Not authenticated') };
-                }
+                let user, token;
 
-                const user = session.user;
+                if (explicitUser) {
+                    // Use explicit user (for registration flow before email verification)
+                    user = explicitUser;
+                    token = SUPABASE_ANON_KEY;
+                } else {
+                    // Use session user (standard flow)
+                    const { data: { session } } = await supabaseClient.auth.getSession();
+                    if (!session) {
+                        return { data: null, error: new Error('Not authenticated') };
+                    }
+                    user = session.user;
+                    token = session.access_token;
+                }
 
                 const response = await fetch(
                     `${supabaseClient.supabaseUrl}/functions/v1/create-payment`,
                     {
                         method: 'POST',
                         headers: {
-                            'Authorization': `Bearer ${session.access_token}`,
+                            'Authorization': `Bearer ${token}`,
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({

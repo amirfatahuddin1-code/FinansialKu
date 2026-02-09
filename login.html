@@ -637,18 +637,16 @@
                 }
 
                 if (data.user) {
-                    if (data.session) {
-                        if (selectedPlan) {
-                            showSuccess('Akun dibuat! Memproses pembayaran...');
-                            await executePlanPayment(selectedPlan);
-                        } else {
-                            showSuccess('Akun berhasil dibuat! Mengalihkan...');
-                            setTimeout(() => {
-                                window.location.href = 'index.html';
-                            }, 1000);
-                        }
+                    if (selectedPlan) {
+                        // Plan selected: Trigger payment immediately (Pay before Verify)
+                        // Don't show success message yet, go straight to payment
+                        await executePlanPayment(selectedPlan, data.user);
+
+                        // After payment flow triggers (or fails), allow user to see status
+                        // Note: executePlanPayment handles the UI for payment token
                     } else {
-                        showSuccess('Akun dibuat! Silakan cek email untuk verifikasi, lalu login kembali untuk pembayaran.');
+                        // No plan: Standard success message
+                        showSuccess('Akun berhasil dibuat! Silakan cek email untuk verifikasi.');
                     }
                 }
             }
@@ -687,10 +685,10 @@
                 }
             }
 
-            async function executePlanPayment(plan) {
+            async function executePlanPayment(plan, explicitUser = null) {
                 try {
                     // Call API to create payment
-                    const result = await subscriptionAPI.createPayment(plan);
+                    const result = await subscriptionAPI.createPayment(plan, explicitUser);
 
                     if (result.error) {
                         showError('Gagal membuat pembayaran: ' + result.error.message);
@@ -703,7 +701,7 @@
                     }
 
                     currentToken = result.data.token;
-                    triggerSnap(currentToken);
+                    triggerSnap(currentToken, !!explicitUser);
 
                 } catch (err) {
                     console.error('Payment flow error:', err);
@@ -711,25 +709,43 @@
                 }
             }
 
-            function triggerSnap(token) {
+            function triggerSnap(token, isRegistration = false) {
                 try {
                     window.snap.pay(token, {
                         onSuccess: function (result) {
-                            showSuccess('Pembayaran berhasil! Mengalihkan ke dashboard...');
-                            setTimeout(() => { window.location.href = 'index.html'; }, 2000);
+                            if (isRegistration) {
+                                showSuccess('Pembayaran berhasil! Silakan CEK EMAIL Anda untuk verifikasi akun sebelum login.');
+                            } else {
+                                showSuccess('Pembayaran berhasil! Mengalihkan ke dashboard...');
+                                setTimeout(() => { window.location.href = 'index.html'; }, 2000);
+                            }
                         },
                         onPending: function (result) {
-                            showSuccess('Menunggu pembayaran... Cek email Anda.');
-                            setTimeout(() => { window.location.href = 'index.html'; }, 2000);
+                            if (isRegistration) {
+                                showSuccess('Menunggu pembayaran. Silakan selesaikan pembayaran lalu CEK EMAIL untuk verifikasi akun.');
+                            } else {
+                                showSuccess('Menunggu pembayaran... Cek email Anda.');
+                                setTimeout(() => { window.location.href = 'index.html'; }, 2000);
+                            }
                         },
                         onError: function (result) {
-                            showError('Pembayaran gagal or dibatalkan.');
+                            showError('Pembayaran gagal atau dibatalkan.');
+                            if (isRegistration) {
+                                // Even if failed, remind them to verify email to retry later
+                                setTimeout(() => {
+                                    showSuccess('Akun telah dibuat. Silakan cek email untuk verifikasi.');
+                                }, 3000);
+                            }
                             showRetryButton();
                         },
                         onClose: function () {
                             // User closed popup without finishing
-                            showError('Pembayaran belum selesai.');
-                            showRetryButton();
+                            if (isRegistration) {
+                                showSuccess('Pembayaran tertunda. Silakan CEK EMAIL untuk verifikasi akun, lalu login untuk melanjutkan pembayaran.');
+                            } else {
+                                showError('Pembayaran belum selesai.');
+                                showRetryButton();
+                            }
                         }
                     });
                 } catch (snapErr) {
