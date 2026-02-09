@@ -6,6 +6,26 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>Karsafin - Atur Keuangan, Wujudkan Mimpi</title>
 
+    <!-- Meta Pixel Code -->
+    <script>
+        !function (f, b, e, v, n, t, s) {
+            if (f.fbq) return; n = f.fbq = function () {
+                n.callMethod ?
+                n.callMethod.apply(n, arguments) : n.queue.push(arguments)
+            };
+            if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0';
+            n.queue = []; t = b.createElement(e); t.async = !0;
+            t.src = v; s = b.getElementsByTagName(e)[0];
+            s.parentNode.insertBefore(t, s)
+        }(window, document, 'script',
+            'https://connect.facebook.net/en_US/fbevents.js');
+        fbq('init', '1234567890');
+        fbq('track', 'PageView');
+    </script>
+    <noscript><img height="1" width="1" style="display:none"
+            src="https://www.facebook.com/tr?id=1234567890&ev=PageView&noscript=1" /></noscript>
+    <!-- End Meta Pixel Code -->
+
     <!-- PWA Meta Tags -->
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#7c3aed">
@@ -123,7 +143,7 @@
                     <span class="material-symbols-outlined hidden dark:block text-slate-400">light_mode</span>
                 </button>
                 <a class="px-6 py-2 bg-primary text-white rounded-full font-semibold text-sm hover:opacity-90 transition-opacity shadow-md"
-                    href="login.html">Masuk</a>
+                    href="login.html" onclick="fbq('track', 'Lead', {content_name: 'Nav Login'})">Masuk</a>
             </div>
         </div>
     </nav>
@@ -144,7 +164,7 @@
                 </p>
                 <div class="flex flex-wrap gap-4 pt-4">
                     <a class="px-8 py-4 bg-primary text-white rounded-xl font-bold text-lg hover:translate-y-[-2px] transition-all shadow-xl flex items-center gap-2"
-                        href="login.html">
+                        href="login.html" onclick="fbq('track', 'Lead', {content_name: 'Hero CTA'})">
                         Mulai Sekarang <span class="material-symbols-outlined">arrow_forward</span>
                     </a>
                     <a class="px-8 py-4 bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm"
@@ -635,7 +655,9 @@
                             Bot</li>
                     </ul>
                     <a class="w-full py-4 text-center rounded-xl bg-white dark:bg-slate-700 font-bold border border-slate-200 dark:border-slate-600 hover:bg-slate-50 transition-colors"
-                        href="login.html?plan=trial">Coba Sekarang</a>
+                        href="login.html?plan=trial"
+                        onclick="fbq('track', 'InitiateCheckout', {content_name: 'Trial Plan', value: 0, currency: 'IDR'})">Coba
+                        Sekarang</a>
                 </div>
 
                 <!-- Basic -->
@@ -667,7 +689,9 @@
                             Piutang & Kalkulator</li>
                     </ul>
                     <a class="w-full py-4 text-center rounded-xl bg-white dark:bg-slate-700 font-bold border border-slate-200 dark:border-slate-600 hover:bg-slate-50 transition-colors"
-                        href="login.html?plan=basic">Pilih Basic</a>
+                        href="login.html?plan=basic"
+                        onclick="fbq('track', 'InitiateCheckout', {content_name: 'Basic Plan', value: 15000, currency: 'IDR'})">Pilih
+                        Basic</a>
                 </div>
 
                 <!-- Pro -->
@@ -700,7 +724,9 @@
                             Laporan Keuangan</li>
                     </ul>
                     <a class="w-full py-4 text-center rounded-xl bg-white text-primary font-bold hover:bg-blue-50 transition-colors shadow-lg"
-                        href="login.html?plan=pro">Mulai Pro</a>
+                        href="login.html?plan=pro"
+                        onclick="fbq('track', 'InitiateCheckout', {content_name: 'Pro Plan', value: 30000, currency: 'IDR'})">Mulai
+                        Pro</a>
                 </div>
             </div>
 
@@ -810,6 +836,7 @@
             </div>
 
             <a href="login.html?plan=lifetime"
+                onclick="fbq('track', 'InitiateCheckout', {content_name: 'Lifetime Plan', value: 97000, currency: 'IDR'})"
                 class="inline-flex items-center gap-3 px-8 md:px-12 py-5 bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-bold text-xl rounded-2xl hover:scale-105 hover:shadow-2xl hover:shadow-orange-500/20 transition-all duration-300 group">
                 <span>👉</span>
                 <span>AMBIL PROMO LIFETIME SEKARANG</span>

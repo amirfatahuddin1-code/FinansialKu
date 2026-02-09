@@ -6,6 +6,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Masuk - Karsafin</title>
 
+    <!-- Meta Pixel Code -->
+    <script>
+        !function (f, b, e, v, n, t, s) {
+            if (f.fbq) return; n = f.fbq = function () {
+                n.callMethod ?
+                n.callMethod.apply(n, arguments) : n.queue.push(arguments)
+            };
+            if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0';
+            n.queue = []; t = b.createElement(e); t.async = !0;
+            t.src = v; s = b.getElementsByTagName(e)[0];
+            s.parentNode.insertBefore(t, s)
+        }(window, document, 'script',
+            'https://connect.facebook.net/en_US/fbevents.js');
+        fbq('init', '1234567890');
+        fbq('track', 'PageView');
+    </script>
+    <noscript><img height="1" width="1" style="display:none"
+            src="https://www.facebook.com/tr?id=1234567890&ev=PageView&noscript=1" /></noscript>
+    <!-- End Meta Pixel Code -->
+
     <!-- PWA Meta Tags -->
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#7c3aed">
@@ -395,7 +415,8 @@
                     <label for="confirmInput">Konfirmasi Password</label>
                     <input type="password" id="confirmInput" placeholder="Ulangi password">
                 </div>
-                <button type="submit" class="btn-login" id="submitBtn">
+                <button type="submit" class="btn-login" id="submitBtn"
+                    onclick="fbq('track', 'Lead', {content_name: 'Login/Register Form'})">
                     <span>Masuk</span>
                     <div class="loading-spinner"></div>
                 </button>
@@ -403,7 +424,7 @@
 
             <div class="login-divider">atau</div>
 
-            <button class="btn-google" id="googleBtn">
+            <button class="btn-google" id="googleBtn" onclick="fbq('track', 'Lead', {content_name: 'Google Login'})">
                 <svg viewBox="0 0 24 24">
                     <path fill="#4285F4"
                         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
