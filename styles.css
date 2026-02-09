@@ -5054,7 +5054,7 @@ details[open] summary {
     position: absolute;
     top: 120%;
     right: 0;
-    width: 240px;
+    width: 280px;
     background: var(--bg-card);
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-xl);
@@ -5080,6 +5080,7 @@ details[open] summary {
     font-size: 0.95rem;
     cursor: pointer;
     transition: all 0.2s;
+    white-space: nowrap;
 }
 
 .dropdown-item:hover {
