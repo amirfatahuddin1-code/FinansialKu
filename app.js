@@ -5118,6 +5118,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize Navigation Toggle
     initNavigationToggle();
 
+    // CHECK FOR PENDING PAYMENT (Google Login Fallback)
+    setTimeout(checkPendingPayment, 1000); // Small delay to ensure API loaded
+
+    // CHECK FOR PENDING PAYMENT (Google Login Fallback)
+    setTimeout(checkPendingPayment, 1000); // Small delay to ensure API loaded
+
     // IMMEDIATE HASH CHECK (Backup for Auth State Events)
     const isRecovery = window.location.hash.includes('type=recovery') || window.location.hash.includes('error_code=404'); // sometimes error happens if token used
     if (isRecovery) {
@@ -5276,5 +5282,123 @@ async function handleSaveNewPassword(e) {
     } finally {
         btn.textContent = originalText;
         btn.disabled = false;
+    }
+}
+
+// ========== PAYMENT FALLBACK ==========
+async function checkPendingPayment() {
+    try {
+        const pendingPlan = localStorage.getItem('pendingPlan');
+        if (!pendingPlan) return;
+
+        console.log('[PAYMENT] Found pending plan from Google Login:', pendingPlan);
+
+        // Verify if we are already on a paid plan (to avoid double payment)
+        // But allowing upgrades is fine.
+
+        // Show Blocking Modal
+        const modalId = 'paymentInterceptorModal';
+        let modal = document.getElementById(modalId);
+
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = modalId;
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.9);
+                z-index: 9999;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-direction: column;
+                color: white;
+                text-align: center;
+                padding: 20px;
+            `;
+            modal.innerHTML = `
+                <div style="background: #1e293b; padding: 30px; border-radius: 16px; max-width: 400px; width: 100%; border: 1px solid #334155;">
+                    <h2 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 10px;">Menyelesaikan Pembayaran</h2>
+                    <p style="color: #94a3b8; margin-bottom: 20px;">Kami mendeteksi rencana pembayaran yang tertunda. Mohon selesaikan pembayaran untuk mengaktifkan fitur Premium.</p>
+                    <div id="paymentLoadingSpinner" style="margin-bottom: 20px;">
+                        <div class="loader-spinner" style="border: 4px solid #f3f3f3; border-top: 4px solid #3b82f6; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+                    </div>
+                    <button id="cancelPaymentBtn" style="background: transparent; border: 1px solid #475569; color: #94a3b8; padding: 10px 20px; border-radius: 8px; cursor: pointer; display: none;">Batal & Logout</button>
+                    <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // Trigger Payment
+        const { data, error } = await window.FinansialKuAPI.subscription.createPayment(pendingPlan);
+
+        if (error) {
+            console.error('[PAYMENT] Creation failed:', error);
+            showToast('Gagal memproses pembayaran: ' + error.message, 'error');
+            document.getElementById('paymentLoadingSpinner').innerHTML = '<span style="color: #ef4444;">Gagal memuat pembayaran.</span>';
+            const cancelBtn = document.getElementById('cancelPaymentBtn');
+            cancelBtn.style.display = 'inline-block';
+            cancelBtn.onclick = async () => {
+                localStorage.removeItem('pendingPlan');
+                await window.FinansialKuAPI.auth.signOut();
+                window.location.href = 'login.html';
+            };
+            return;
+        }
+
+        if (data && data.token) {
+            console.log('[PAYMENT] Token received, triggering Snap...');
+            // Trigger Snap
+            window.snap.pay(data.token, {
+                onSuccess: function (result) {
+                    console.log('[PAYMENT] Success:', result);
+                    localStorage.removeItem('pendingPlan');
+                    modal.innerHTML = `
+                        <div style="background: #1e293b; padding: 30px; border-radius: 16px; max-width: 400px; width: 100%; border: 1px solid #334155;">
+                            <h2 style="color: #10b981; font-size: 1.5rem; font-weight: bold; margin-bottom: 10px;">Pembayaran Berhasil! 🎉</h2>
+                            <p style="color: #94a3b8;">Akun Anda telah diupgrade. Memuat ulang...</p>
+                        </div>
+                    `;
+                    setTimeout(() => window.location.reload(), 2000);
+                },
+                onPending: function (result) {
+                    console.log('[PAYMENT] Pending:', result);
+                    showToast('Menunggu pembayaran...', 'warning');
+                    document.getElementById('cancelPaymentBtn').style.display = 'inline-block';
+                },
+                onError: function (result) {
+                    console.error('[PAYMENT] Error:', result);
+                    showToast('Pembayaran gagal', 'error');
+                    document.getElementById('cancelPaymentBtn').style.display = 'inline-block';
+                    document.getElementById('cancelPaymentBtn').onclick = async () => {
+                        await window.FinansialKuAPI.auth.signOut();
+                        window.location.href = 'login.html';
+                    };
+                },
+                onClose: function () {
+                    console.log('[PAYMENT] Closed');
+                    // If closed, user cancelled. 
+                    // To enforce payment, we can logout or ask again.
+                    // For now, let's allow them to cancel but warn them.
+                    const confirmCancel = confirm('Batalkan pembayaran? Anda akan logout.');
+                    if (confirmCancel) {
+                        localStorage.removeItem('pendingPlan');
+                        window.FinansialKuAPI.auth.signOut().then(() => {
+                            window.location.href = 'login.html';
+                        });
+                    } else {
+                        // Retry?
+                        window.location.reload();
+                    }
+                }
+            });
+        }
+
+    } catch (err) {
+        console.error('[PAYMENT] Fallback error:', err);
     }
 }
