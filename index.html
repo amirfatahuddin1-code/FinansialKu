@@ -678,40 +678,40 @@
             <section class="tab-content" id="reports">
                 <div class="section-header">
                     <h2>Analisis & Laporan</h2>
-
                     <div class="report-period-container">
                         <select id="monthlyReportSelect"
-                            class="p-2 border rounded-lg bg-white dark:bg-slate-800 text-sm border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary font-medium text-slate-700 dark:text-slate-200">
+                            style="padding: 10px 16px; border-radius: var(--radius-lg); background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); cursor: pointer; outline: none; font-family: var(--font-family);">
                             <!-- Populated by JS -->
                         </select>
                     </div>
+                </div>
 
-                    <!-- Monthly Comparison Chart -->
-                    <div class="chart-container glass-card">
-                        <h3>Perbandingan Bulanan</h3>
-                        <canvas id="monthlyComparisonChart"></canvas>
+                <!-- Monthly Comparison Chart -->
+                <div class="chart-container glass-card">
+                    <h3>Perbandingan Bulanan</h3>
+                    <canvas id="monthlyComparisonChart"></canvas>
+                </div>
+
+                <!-- Category Breakdown -->
+                <div class="chart-container glass-card">
+                    <h3>Pengeluaran per Kategori</h3>
+                    <div class="pie-chart-wrapper">
+                        <div class="pie-chart-container">
+                            <canvas id="categoryPieChart"></canvas>
+                        </div>
+                        <div class="category-legend" id="categoryLegend"></div>
                     </div>
+                </div>
 
-                    <!-- Category Breakdown -->
-                    <div class="chart-container glass-card">
-                        <h3>Pengeluaran per Kategori</h3>
-                        <div class="pie-chart-wrapper">
-                            <div class="pie-chart-container">
-                                <canvas id="categoryPieChart"></canvas>
-                            </div>
-                            <div class="category-legend" id="categoryLegend"></div>
+                <!-- Timeline -->
+                <div class="timeline-section glass-card">
+                    <h3>Timeline Target & Acara</h3>
+                    <div class="timeline-container" id="timelineContainer">
+                        <div class="empty-state small">
+                            <p>Belum ada target atau acara</p>
                         </div>
                     </div>
-
-                    <!-- Timeline -->
-                    <div class="timeline-section glass-card">
-                        <h3>Timeline Target & Acara</h3>
-                        <div class="timeline-container" id="timelineContainer">
-                            <div class="empty-state small">
-                                <p>Belum ada target atau acara</p>
-                            </div>
-                        </div>
-                    </div>
+                </div>
             </section>
 
             <!-- Debts Tab -->
