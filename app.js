@@ -5405,3 +5405,97 @@ async function checkPendingPayment() {
         console.error('[PAYMENT] Fallback error:', err);
     }
 }
+
+// ========== Report Period Selector ==========
+function initReportPeriodSelector() {
+    const trigger = document.getElementById('reportPeriodTrigger');
+    const dropdown = document.getElementById('reportPeriodDropdown');
+    const options = document.querySelectorAll('.period-option');
+
+    if (!trigger || !dropdown) return;
+
+    // Toggle Dropdown
+    trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dropdown.classList.toggle('active');
+    });
+
+    options.forEach(option => {
+        option.addEventListener('click', (e) => {
+            e.stopPropagation();
+
+            // Remove active from all
+            options.forEach(opt => opt.classList.remove('active'));
+            // Add active to clicked
+            option.classList.add('active');
+
+            // Update Trigger
+            const val = option.dataset.value;
+            const label = option.querySelector('span').textContent;
+
+            // Update trigger value text
+            const triggerValue = trigger.querySelector('.trigger-value');
+            if (triggerValue) triggerValue.textContent = label;
+
+            // Update details based on selection
+            updateReportPeriodDetails(val);
+
+            // Close dropdown
+            dropdown.classList.remove('active');
+
+            // Trigger data refresh (placeholder)
+            console.log('Report period changed to:', val);
+            // if (typeof updateReports === 'function') updateReports();
+        });
+    });
+
+    // Close on click outside
+    document.addEventListener('click', (e) => {
+        if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.classList.remove('active');
+        }
+    });
+}
+
+function updateReportPeriodDetails(val) {
+    const dateDisplay = document.getElementById('triggerDateDisplay');
+    const previewContent = document.getElementById('periodDetailContent');
+
+    const now = new Date();
+    const shortFormatter = new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short' });
+
+    let detailText = '';
+    let triggerDateText = '';
+
+    if (val === 'realtime') {
+        const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        triggerDateText = `Hari Ini - Pk ${timeStr} (GMT+07)`;
+        detailText = `Hari Ini - Pk ${timeStr}`;
+    } else if (val === 'yesterday') {
+        const yest = new Date();
+        yest.setDate(yest.getDate() - 1);
+        triggerDateText = `Kemarin, ${shortFormatter.format(yest)}`;
+        detailText = `Data Kemarin (${shortFormatter.format(yest)})`;
+    } else if (val === 'last7days') {
+        const start = new Date();
+        start.setDate(start.getDate() - 7);
+        triggerDateText = `${shortFormatter.format(start)} - ${shortFormatter.format(now)}`;
+        detailText = `7 Hari Terakhir`;
+    } else if (val === 'last30days') {
+        const start = new Date();
+        start.setDate(start.getDate() - 30);
+        triggerDateText = `${shortFormatter.format(start)} - ${shortFormatter.format(now)}`;
+        detailText = `30 Hari Terakhir`;
+    } else {
+        triggerDateText = 'Pilih Tanggal';
+        detailText = 'Filter Kustom';
+    }
+
+    if (dateDisplay) dateDisplay.textContent = triggerDateText;
+    if (previewContent) previewContent.innerHTML = `<span class="detail-highlight">${detailText}</span>`;
+}
+
+// Add to initialization
+document.addEventListener('DOMContentLoaded', () => {
+    initReportPeriodSelector();
+});

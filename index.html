@@ -678,6 +678,78 @@
             <section class="tab-content" id="reports">
                 <div class="section-header">
                     <h2>Analisis & Laporan</h2>
+
+                    <div class="report-period-container">
+                        <span class="report-period-label">Periode Data</span>
+                        <div class="report-period-trigger" id="reportPeriodTrigger">
+                            <div class="trigger-content">
+                                <span class="trigger-value">Real-time</span>
+                                <span class="trigger-date" id="triggerDateDisplay">Hari Ini - Pk 11:00 (GMT+07)</span>
+                            </div>
+                            <svg class="trigger-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                        </div>
+
+                        <!-- Dropdown Menu -->
+                        <div class="report-period-dropdown" id="reportPeriodDropdown">
+                            <div class="dropdown-row">
+                                <!-- Period Options (Left) -->
+                                <div class="period-options">
+                                    <div class="period-option active" data-value="realtime">
+                                        <span>Real-time</span>
+                                    </div>
+                                    <div class="period-option" data-value="yesterday">
+                                        <span>Kemarin</span>
+                                    </div>
+                                    <div class="period-option" data-value="last7days">
+                                        <span>7 hari sebelumnya</span>
+                                    </div>
+                                    <div class="period-option" data-value="last30days">
+                                        <span>30 hari sebelumnya</span>
+                                    </div>
+
+                                    <div class="period-divider"></div>
+
+                                    <div class="period-option has-arrow" data-value="daily">
+                                        <span>Per Hari</span>
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="9 18 15 12 9 6"></polyline>
+                                        </svg>
+                                    </div>
+                                    <div class="period-option has-arrow" data-value="weekly">
+                                        <span>Per Minggu</span>
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="9 18 15 12 9 6"></polyline>
+                                        </svg>
+                                    </div>
+                                    <div class="period-option has-arrow" data-value="monthly">
+                                        <span>Per Bulan</span>
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="9 18 15 12 9 6"></polyline>
+                                        </svg>
+                                    </div>
+                                    <div class="period-option has-arrow" data-value="yearly">
+                                        <span>Berdasarkan Tahun</span>
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="9 18 15 12 9 6"></polyline>
+                                        </svg>
+                                    </div>
+                                </div>
+
+                                <!-- Detail / Preview (Right) -->
+                                <div class="period-detail-panel">
+                                    <div class="detail-content" id="periodDetailContent">
+                                        <span class="detail-highlight">Hari Ini - Pk 11:00</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Monthly Comparison Chart -->
