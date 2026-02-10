@@ -283,6 +283,7 @@ async function loadData() {
         state.debts = debtsRes.data || [];
 
         console.log('Data loaded successfully in parallel');
+        updateReports(); // Initial render
     } catch (err) {
         console.error('Failed to load data in parallel:', err);
         // Fallback or re-throw if necessary
@@ -1845,47 +1846,225 @@ function exportEventPDF(id) {
 var monthlyChart = null;
 var pieChart = null;
 
-function updateReports() { renderMonthlyChart(); renderCategoryPie(); renderTimeline(); }
+function getReportDateRange() {
+    // Default fallback
+    let start = new Date();
+    let end = new Date();
+    start.setHours(0, 0, 0, 0); end.setHours(23, 59, 59, 999);
 
-function renderMonthlyChart() {
-    const ctx = document.getElementById('monthlyComparisonChart').getContext('2d');
-    const labels = [], incData = [], expData = [];
-    for (let i = 11; i >= 0; i--) {
-        const d = new Date(); d.setMonth(d.getMonth() - i);
-        const month = d.getMonth(), year = d.getFullYear();
-        labels.push(d.toLocaleDateString('id-ID', { month: 'short' }));
-        const monthTx = state.transactions.filter(t => { const td = new Date(t.date); return td.getMonth() === month && td.getFullYear() === year; });
-        incData.push(monthTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0));
-        expData.push(monthTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0));
+    if (!state.reportSettings) return { start, end };
+
+    const { period, date } = state.reportSettings;
+    const now = new Date();
+
+    if (period === 'realtime' || period === 'daily') {
+        const d = period === 'realtime' ? now : date;
+        start = new Date(d); start.setHours(0, 0, 0, 0);
+        end = new Date(d); end.setHours(23, 59, 59, 999);
+    } else if (period === 'yesterday') {
+        start = new Date(now); start.setDate(start.getDate() - 1); start.setHours(0, 0, 0, 0);
+        end = new Date(start); end.setHours(23, 59, 59, 999);
+    } else if (period === 'last7days') {
+        end = new Date(now); end.setHours(23, 59, 59, 999);
+        start = new Date(now); start.setDate(start.getDate() - 7); start.setHours(0, 0, 0, 0);
+    } else if (period === 'last30days') {
+        end = new Date(now); end.setHours(23, 59, 59, 999);
+        start = new Date(now); start.setDate(start.getDate() - 30); start.setHours(0, 0, 0, 0);
+    } else if (period === 'weekly') {
+        // weekly logic: start from date (which should be start of week from init)
+        // Adjust if date is just any day in week
+        start = new Date(date);
+        const day = start.getDay() || 7;
+        if (day !== 1) start.setDate(start.getDate() - (day - 1));
+        start.setHours(0, 0, 0, 0);
+        end = new Date(start); end.setDate(end.getDate() + 6); end.setHours(23, 59, 59, 999);
+    } else if (period === 'monthly') {
+        start = new Date(date.getFullYear(), date.getMonth(), 1);
+        end = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
+    } else if (period === 'yearly') {
+        start = new Date(date.getFullYear(), 0, 1);
+        end = new Date(date.getFullYear(), 11, 31, 23, 59, 59, 999);
     }
+
+    return { start, end };
+}
+
+function updateReports() {
+    renderComparisonChart();
+    renderCategoryPie();
+    renderTimeline();
+
+    // Update chart title
+    const chartContainer = document.querySelector('.chart-container h3');
+    if (chartContainer) {
+        const titleSpan = document.getElementById('triggerDateDisplay');
+        const rangeText = titleSpan ? titleSpan.textContent : '';
+        chartContainer.textContent = `Analisis Keuangan (${rangeText})`;
+    }
+}
+
+function renderComparisonChart() {
+    const ctxEl = document.getElementById('monthlyComparisonChart');
+    if (!ctxEl) return;
+    const ctx = ctxEl.getContext('2d');
+
+    const { start, end } = getReportDateRange();
+    const period = state.reportSettings?.period || 'realtime';
+
+    const labels = [], incData = [], expData = [];
+
+    // Determine aggregation strategy
+    let mode = 'daily'; // daily, monthly, hourly
+    if (period === 'yearly') mode = 'monthly';
+    else if (period === 'realtime' || period === 'daily' || period === 'yesterday') mode = 'hourly';
+    else mode = 'daily'; // weekly, lastXdays, monthly
+
+    if (mode === 'hourly') {
+        for (let i = 0; i < 24; i += 4) { // 4-hour blocks to save space? or 1-hour?
+            // Let's do 3-hour blocks: 0, 3, 6, 9, 12, 15, 18, 21
+            // Or just simple 6 blocks: Pagi, Siang, Sore, Malam
+            // Let's try 2-hour blocks for detail
+            labels.push(`${i}:00`);
+            // Filter tx in [i, i+1]
+            // Note: Simplification for now, just sum transactions in this hour
+            incData.push(0); expData.push(0); // Placeholder init
+        }
+
+        // Re-loop properly
+        // Reset and actually loop
+        labels.length = 0; incData.length = 0; expData.length = 0;
+        for (let i = 0; i < 24; i++) {
+            labels.push(`${i}:00`);
+            const hourInc = state.transactions.filter(t => {
+                const d = new Date(t.date);
+                return d >= start && d <= end && d.getHours() === i && t.type === 'income';
+            }).reduce((s, t) => s + t.amount, 0);
+
+            const hourExp = state.transactions.filter(t => {
+                const d = new Date(t.date);
+                return d >= start && d <= end && d.getHours() === i && t.type === 'expense';
+            }).reduce((s, t) => s + t.amount, 0);
+
+            incData.push(hourInc);
+            expData.push(hourExp);
+        }
+
+    } else if (mode === 'monthly') {
+        for (let i = 0; i < 12; i++) {
+            const d = new Date(start.getFullYear(), i, 1);
+            labels.push(d.toLocaleDateString('id-ID', { month: 'short' }));
+
+            const mInc = state.transactions.filter(t => {
+                const td = new Date(t.date);
+                return td.getFullYear() === start.getFullYear() && td.getMonth() === i && t.type === 'income';
+            }).reduce((s, t) => s + t.amount, 0);
+
+            const mExp = state.transactions.filter(t => {
+                const td = new Date(t.date);
+                return td.getFullYear() === start.getFullYear() && td.getMonth() === i && t.type === 'expense';
+            }).reduce((s, t) => s + t.amount, 0);
+
+            incData.push(mInc); expData.push(mExp);
+        }
+    } else {
+        // Daily breakdown (for weekly, monthly, lastXdays)
+        const curr = new Date(start);
+        while (curr <= end) {
+            labels.push(curr.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }));
+
+            const dInc = state.transactions.filter(t => {
+                const td = new Date(t.date);
+                return td.getDate() === curr.getDate() && td.getMonth() === curr.getMonth() && td.getFullYear() === curr.getFullYear() && t.type === 'income';
+            }).reduce((s, t) => s + t.amount, 0);
+
+            const dExp = state.transactions.filter(t => {
+                const td = new Date(t.date);
+                return td.getDate() === curr.getDate() && td.getMonth() === curr.getMonth() && td.getFullYear() === curr.getFullYear() && t.type === 'expense';
+            }).reduce((s, t) => s + t.amount, 0);
+
+            incData.push(dInc); expData.push(dExp);
+
+            curr.setDate(curr.getDate() + 1);
+        }
+    }
+
     if (monthlyChart) monthlyChart.destroy();
-    monthlyChart = new Chart(ctx, { type: 'bar', data: { labels, datasets: [{ label: 'Pemasukan', data: incData, backgroundColor: '#10b981' }, { label: 'Pengeluaran', data: expData, backgroundColor: '#ef4444' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8' } } }, scales: { x: { grid: { color: 'rgba(148,163,184,0.1)' }, ticks: { color: '#94a3b8' } }, y: { grid: { color: 'rgba(148,163,184,0.1)' }, ticks: { color: '#94a3b8', callback: v => formatCurrency(v) } } } } });
+    monthlyChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [
+                { label: 'Pemasukan', data: incData, backgroundColor: '#10b981', borderRadius: 4 },
+                { label: 'Pengeluaran', data: expData, backgroundColor: '#ef4444', borderRadius: 4 }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { labels: { color: '#94a3b8' } },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            let label = context.dataset.label || '';
+                            if (label) label += ': ';
+                            if (context.parsed.y !== null) label += formatCurrency(context.parsed.y);
+                            return label;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
+                y: { grid: { color: 'rgba(148,163,184,0.1)' }, ticks: { color: '#94a3b8', callback: v => formatCurrency(v) } }
+            }
+        }
+    });
 }
 
 function renderCategoryPie() {
-    const { start, end } = getDateRange('monthly');
+    const { start, end } = getReportDateRange();
     const expCats = state.categories.filter(c => c.type === 'expense');
-    const data = expCats.map(c => ({ ...c, total: state.transactions.filter(t => t.categoryId === c.id && t.type === 'expense' && new Date(t.date) >= start && new Date(t.date) <= end).reduce((s, t) => s + t.amount, 0) }))
+    const data = expCats.map(c => ({
+        ...c,
+        total: state.transactions.filter(t => t.categoryId === c.id && t.type === 'expense' && new Date(t.date) >= start && new Date(t.date) <= end).reduce((s, t) => s + t.amount, 0)
+    }))
         .filter(c => c.total > 0)
         .sort((a, b) => b.total - a.total);
 
-    const ctx = document.getElementById('categoryPieChart').getContext('2d');
+    const ctxEl = document.getElementById('categoryPieChart');
+    if (!ctxEl) return;
+    const ctx = ctxEl.getContext('2d');
+
     if (pieChart) pieChart.destroy();
+
+    // Legend update
+    const legend = document.getElementById('categoryLegend');
+    if (legend) {
+        if (data.length) {
+            const total = data.reduce((s, c) => s + c.total, 0);
+            legend.innerHTML = data.map(c => `<div class="legend-item"><div class="legend-color" style="background:${c.color}"></div><span class="legend-name">${c.name}</span><span class="legend-value">${total > 0 ? Math.round((c.total / total) * 100) : 0}%</span></div>`).join('');
+        } else {
+            legend.innerHTML = '<div class="empty-state small">Belum ada pengeluaran periode ini</div>';
+        }
+    }
+
     if (data.length) {
         pieChart = new Chart(ctx, {
-            type: 'pie',
+            type: 'doughnut', // Doughnut looks better
             data: {
                 labels: data.map(c => c.name),
                 datasets: [{
                     data: data.map(c => c.total),
                     backgroundColor: data.map(c => c.color),
-                    borderWidth: 1,
-                    borderColor: 'rgba(255, 255, 255, 0.1)'
+                    borderWidth: 0,
+                    hoverOffset: 4
                 }]
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
                 plugins: {
                     legend: { display: false },
                     tooltip: {
@@ -1905,11 +2084,10 @@ function renderCategoryPie() {
                 }
             }
         });
+    } else {
+        // Clear canvas if no data
+        // pieChart remains destroyed
     }
-
-    const legend = document.getElementById('categoryLegend');
-    const total = data.reduce((s, c) => s + c.total, 0);
-    legend.innerHTML = data.map(c => `<div class="legend-item"><div class="legend-color" style="background:${c.color}"></div><span class="legend-name">${c.icon} ${c.name}</span><span class="legend-value">${total > 0 ? Math.round((c.total / total) * 100) : 0}%</span></div>`).join('');
 }
 
 function renderTimeline() {
@@ -5407,7 +5585,7 @@ async function checkPendingPayment() {
 }
 
 // ========== Report Period Selector ==========
-function initReportPeriodSelector() {
+function _initReportPeriodSelector() {
     const trigger = document.getElementById('reportPeriodTrigger');
     const dropdown = document.getElementById('reportPeriodDropdown');
     const options = document.querySelectorAll('.period-option');
@@ -5457,9 +5635,29 @@ function initReportPeriodSelector() {
     });
 }
 
+function populatePeriodDropdowns() {
+    const currentYear = new Date().getFullYear();
+    const startYear = currentYear - 5;
+    const endYear = currentYear + 1;
+
+    const yearSelect = document.getElementById('yearSelect');
+    const yearSelectMonth = document.getElementById('yearSelectMonth');
+
+    if (!yearSelect || !yearSelectMonth) return;
+
+    let options = '';
+    for (let y = endYear; y >= startYear; y--) {
+        options += `<option value="${y}" ${y === currentYear ? 'selected' : ''}>${y}</option>`;
+    }
+
+    yearSelect.innerHTML = options;
+    yearSelectMonth.innerHTML = options;
+}
+
 function updateReportPeriodDetails(val) {
     const dateDisplay = document.getElementById('triggerDateDisplay');
     const previewContent = document.getElementById('periodDetailContent');
+    const highlight = previewContent ? previewContent.querySelector('.detail-highlight') : null;
 
     const now = new Date();
     const shortFormatter = new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short' });
@@ -5470,12 +5668,13 @@ function updateReportPeriodDetails(val) {
     if (val === 'realtime') {
         const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
         triggerDateText = `Hari Ini - Pk ${timeStr} (GMT+07)`;
-        detailText = `Hari Ini - Pk ${timeStr}`;
+        detailText = `Hari Ini - Pk ${timeStr} (Live)`;
     } else if (val === 'yesterday') {
         const yest = new Date();
         yest.setDate(yest.getDate() - 1);
-        triggerDateText = `Kemarin, ${shortFormatter.format(yest)}`;
-        detailText = `Data Kemarin (${shortFormatter.format(yest)})`;
+        const fmt = shortFormatter.format(yest);
+        triggerDateText = `Kemarin, ${fmt}`;
+        detailText = `Data Kemarin (${fmt})`;
     } else if (val === 'last7days') {
         const start = new Date();
         start.setDate(start.getDate() - 7);
@@ -5486,13 +5685,188 @@ function updateReportPeriodDetails(val) {
         start.setDate(start.getDate() - 30);
         triggerDateText = `${shortFormatter.format(start)} - ${shortFormatter.format(now)}`;
         detailText = `30 Hari Terakhir`;
-    } else {
-        triggerDateText = 'Pilih Tanggal';
-        detailText = 'Filter Kustom';
+    } else if (val === 'monthly') {
+        const date = state.reportSettings.date || now;
+        const fmt = date.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+        triggerDateText = fmt;
+        detailText = `Laporan Bulan ${fmt}`;
+    } else if (val === 'yearly') {
+        const date = state.reportSettings.date || now;
+        const fmt = date.getFullYear();
+        triggerDateText = `Tahun ${fmt}`;
+        detailText = `Laporan Tahun ${fmt}`;
     }
 
     if (dateDisplay) dateDisplay.textContent = triggerDateText;
-    if (previewContent) previewContent.innerHTML = `<span class="detail-highlight">${detailText}</span>`;
+    if (highlight) highlight.textContent = detailText; // Update existing span
+    else if (previewContent) previewContent.innerHTML = `<span class="detail-highlight">${detailText}</span>`;
+}
+
+function updateReports() {
+    // console.log('Updating reports for:', state.reportSettings);
+    // Logic to filter data would go here
+    showToast('Memperbarui data laporan...', 'info');
+
+    // Attempt to refresh if chart exists (placeholder for now)
+    // If you have a global chart instance, update it here.
+    // window.myChart.update(); 
+
+    const chartContainer = document.querySelector('.chart-container h3');
+    if (chartContainer) {
+        chartContainer.textContent = `Perbandingan Bulanan (${document.getElementById('triggerDateDisplay').textContent})`;
+    }
+}
+
+// ========== Report Period Selector ==========
+function initReportPeriodSelector() {
+    const trigger = document.getElementById('reportPeriodTrigger');
+    const dropdown = document.getElementById('reportPeriodDropdown');
+    const options = document.querySelectorAll('.period-option');
+    const customSelectors = document.getElementById('customSelectors');
+    const monthYearRequest = document.getElementById('monthYearRequest');
+    const yearRequest = document.getElementById('yearRequest');
+    const datePickerInput = document.getElementById('reportDatePicker');
+
+    // Initialize State for Reports if not exists
+    if (!state.reportSettings) {
+        state.reportSettings = {
+            period: 'realtime',
+            date: new Date(),
+            startDate: null,
+            endDate: null
+        };
+    }
+
+    // Initialize Flatpickr
+    let fp;
+    if (typeof flatpickr !== 'undefined' && datePickerInput) {
+        fp = flatpickr(datePickerInput, {
+            dateFormat: "d M Y",
+            locale: "id",
+            disableMobile: "true",
+            onChange: function (selectedDates, dateStr, instance) {
+                if (selectedDates.length > 0) {
+                    const selectedDate = selectedDates[0];
+                    state.reportSettings.date = selectedDate;
+
+                    // Update text
+                    const triggerDate = document.getElementById('triggerDateDisplay');
+                    const highlight = document.querySelector('.detail-highlight');
+
+                    const formatted = selectedDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+
+                    if (state.reportSettings.period === 'daily') {
+                        if (triggerDate) triggerDate.textContent = formatted;
+                        if (highlight) highlight.textContent = formatted;
+                    } else if (state.reportSettings.period === 'weekly') {
+                        // Calculate week range
+                        const start = new Date(selectedDate);
+                        const day = start.getDay() || 7; // 1 (Mon) - 7 (Sun)
+                        if (day !== 1) start.setHours(-24 * (day - 1));
+
+                        const end = new Date(start);
+                        end.setDate(end.getDate() + 6);
+
+                        const rangeStr = `${start.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })} - ${end.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+                        if (triggerDate) triggerDate.textContent = rangeStr;
+                        if (highlight) highlight.textContent = rangeStr;
+                    }
+
+                    updateReports(); // Trigger update
+                }
+            }
+        });
+    }
+
+    // Populate Dropdowns
+    populatePeriodDropdowns();
+
+    if (!trigger || !dropdown) return;
+
+    // Toggle Dropdown
+    trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dropdown.classList.toggle('active');
+
+        // Hide custom selectors when opening freshly
+        if (dropdown.classList.contains('active')) {
+            // Reset UI state if needed
+        }
+    });
+
+    options.forEach(option => {
+        option.addEventListener('click', (e) => {
+            e.stopPropagation();
+
+            const val = option.dataset.value;
+            state.reportSettings.period = val;
+
+            // Remove active from all
+            options.forEach(opt => opt.classList.remove('active'));
+            option.classList.add('active');
+
+            // Update Trigger Label
+            const label = option.querySelector('span').textContent;
+            const triggerValue = trigger.querySelector('.trigger-value');
+            if (triggerValue) triggerValue.textContent = label;
+
+            // Handle UI logic based on selection
+            if (val === 'daily' || val === 'weekly') {
+                if (customSelectors) customSelectors.style.display = 'none';
+                if (fp) fp.open();
+                else alert('Date picker library not loaded');
+            } else if (val === 'monthly') {
+                if (customSelectors) customSelectors.style.display = 'block';
+                if (monthYearRequest) monthYearRequest.style.display = 'block';
+                if (yearRequest) yearRequest.style.display = 'none';
+            } else if (val === 'yearly') {
+                if (customSelectors) customSelectors.style.display = 'block';
+                if (monthYearRequest) monthYearRequest.style.display = 'none';
+                if (yearRequest) yearRequest.style.display = 'block';
+            } else {
+                // Presets
+                if (customSelectors) customSelectors.style.display = 'none';
+                updateReportPeriodDetails(val);
+                updateReports();
+                dropdown.classList.remove('active');
+            }
+        });
+    });
+
+    // Handle Month/Year Apply
+    const applyMonthYear = document.getElementById('applyMonthYear');
+    if (applyMonthYear) {
+        applyMonthYear.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const month = parseInt(document.getElementById('monthSelect').value);
+            const year = parseInt(document.getElementById('yearSelectMonth').value);
+            state.reportSettings.date = new Date(year, month, 1);
+
+            updateReportPeriodDetails('monthly');
+            updateReports();
+            dropdown.classList.remove('active');
+        });
+    }
+
+    const applyYear = document.getElementById('applyYear');
+    if (applyYear) {
+        applyYear.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const year = parseInt(document.getElementById('yearSelect').value);
+            state.reportSettings.date = new Date(year, 0, 1);
+
+            updateReportPeriodDetails('yearly');
+            updateReports();
+            dropdown.classList.remove('active');
+        });
+    }
+
+    // Close on click outside
+    document.addEventListener('click', (e) => {
+        if (!trigger.contains(e.target) && !dropdown.contains(e.target) && !e.target.closest('.flatpickr-calendar')) {
+            dropdown.classList.remove('active');
+        }
+    });
 }
 
 // Add to initialization

@@ -746,6 +746,44 @@
                                     <div class="detail-content" id="periodDetailContent">
                                         <span class="detail-highlight">Hari Ini - Pk 11:00</span>
                                     </div>
+
+                                    <!-- Custom Selectors (Hidden by default) -->
+                                    <div id="customSelectors"
+                                        style="display: none; margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                                        <!-- Month/Year Picker -->
+                                        <div id="monthYearRequest" style="display:none;">
+                                            <select id="monthSelect"
+                                                class="p-2 border rounded text-sm w-full mb-2 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                                                <option value="0">Januari</option>
+                                                <option value="1">Februari</option>
+                                                <option value="2">Maret</option>
+                                                <option value="3">April</option>
+                                                <option value="4">Mei</option>
+                                                <option value="5">Juni</option>
+                                                <option value="6">Juli</option>
+                                                <option value="7">Agustus</option>
+                                                <option value="8">September</option>
+                                                <option value="9">Oktober</option>
+                                                <option value="10">November</option>
+                                                <option value="11">Desember</option>
+                                            </select>
+                                            <select id="yearSelectMonth"
+                                                class="p-2 border rounded text-sm w-full mb-2 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"></select>
+                                            <button id="applyMonthYear"
+                                                class="w-full mt-2 bg-primary text-white p-2 rounded text-sm hover:bg-opacity-90">Terapkan</button>
+                                        </div>
+
+                                        <!-- Year Only Picker -->
+                                        <div id="yearRequest" style="display:none;">
+                                            <select id="yearSelect"
+                                                class="p-2 border rounded text-sm w-full mb-2 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"></select>
+                                            <button id="applyYear"
+                                                class="w-full mt-2 bg-primary text-white p-2 rounded text-sm hover:bg-opacity-90">Terapkan</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Hidden Date Picker Input -->
+                                    <input type="text" id="reportDatePicker" style="display: none;">
                                 </div>
                             </div>
                         </div>
