@@ -680,142 +680,38 @@
                     <h2>Analisis & Laporan</h2>
 
                     <div class="report-period-container">
-                        <span class="report-period-label">Periode Data</span>
-                        <div class="report-period-trigger" id="reportPeriodTrigger">
-                            <div class="trigger-content">
-                                <span class="trigger-value">Real-time</span>
-                                <span class="trigger-date" id="triggerDateDisplay">Hari Ini - Pk 11:00 (GMT+07)</span>
+                        <select id="monthlyReportSelect"
+                            class="p-2 border rounded-lg bg-white dark:bg-slate-800 text-sm border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary font-medium text-slate-700 dark:text-slate-200">
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+
+                    <!-- Monthly Comparison Chart -->
+                    <div class="chart-container glass-card">
+                        <h3>Perbandingan Bulanan</h3>
+                        <canvas id="monthlyComparisonChart"></canvas>
+                    </div>
+
+                    <!-- Category Breakdown -->
+                    <div class="chart-container glass-card">
+                        <h3>Pengeluaran per Kategori</h3>
+                        <div class="pie-chart-wrapper">
+                            <div class="pie-chart-container">
+                                <canvas id="categoryPieChart"></canvas>
                             </div>
-                            <svg class="trigger-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                                <line x1="16" y1="2" x2="16" y2="6"></line>
-                                <line x1="8" y1="2" x2="8" y2="6"></line>
-                                <line x1="3" y1="10" x2="21" y2="10"></line>
-                            </svg>
+                            <div class="category-legend" id="categoryLegend"></div>
                         </div>
+                    </div>
 
-                        <!-- Dropdown Menu -->
-                        <div class="report-period-dropdown" id="reportPeriodDropdown">
-                            <div class="dropdown-row">
-                                <!-- Period Options (Left) -->
-                                <div class="period-options">
-                                    <div class="period-option active" data-value="realtime">
-                                        <span>Real-time</span>
-                                    </div>
-                                    <div class="period-option" data-value="yesterday">
-                                        <span>Kemarin</span>
-                                    </div>
-                                    <div class="period-option" data-value="last7days">
-                                        <span>7 hari sebelumnya</span>
-                                    </div>
-                                    <div class="period-option" data-value="last30days">
-                                        <span>30 hari sebelumnya</span>
-                                    </div>
-
-                                    <div class="period-divider"></div>
-
-                                    <div class="period-option has-arrow" data-value="daily">
-                                        <span>Per Hari</span>
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <polyline points="9 18 15 12 9 6"></polyline>
-                                        </svg>
-                                    </div>
-                                    <div class="period-option has-arrow" data-value="weekly">
-                                        <span>Per Minggu</span>
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <polyline points="9 18 15 12 9 6"></polyline>
-                                        </svg>
-                                    </div>
-                                    <div class="period-option has-arrow" data-value="monthly">
-                                        <span>Per Bulan</span>
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <polyline points="9 18 15 12 9 6"></polyline>
-                                        </svg>
-                                    </div>
-                                    <div class="period-option has-arrow" data-value="yearly">
-                                        <span>Berdasarkan Tahun</span>
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <polyline points="9 18 15 12 9 6"></polyline>
-                                        </svg>
-                                    </div>
-                                </div>
-
-                                <!-- Detail / Preview (Right) -->
-                                <div class="period-detail-panel">
-                                    <div class="detail-content" id="periodDetailContent">
-                                        <span class="detail-highlight">Hari Ini - Pk 11:00</span>
-                                    </div>
-
-                                    <!-- Custom Selectors (Hidden by default) -->
-                                    <div id="customSelectors"
-                                        style="display: none; margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 10px;">
-                                        <!-- Month/Year Picker -->
-                                        <div id="monthYearRequest" style="display:none;">
-                                            <select id="monthSelect"
-                                                class="p-2 border rounded text-sm w-full mb-2 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-                                                <option value="0">Januari</option>
-                                                <option value="1">Februari</option>
-                                                <option value="2">Maret</option>
-                                                <option value="3">April</option>
-                                                <option value="4">Mei</option>
-                                                <option value="5">Juni</option>
-                                                <option value="6">Juli</option>
-                                                <option value="7">Agustus</option>
-                                                <option value="8">September</option>
-                                                <option value="9">Oktober</option>
-                                                <option value="10">November</option>
-                                                <option value="11">Desember</option>
-                                            </select>
-                                            <select id="yearSelectMonth"
-                                                class="p-2 border rounded text-sm w-full mb-2 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"></select>
-                                            <button id="applyMonthYear"
-                                                class="w-full mt-2 bg-primary text-white p-2 rounded text-sm hover:bg-opacity-90">Terapkan</button>
-                                        </div>
-
-                                        <!-- Year Only Picker -->
-                                        <div id="yearRequest" style="display:none;">
-                                            <select id="yearSelect"
-                                                class="p-2 border rounded text-sm w-full mb-2 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"></select>
-                                            <button id="applyYear"
-                                                class="w-full mt-2 bg-primary text-white p-2 rounded text-sm hover:bg-opacity-90">Terapkan</button>
-                                        </div>
-                                    </div>
-
-                                    <!-- Hidden Date Picker Input -->
-                                    <input type="text" id="reportDatePicker" style="display: none;">
-                                </div>
+                    <!-- Timeline -->
+                    <div class="timeline-section glass-card">
+                        <h3>Timeline Target & Acara</h3>
+                        <div class="timeline-container" id="timelineContainer">
+                            <div class="empty-state small">
+                                <p>Belum ada target atau acara</p>
                             </div>
                         </div>
                     </div>
-                </div>
-
-                <!-- Monthly Comparison Chart -->
-                <div class="chart-container glass-card">
-                    <h3>Perbandingan Bulanan</h3>
-                    <canvas id="monthlyComparisonChart"></canvas>
-                </div>
-
-                <!-- Category Breakdown -->
-                <div class="chart-container glass-card">
-                    <h3>Pengeluaran per Kategori</h3>
-                    <div class="pie-chart-wrapper">
-                        <div class="pie-chart-container">
-                            <canvas id="categoryPieChart"></canvas>
-                        </div>
-                        <div class="category-legend" id="categoryLegend"></div>
-                    </div>
-                </div>
-
-                <!-- Timeline -->
-                <div class="timeline-section glass-card">
-                    <h3>Timeline Target & Acara</h3>
-                    <div class="timeline-container" id="timelineContainer">
-                        <div class="empty-state small">
-                            <p>Belum ada target atau acara</p>
-                        </div>
-                    </div>
-                </div>
             </section>
 
             <!-- Debts Tab -->
