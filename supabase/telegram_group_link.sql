@@ -14,11 +14,11 @@ ALTER TABLE telegram_group_links ENABLE ROW LEVEL SECURITY;
 
 -- Policy: Users can manage their own group links
 CREATE POLICY "Users can CRUD own telegram group links" ON telegram_group_links
-  FOR ALL USING (auth.uid() = user_id);
+  FOR ALL TO authenticated USING ((SELECT auth.uid()) = user_id);
 
 -- Policy: Service role can read for matching (needed for n8n/sync server)
 CREATE POLICY "Service role can read all telegram group links" ON telegram_group_links
-  FOR SELECT USING (true);
+  FOR SELECT TO service_role USING (true);
 
 -- Index for fast lookup by group_id
 CREATE INDEX IF NOT EXISTS idx_telegram_group_links_group_id 

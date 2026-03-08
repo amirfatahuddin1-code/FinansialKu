@@ -5054,14 +5054,9 @@ async function handleSelectPlan(planType) {
         }
 
         if (data && data.token) {
-            // Hide processing, close modal
-            // processingEl and pricingCards reset happens in closeModal or when re-opening
-
-            // NOTE: Do not close modal immediately if we want to keep context, 
-            // but for Snap popup it's better to verify after payment.
+            // ===== MIDTRANS SNAP FLOW =====
             closeModal('subscriptionModal');
 
-            // --- REDIRECT FALLBACK FOR MOBILE/CORS ISSUES ---
             const fallbackToRedirect = () => {
                 if (data.redirect_url) {
                     showToast('Mengalihkan ke halaman pembayaran...', 'info');
@@ -5076,11 +5071,10 @@ async function handleSelectPlan(planType) {
             // Open Midtrans Snap popup
             if (window.snap) {
                 try {
-                    // Set timeout to detect if snap fails to open (e.g. CORS block)
                     const snapTimeout = setTimeout(() => {
                         console.warn('Snap popup timeout, falling back to redirect');
                         fallbackToRedirect();
-                    }, 5000); // 5 seconds timeout
+                    }, 5000);
 
                     window.snap.pay(data.token, {
                         onSuccess: function (result) {
@@ -5099,12 +5093,8 @@ async function handleSelectPlan(planType) {
                         onError: function (result) {
                             clearTimeout(snapTimeout);
                             console.error('Payment error:', result);
-
-                            // If error is related to popup blocking, try redirect
-                            // Otherwise just show error
                             showToast('Mencoba metode alternatif...', 'warning');
                             fallbackToRedirect();
-
                             state.isProcessingPayment = false;
                         },
                         onClose: function () {
@@ -5121,6 +5111,14 @@ async function handleSelectPlan(planType) {
                 console.warn('Snap.js not found, using redirect');
                 fallbackToRedirect();
             }
+        } else if (data && data.redirect_url) {
+            // ===== MAYAR REDIRECT FLOW =====
+            closeModal('subscriptionModal');
+            showToast('Mengalihkan ke halaman pembayaran Mayar...', 'info');
+            state.isProcessingPayment = false;
+            setTimeout(() => {
+                window.location.href = data.redirect_url;
+            }, 1000);
         }
     } catch (err) {
         console.error('Payment Error:', err);
@@ -5442,7 +5440,7 @@ async function checkPendingPayment() {
 
         if (data && data.token) {
             console.log('[PAYMENT] Token received, triggering Snap...');
-            // Trigger Snap
+            // Trigger Midtrans Snap
             window.snap.pay(data.token, {
                 onSuccess: function (result) {
                     console.log('[PAYMENT] Success:', result);
@@ -5471,9 +5469,6 @@ async function checkPendingPayment() {
                 },
                 onClose: function () {
                     console.log('[PAYMENT] Closed');
-                    // If closed, user cancelled. 
-                    // To enforce payment, we can logout or ask again.
-                    // For now, let's allow them to cancel but warn them.
                     const confirmCancel = confirm('Batalkan pembayaran? Anda akan logout.');
                     if (confirmCancel) {
                         localStorage.removeItem('pendingPlan');
@@ -5481,11 +5476,18 @@ async function checkPendingPayment() {
                             window.location.href = 'login.html';
                         });
                     } else {
-                        // Retry?
                         window.location.reload();
                     }
                 }
             });
+        } else if (data && data.redirect_url) {
+            // ===== MAYAR REDIRECT FLOW =====
+            console.log('[PAYMENT] Mayar redirect URL received, redirecting...');
+            localStorage.removeItem('pendingPlan');
+            showToast('Mengalihkan ke halaman pembayaran...', 'info');
+            setTimeout(() => {
+                window.location.href = data.redirect_url;
+            }, 1000);
         }
 
     } catch (err) {

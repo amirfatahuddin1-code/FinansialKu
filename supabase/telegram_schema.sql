@@ -20,15 +20,15 @@ ALTER TABLE telegram_transactions ENABLE ROW LEVEL SECURITY;
 
 -- Policy: Users can read their own telegram transactions
 CREATE POLICY "Users can read own telegram transactions" ON telegram_transactions
-  FOR SELECT USING (auth.uid() = user_id);
+  FOR SELECT TO authenticated USING ((SELECT auth.uid()) = user_id);
 
 -- Policy: Users can update their own telegram transactions
 CREATE POLICY "Users can update own telegram transactions" ON telegram_transactions
-  FOR UPDATE USING (auth.uid() = user_id);
+  FOR UPDATE TO authenticated USING ((SELECT auth.uid()) = user_id);
 
 -- Policy: Allow insert from Edge Functions (service role)
 CREATE POLICY "Service role can insert telegram transactions" ON telegram_transactions
-  FOR INSERT WITH CHECK (true);
+  FOR INSERT TO service_role WITH CHECK ((SELECT auth.role()) = 'service_role');
 
 -- Create index for faster queries
 CREATE INDEX IF NOT EXISTS idx_telegram_transactions_user ON telegram_transactions(user_id);
@@ -48,4 +48,4 @@ ALTER TABLE telegram_user_links ENABLE ROW LEVEL SECURITY;
 
 -- Policy: Users can manage their own links
 CREATE POLICY "Users can CRUD own telegram links" ON telegram_user_links
-  FOR ALL USING (auth.uid() = user_id);
+  FOR ALL TO authenticated USING ((SELECT auth.uid()) = user_id);

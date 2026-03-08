@@ -10,46 +10,12 @@ Deno.serve(async (req) => {
     }
 
     try {
-        // ========== GATEWAY ROUTING ==========
-        // Check which payment gateway to use
-        const activeGateway = Deno.env.get('PAYMENT_GATEWAY') || 'midtrans'
+        // Get Mayar API Key from environment
+        const mayarApiKey = Deno.env.get('MAYAR_API_KEY')
+        const isProduction = Deno.env.get('MAYAR_IS_PRODUCTION') === 'true'
 
-        if (activeGateway === 'mayar') {
-            // Forward to Mayar payment function
-            const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-            const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-
-            const body = await req.text()
-
-            const mayarResponse = await fetch(
-                `${supabaseUrl}/functions/v1/create-payment-mayar`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${supabaseServiceKey}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: body,
-                }
-            )
-
-            const mayarData = await mayarResponse.json()
-            return new Response(
-                JSON.stringify(mayarData),
-                {
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-                    status: mayarResponse.status,
-                }
-            )
-        }
-        // ========== END GATEWAY ROUTING ==========
-
-        // Get Midtrans Server Key from environment
-        const serverKey = Deno.env.get('MIDTRANS_SERVER_KEY')
-        const isProduction = Deno.env.get('MIDTRANS_IS_PRODUCTION') === 'true'
-
-        if (!serverKey) {
-            throw new Error('MIDTRANS_SERVER_KEY is not configured')
+        if (!mayarApiKey) {
+            throw new Error('MAYAR_API_KEY is not configured')
         }
 
         // Parse request body
@@ -89,49 +55,64 @@ Deno.serve(async (req) => {
         const timestamp = Date.now()
         const orderId = `KARSAFIN-${plan_id.toUpperCase()}-${user_id.substring(0, 8)}-${timestamp}`
 
-        // Midtrans Snap API endpoint
-        const midtransUrl = isProduction
-            ? 'https://app.midtrans.com/snap/v1/transactions'
-            : 'https://app.sandbox.midtrans.com/snap/v1/transactions'
+        // Mayar API endpoint
+        const mayarUrl = isProduction
+            ? 'https://api.mayar.id/hl/v1/invoice'
+            : 'https://api.mayar.club/hl/v1/invoice'
 
-        // Prepare Midtrans request
-        const midtransPayload = {
-            transaction_details: {
-                order_id: orderId,
-                gross_amount: plan.price,
-            },
-            item_details: [{
-                id: plan_id,
-                price: plan.price,
+        // Redirect URL after payment
+        const appUrl = Deno.env.get('APP_URL') || 'https://finansial-ku.vercel.app'
+
+        // Expiration: 24 hours from now
+        const expiredAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+
+        // Prepare Mayar invoice request
+        const mayarPayload = {
+            name: user_name || 'Pengguna Karsafin',
+            email: user_email || '',
+            mobile: '08000000000', // Default, as mobile is required by Mayar
+            redirectUrl: `${appUrl}/?payment_success=true`,
+            description: `Pembayaran Karsafin ${plan.name} - Order ${orderId}`,
+            expiredAt: expiredAt,
+            items: [{
                 quantity: 1,
-                name: `Karsafin ${plan.name}`,
+                rate: plan.price,
+                description: `Karsafin ${plan.name}`,
             }],
-            customer_details: {
-                email: user_email || '',
-                first_name: user_name || 'Pengguna Karsafin',
-            },
-            callbacks: {
-                finish: `${Deno.env.get('APP_URL') || 'https://finansial-ku.vercel.app'}/?payment_success=true`,
+            extraData: {
+                noCustomer: user_id,
+                idProd: plan_id,
             },
         }
 
-        // Call Midtrans API
-        const auth = btoa(`${serverKey}:`)
-        const midtransResponse = await fetch(midtransUrl, {
+        console.log('Mayar Request:', JSON.stringify(mayarPayload))
+
+        // Call Mayar API
+        const mayarResponse = await fetch(mayarUrl, {
             method: 'POST',
             headers: {
-                'Authorization': `Basic ${auth}`,
+                'Authorization': `Bearer ${mayarApiKey}`,
                 'Content-Type': 'application/json',
-                'Accept': 'application/json',
             },
-            body: JSON.stringify(midtransPayload),
+            body: JSON.stringify(mayarPayload),
         })
 
-        const midtransData = await midtransResponse.json()
+        const mayarData = await mayarResponse.json()
+        console.log('Mayar Response:', JSON.stringify(mayarData))
 
-        if (!midtransResponse.ok) {
-            console.error('Midtrans Error:', midtransData)
-            throw new Error(midtransData.error_messages?.join(', ') || 'Failed to create payment')
+        if (!mayarResponse.ok || mayarData.statusCode !== 200) {
+            console.error('Mayar Error:', mayarData)
+            throw new Error(mayarData.messages || 'Failed to create Mayar invoice')
+        }
+
+        // Extract payment link from response
+        const invoiceData = Array.isArray(mayarData.data) ? mayarData.data[0] : mayarData.data
+        const paymentLink = invoiceData?.link
+        const mayarInvoiceId = invoiceData?.id
+        const mayarTransactionId = invoiceData?.transactionId
+
+        if (!paymentLink) {
+            throw new Error('No payment link returned from Mayar')
         }
 
         // Store pending transaction in database
@@ -151,22 +132,27 @@ Deno.serve(async (req) => {
                     plan_id: plan_id,
                     amount: plan.price,
                     status: 'pending',
-                    midtrans_response: midtransData,
+                    payment_gateway: 'mayar',
+                    gateway_response: {
+                        ...mayarData,
+                        mayar_invoice_id: mayarInvoiceId,
+                        mayar_transaction_id: mayarTransactionId,
+                    },
                 }),
             }
         )
 
         if (!insertResponse.ok) {
             console.error('Failed to store transaction:', await insertResponse.text())
-            // Don't throw - payment token was already created
+            // Don't throw - payment link was already created
         }
 
         return new Response(
             JSON.stringify({
                 success: true,
-                token: midtransData.token,
-                redirect_url: midtransData.redirect_url,
+                redirect_url: paymentLink,
                 order_id: orderId,
+                gateway: 'mayar',
             }),
             {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -175,7 +161,7 @@ Deno.serve(async (req) => {
         )
 
     } catch (error: any) {
-        console.error('Create Payment Error:', error)
+        console.error('Create Payment (Mayar) Error:', error)
 
         return new Response(
             JSON.stringify({

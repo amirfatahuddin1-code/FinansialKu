@@ -741,13 +741,24 @@
                         return;
                     }
 
-                    if (!result.data || !result.data.token) {
-                        showError('Gagal mendapatkan token pembayaran.');
-                        return;
+                    if (result.data && result.data.token) {
+                        // ===== MIDTRANS SNAP FLOW =====
+                        currentToken = result.data.token;
+                        triggerSnap(currentToken, !!explicitUser);
+                    } else if (result.data && result.data.redirect_url) {
+                        // ===== MAYAR REDIRECT FLOW =====
+                        if (!!explicitUser) {
+                            // Registration flow: show email verification message first
+                            showSuccess('Akun berhasil dibuat! Mengalihkan ke halaman pembayaran...');
+                        } else {
+                            showSuccess('Mengalihkan ke halaman pembayaran...');
+                        }
+                        setTimeout(() => {
+                            window.location.href = result.data.redirect_url;
+                        }, 1500);
+                    } else {
+                        showError('Gagal mendapatkan link pembayaran.');
                     }
-
-                    currentToken = result.data.token;
-                    triggerSnap(currentToken, !!explicitUser);
 
                 } catch (err) {
                     console.error('Payment flow error:', err);
@@ -777,7 +788,6 @@
                         onError: function (result) {
                             showError('Pembayaran gagal atau dibatalkan.');
                             if (isRegistration) {
-                                // Even if failed, remind them to verify email to retry later
                                 setTimeout(() => {
                                     showSuccess('Akun telah dibuat. Silakan cek email untuk verifikasi.');
                                 }, 3000);
@@ -785,7 +795,6 @@
                             showRetryButton();
                         },
                         onClose: function () {
-                            // User closed popup without finishing
                             if (isRegistration) {
                                 showSuccess('Pembayaran tertunda. Silakan CEK EMAIL untuk verifikasi akun, lalu login untuk melanjutkan pembayaran.');
                             } else {
@@ -796,7 +805,6 @@
                     });
                 } catch (snapErr) {
                     console.warn('Snap error:', snapErr);
-                    // This catches the 'Invalid state transition'
                     showError('Silakan klik tombol di bawah untuk membuka pembayaran.');
                     showRetryButton();
                 }

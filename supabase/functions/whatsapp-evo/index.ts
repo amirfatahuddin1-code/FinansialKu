@@ -404,7 +404,7 @@ Deno.serve(async (req) => {
 
         } else if (text.length > 0) {
             console.log('Processing Text:', text)
-            // Use DeepSeek for Text (Switching from Groq)
+            // Use DeepSeek for Text (User preference)
             const aiRes = await runDeepSeekText(deepseekApiKey, text)
             console.log('AI Text Result:', JSON.stringify(aiRes))
 

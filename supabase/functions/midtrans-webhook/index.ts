@@ -75,7 +75,9 @@ Deno.serve(async (req) => {
                 body: JSON.stringify({
                     status: paymentStatus,
                     payment_type: payment_type,
+                    payment_gateway: 'midtrans',
                     midtrans_response: payload,
+                    gateway_response: payload,
                     updated_at: new Date().toISOString(),
                 }),
             }

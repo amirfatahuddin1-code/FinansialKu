@@ -166,31 +166,31 @@ CREATE POLICY "Anyone can view subscription plans" ON subscription_plans
 
 -- Subscriptions: users can only see their own
 CREATE POLICY "Users can view own subscriptions" ON subscriptions
-  FOR SELECT USING (auth.uid() = user_id);
+  FOR SELECT TO authenticated USING ((SELECT auth.uid()) = user_id);
 
 CREATE POLICY "Users can insert own subscriptions" ON subscriptions
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
+  FOR INSERT TO authenticated WITH CHECK ((SELECT auth.uid()) = user_id);
 
 -- Service role can update subscriptions (for webhooks)
 CREATE POLICY "Service role can manage subscriptions" ON subscriptions
-  FOR ALL USING (auth.role() = 'service_role');
+  FOR ALL TO service_role USING ((SELECT auth.role()) = 'service_role');
 
 -- Payment transactions: users can view their own
 CREATE POLICY "Users can view own payments" ON payment_transactions
-  FOR SELECT USING (auth.uid() = user_id);
+  FOR SELECT TO authenticated USING ((SELECT auth.uid()) = user_id);
 
 CREATE POLICY "Users can insert own payments" ON payment_transactions
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
+  FOR INSERT TO authenticated WITH CHECK ((SELECT auth.uid()) = user_id);
 
 CREATE POLICY "Service role can manage payments" ON payment_transactions
-  FOR ALL USING (auth.role() = 'service_role');
+  FOR ALL TO service_role USING ((SELECT auth.role()) = 'service_role');
 
 -- Messaging usage: users can view/update their own
 CREATE POLICY "Users can CRUD own messaging usage" ON messaging_usage
-  FOR ALL USING (auth.uid() = user_id);
+  FOR ALL TO authenticated USING ((SELECT auth.uid()) = user_id);
 
 CREATE POLICY "Service role can manage messaging usage" ON messaging_usage
-  FOR ALL USING (auth.role() = 'service_role');
+  FOR ALL TO service_role USING ((SELECT auth.role()) = 'service_role');
 
 
 -- ========== FUNCTIONS ==========
@@ -222,7 +222,7 @@ BEGIN
   ORDER BY s.expires_at DESC
   LIMIT 1;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 
 -- Function to create trial subscription for new user
@@ -243,7 +243,7 @@ BEGIN
   
   RETURN v_subscription_id;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 
 -- Function to activate subscription after payment
@@ -294,7 +294,7 @@ BEGIN
   
   RETURN v_subscription_id;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 
 -- Function to increment messaging count
@@ -327,7 +327,7 @@ BEGIN
   
   RETURN v_new_count;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 
 -- Function to get current messaging usage
@@ -355,7 +355,7 @@ BEGIN
     RETURN QUERY SELECT 0, 0, 0;
   END IF;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 
 -- ========== TRIGGER: Auto-create trial for new users ==========
@@ -367,7 +367,7 @@ BEGIN
   PERFORM create_trial_subscription(NEW.id);
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- Only create trigger if it doesn't exist
 DO $$

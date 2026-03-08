@@ -97,33 +97,33 @@ ALTER TABLE event_items ENABLE ROW LEVEL SECURITY;
 
 -- Profiles policies
 CREATE POLICY "Users can view own profile" ON profiles
-  FOR SELECT USING (auth.uid() = id);
+  FOR SELECT USING ((SELECT auth.uid()) = id);
 
 CREATE POLICY "Users can update own profile" ON profiles
-  FOR UPDATE USING (auth.uid() = id);
+  FOR UPDATE USING ((SELECT auth.uid()) = id);
 
 CREATE POLICY "Users can insert own profile" ON profiles
-  FOR INSERT WITH CHECK (auth.uid() = id);
+  FOR INSERT WITH CHECK ((SELECT auth.uid()) = id);
 
 -- Categories policies
 CREATE POLICY "Users can CRUD own categories" ON categories
-  FOR ALL USING (auth.uid() = user_id);
+  FOR ALL USING ((SELECT auth.uid()) = user_id);
 
 -- Transactions policies
 CREATE POLICY "Users can CRUD own transactions" ON transactions
-  FOR ALL USING (auth.uid() = user_id);
+  FOR ALL USING ((SELECT auth.uid()) = user_id);
 
 -- Budgets policies
 CREATE POLICY "Users can CRUD own budgets" ON budgets
-  FOR ALL USING (auth.uid() = user_id);
+  FOR ALL USING ((SELECT auth.uid()) = user_id);
 
 -- Savings policies
 CREATE POLICY "Users can CRUD own savings" ON savings
-  FOR ALL USING (auth.uid() = user_id);
+  FOR ALL USING ((SELECT auth.uid()) = user_id);
 
 -- Events policies
 CREATE POLICY "Users can CRUD own events" ON events
-  FOR ALL USING (auth.uid() = user_id);
+  FOR ALL USING ((SELECT auth.uid()) = user_id);
 
 -- Event items policies (via event ownership)
 CREATE POLICY "Users can CRUD own event items" ON event_items
@@ -131,7 +131,7 @@ CREATE POLICY "Users can CRUD own event items" ON event_items
     EXISTS (
       SELECT 1 FROM events 
       WHERE events.id = event_items.event_id 
-      AND events.user_id = auth.uid()
+      AND events.user_id = (SELECT auth.uid())
     )
   );
 
@@ -166,7 +166,7 @@ BEGIN
   
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- Trigger to create profile on signup
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;

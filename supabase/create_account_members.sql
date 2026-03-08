@@ -21,6 +21,6 @@ BEGIN
         SELECT 1 FROM pg_policies WHERE tablename = 'account_members' AND policyname = 'Users can CRUD own account members'
     ) THEN
         CREATE POLICY "Users can CRUD own account members" ON account_members
-            FOR ALL USING (auth.uid() = user_id);
+            FOR ALL TO authenticated USING ((SELECT auth.uid()) = user_id);
     END IF;
 END $$;

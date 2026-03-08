@@ -24,19 +24,19 @@ ALTER TABLE whatsapp_transactions ENABLE ROW LEVEL SECURITY;
 
 -- Policy: Users can read their own whatsapp transactions
 CREATE POLICY "Users can read own whatsapp transactions" ON whatsapp_transactions
-  FOR SELECT USING (auth.uid() = user_id);
+  FOR SELECT TO authenticated USING ((SELECT auth.uid()) = user_id);
 
 -- Policy: Users can update their own whatsapp transactions
 CREATE POLICY "Users can update own whatsapp transactions" ON whatsapp_transactions
-  FOR UPDATE USING (auth.uid() = user_id);
+  FOR UPDATE TO authenticated USING ((SELECT auth.uid()) = user_id);
 
 -- Policy: Users can delete their own whatsapp transactions
 CREATE POLICY "Users can delete own whatsapp transactions" ON whatsapp_transactions
-  FOR DELETE USING (auth.uid() = user_id);
+  FOR DELETE TO authenticated USING ((SELECT auth.uid()) = user_id);
 
 -- Policy: Allow insert from Edge Functions (service role)
 CREATE POLICY "Service role can insert whatsapp transactions" ON whatsapp_transactions
-  FOR INSERT WITH CHECK (true);
+  FOR INSERT TO service_role WITH CHECK ((SELECT auth.role()) = 'service_role');
 
 -- Create indexes for faster queries
 CREATE INDEX IF NOT EXISTS idx_whatsapp_transactions_user ON whatsapp_transactions(user_id);
@@ -57,7 +57,7 @@ ALTER TABLE whatsapp_user_links ENABLE ROW LEVEL SECURITY;
 
 -- Policy: Users can manage their own links
 CREATE POLICY "Users can CRUD own whatsapp links" ON whatsapp_user_links
-  FOR ALL USING (auth.uid() = user_id);
+  FOR ALL TO authenticated USING ((SELECT auth.uid()) = user_id);
 
 -- Create index
 CREATE INDEX IF NOT EXISTS idx_whatsapp_user_links_phone ON whatsapp_user_links(phone_number);
@@ -77,7 +77,7 @@ ALTER TABLE whatsapp_group_links ENABLE ROW LEVEL SECURITY;
 
 -- Policy: Users can manage their own group links
 CREATE POLICY "Users can CRUD own whatsapp group links" ON whatsapp_group_links
-  FOR ALL USING (auth.uid() = user_id);
+  FOR ALL TO authenticated USING ((SELECT auth.uid()) = user_id);
 
 -- Create indexes
 CREATE INDEX IF NOT EXISTS idx_whatsapp_group_links_user ON whatsapp_group_links(user_id);

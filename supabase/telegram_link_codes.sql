@@ -13,14 +13,14 @@ ALTER TABLE telegram_link_codes ENABLE ROW LEVEL SECURITY;
 
 -- Policy: Users can manage their own codes
 CREATE POLICY "Users can CRUD own telegram link codes" ON telegram_link_codes
-  FOR ALL USING (auth.uid() = user_id);
+  FOR ALL TO authenticated USING ((SELECT auth.uid()) = user_id);
 
 -- Policy: Service role can read/update for verification (needed for bot)
 CREATE POLICY "Service role can read all telegram link codes" ON telegram_link_codes
-  FOR SELECT USING (true);
+  FOR SELECT TO service_role USING ((SELECT auth.role()) = 'service_role');
 
 CREATE POLICY "Service role can update telegram link codes" ON telegram_link_codes
-  FOR UPDATE USING (true);
+  FOR UPDATE TO service_role USING ((SELECT auth.role()) = 'service_role');
 
 -- Index for fast lookup by code
 CREATE INDEX IF NOT EXISTS idx_telegram_link_codes_code 

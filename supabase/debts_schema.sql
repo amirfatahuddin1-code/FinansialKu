@@ -18,13 +18,13 @@ ALTER TABLE public.debts ENABLE ROW LEVEL SECURITY;
 
 -- Policies
 CREATE POLICY "Users can view their own debts" ON public.debts
-    FOR SELECT USING (auth.uid() = user_id);
+    FOR SELECT USING ((SELECT auth.uid()) = user_id);
 
 CREATE POLICY "Users can insert their own debts" ON public.debts
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
+    FOR INSERT WITH CHECK ((SELECT auth.uid()) = user_id);
 
 CREATE POLICY "Users can update their own debts" ON public.debts
-    FOR UPDATE USING (auth.uid() = user_id);
+    FOR UPDATE USING ((SELECT auth.uid()) = user_id);
 
 CREATE POLICY "Users can delete their own debts" ON public.debts
-    FOR DELETE USING (auth.uid() = user_id);
+    FOR DELETE USING ((SELECT auth.uid()) = user_id);
