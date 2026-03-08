@@ -3315,7 +3315,11 @@ form {
 }
 
 .toast.warning {
-    border-color: var(--warning);
+    border-left: 4px solid var(--warning);
+}
+
+.toast.info {
+    border-left: 4px solid var(--accent-primary);
 }
 
 .toast-icon {
@@ -3332,7 +3336,13 @@ form {
 }
 
 .toast.warning .toast-icon {
+    background: rgba(245, 158, 11, 0.1);
     color: var(--warning);
+}
+
+.toast.info .toast-icon {
+    background: rgba(124, 58, 237, 0.1);
+    color: var(--accent-primary);
 }
 
 .toast-message {
@@ -5547,8 +5557,19 @@ details[open] summary {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: var(--space-10);
+    padding: var(--space-12) var(--space-6);
     gap: var(--space-4);
+    text-align: center;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: var(--radius-xl);
+    border: 1px dashed var(--border-color);
+    margin: var(--space-4) 0;
+}
+
+.payment-processing p {
+    margin: 0;
+    max-width: 250px;
+    line-height: 1.5;
 }
 
 .payment-processing .loading-spinner {
