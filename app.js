@@ -2337,6 +2337,23 @@ async function init() {
     try { initHomeDashboard(); } catch (e) { console.error('Home Dashboard init failed', e); }
     try { updateDashboard(); } catch (e) { console.error('Dashboard update failed', e); }
     try { loadSyncSettings(); } catch (e) { console.error('Sync settings failed', e); }
+
+    // Check for payment redirect success
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('payment_success') === 'true') {
+        showToast('Memverifikasi pembayaran...', 'info');
+        // Clear param from URL without refresh to keep clean UI
+        const newUrl = window.location.pathname + (window.location.hash || '');
+        window.history.replaceState({}, document.title, newUrl);
+
+        // Force refresh subscription after a small delay to allow webhook to process
+        setTimeout(() => {
+            if (typeof checkSubscription === 'function') {
+                checkSubscription();
+                showToast('Pembayaran berhasil diproses! Layanan Pro Anda telah aktif.', 'success');
+            }
+        }, 3500);
+    }
 }
 
 // Start App
