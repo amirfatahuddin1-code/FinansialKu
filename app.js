@@ -1432,7 +1432,6 @@ function openEventModal(event = null) {
     document.getElementById('eventId').value = event ? event.id : '';
     document.getElementById('eventName').value = event ? event.name : '';
     document.getElementById('eventDate').value = event ? event.date : '';
-    document.getElementById('eventBudget').value = event ? event.budget.toLocaleString('id-ID') : '';
     openModal('eventModal');
 }
 
@@ -1447,16 +1446,17 @@ async function saveEvent(e) {
         const id = document.getElementById('eventId').value;
         const name = document.getElementById('eventName').value;
         const date = document.getElementById('eventDate').value;
-        const budget = parseAmount(document.getElementById('eventBudget').value);
 
-        if (!name || !date || !budget) { showToast('Lengkapi semua field', 'warning'); return; }
+        if (!name || !date) { showToast('Lengkapi semua field', 'warning'); return; }
 
         // Find existing event to preserve items if updating
         const existingEvent = state.events.find(ev => ev.id === id);
+        const budget = existingEvent ? (existingEvent.budget || 0) : 0;
         const items = existingEvent ? existingEvent.items : [];
+        const incomes = existingEvent ? (existingEvent.incomes || []) : [];
         const archived = existingEvent ? existingEvent.archived : false;
 
-        const eventPayload = { id, name, date, budget, items, archived };
+        const eventPayload = { id, name, date, budget, items, incomes, archived };
 
         // Use API to save (saveEventToAPI handles the API call)
         const savedData = await saveEventToAPI(eventPayload);
@@ -1499,9 +1499,10 @@ function updateEvents() {
 }
 
 function renderEventCard(event, isArchived = false) {
+    const budget = event.incomes && event.incomes.length ? event.incomes.reduce((sum, inc) => sum + (Number(inc.amount) || 0), 0) : (event.budget || 0);
     const spent = event.items.reduce((s, i) => s + (i.actual || 0), 0);
-    const remaining = event.budget - spent;
-    const progress = event.budget > 0 ? (spent / event.budget) * 100 : 0;
+    const remaining = budget - spent;
+    const progress = budget > 0 ? (spent / budget) * 100 : 0;
     const checkedCount = event.items.filter(i => i.isPaid).length;
     const days = daysUntil(event.date);
     const badge = days < 0 ? 'completed' : days === 0 ? 'today' : 'upcoming';
@@ -1509,7 +1510,7 @@ function renderEventCard(event, isArchived = false) {
 
     return `<div class="event-card ${isArchived ? 'archived' : ''}" onclick="openEventDetail('${event.id}')">
         <div class="event-header"><div><div class="event-name">${event.name}</div><div class="event-date"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${formatDate(event.date)}</div></div><span class="event-badge ${badge}">${badgeText}</span></div>
-        <div class="event-budget-summary"><div class="event-budget-item"><span class="event-budget-label">Anggaran</span><span class="event-budget-value budget">${formatCurrency(event.budget)}</span></div><div class="event-budget-item"><span class="event-budget-label">Terpakai</span><span class="event-budget-value spent">${formatCurrency(spent)}</span></div><div class="event-budget-item"><span class="event-budget-label">Sisa</span><span class="event-budget-value remaining">${formatCurrency(remaining)}</span></div></div>
+        <div class="event-budget-summary"><div class="event-budget-item"><span class="event-budget-label">Total Pemasukan</span><span class="event-budget-value budget">${formatCurrency(budget)}</span></div><div class="event-budget-item"><span class="event-budget-label">Terpakai</span><span class="event-budget-value spent">${formatCurrency(spent)}</span></div><div class="event-budget-item"><span class="event-budget-label">Sisa</span><span class="event-budget-value remaining">${formatCurrency(remaining)}</span></div></div>
         <div class="event-progress"><div class="event-progress-bar" style="width:${Math.min(progress, 100)}%"></div></div>
         <div class="event-checklist-count">${checkedCount}/${event.items.length} item selesai</div>
     </div>`;
@@ -1521,17 +1522,24 @@ function openEventDetail(id) {
     if (!event) return;
 
     document.getElementById('eventDetailTitle').textContent = event.name;
+    const budget = event.incomes && event.incomes.length ? event.incomes.reduce((sum, inc) => sum + (Number(inc.amount) || 0), 0) : (event.budget || 0);
     const spent = event.items.reduce((s, i) => s + (i.actual || 0), 0);
     const content = document.getElementById('eventDetailContent');
 
     content.innerHTML = `
         <div class="event-detail-stats">
-            <div class="event-stat"><div class="event-stat-value" style="color:#3b82f6">${formatCurrency(event.budget)}</div><div class="event-stat-label">Total Anggaran</div></div>
+            <div class="event-stat"><div class="event-stat-value" style="color:#3b82f6">${formatCurrency(budget)}</div><div class="event-stat-label">Total Pemasukan</div></div>
             <div class="event-stat"><div class="event-stat-value" style="color:#f59e0b">${formatCurrency(spent)}</div><div class="event-stat-label">Terpakai</div></div>
-            <div class="event-stat"><div class="event-stat-value" style="color:#10b981">${formatCurrency(event.budget - spent)}</div><div class="event-stat-label">Sisa</div></div>
+            <div class="event-stat"><div class="event-stat-value" style="color:#10b981">${formatCurrency(budget - spent)}</div><div class="event-stat-label">Sisa</div></div>
         </div>
         <div class="event-items-section">
-            <div class="event-items-header"><h4>Daftar Item</h4><button class="btn-primary btn-small" onclick="openEventItemModal('${id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Tambah Item</button></div>
+            <div class="event-items-header">
+                <h4>Daftar Item</h4>
+                <div style="display:flex; gap:8px;">
+                    <button class="btn-secondary btn-small" onclick="openEventIncomeModal('${id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>Atur Pemasukan</button>
+                    <button class="btn-primary btn-small" onclick="openEventItemModal('${id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Tambah Item</button>
+                </div>
+            </div>
             <div class="event-items-list">${event.items.length ? event.items.map((item, idx) => renderEventItem(id, item, idx)).join('') : '<div class="empty-state small"><p>Belum ada item</p></div>'}</div>
         </div>
         <div class="event-detail-actions">
@@ -1652,8 +1660,18 @@ function openEventItemModal(eventId, idx = -1) {
     // Populate custom categories if any
     populateEventItemCategories(item ? item.category : 'venue');
 
+    document.getElementById('eventItemUnitPrice').value = item && item.unit_price ? item.unit_price.toLocaleString('id-ID') : '';
+    document.getElementById('eventItemQty').value = item && item.qty ? item.qty : '1';
     document.getElementById('eventItemBudget').value = item ? item.budget.toLocaleString('id-ID') : '';
     document.getElementById('eventItemActual').value = item && item.actual ? item.actual.toLocaleString('id-ID') : '';
+
+    const calcItemBudget = () => {
+        const price = parseAmount(document.getElementById('eventItemUnitPrice').value) || 0;
+        const qty = parseInt(document.getElementById('eventItemQty').value) || 1;
+        document.getElementById('eventItemBudget').value = (price * qty).toLocaleString('id-ID');
+    };
+    document.getElementById('eventItemUnitPrice').addEventListener('input', calcItemBudget);
+    document.getElementById('eventItemQty').addEventListener('input', calcItemBudget);
 
     // Reset new category fields
     document.getElementById('newEventCategoryGroup').style.display = 'none';
@@ -1683,10 +1701,16 @@ async function saveEventItem(e) {
         saveCustomEventCategory(category, newName, newIcon);
     }
 
+    const unitPrice = parseAmount(document.getElementById('eventItemUnitPrice').value) || 0;
+    const qty = parseInt(document.getElementById('eventItemQty').value) || 1;
+    const computedBudget = unitPrice * qty;
+
     const item = {
         name: document.getElementById('eventItemName').value,
         category: category,
-        budget: parseAmount(document.getElementById('eventItemBudget').value),
+        unit_price: unitPrice,
+        qty: qty,
+        budget: computedBudget,
         actual: parseAmount(document.getElementById('eventItemActual').value),
         isPaid: false
     };
@@ -1744,6 +1768,109 @@ async function deleteEventItem(eventId, idx) {
     } catch (err) {
         console.error('Failed to delete event item:', err);
         showToast('Gagal menghapus item dari database', 'error');
+    }
+}
+
+// ========== Event Income Management ==========
+function openEventIncomeModal(eventId) {
+    document.getElementById('eventIncomeEventId').value = eventId;
+    const event = state.events.find(e => e.id === eventId);
+    if (!event) return;
+
+    document.getElementById('eventIncomeName').value = '';
+    document.getElementById('eventIncomeAmount').value = '';
+    renderEventIncomes(eventId);
+    openModal('eventIncomeModal');
+}
+
+function renderEventIncomes(eventId) {
+    const event = state.events.find(e => e.id === eventId);
+    const list = document.getElementById('eventIncomeList');
+    if (!event || !event.incomes || !event.incomes.length) {
+        list.innerHTML = '<div class="empty-state small" style="padding:16px;"><p>Belum ada pemasukan yang diatur</p></div>';
+        return;
+    }
+    list.innerHTML = event.incomes.map(inc => `
+        <div style="display:flex; justify-content:space-between; align-items:center; background:var(--glass-bg); padding:12px; border-radius:8px; border:1px solid var(--gray-200);">
+            <div>
+                <div style="font-weight:600; color:var(--text-main);">${inc.name}</div>
+                <div style="color:var(--primary); font-size:0.95em; font-weight:500;">Rp ${Number(inc.amount).toLocaleString('id-ID')}</div>
+            </div>
+            <button class="btn-text" style="color:var(--danger); padding:4px 8px; min-width:unset;" onclick="deleteEventIncome('${eventId}', '${inc.id}')">Hapus</button>
+        </div>
+    `).join('');
+}
+
+async function saveEventIncome(e) {
+    e.preventDefault();
+    const eventId = document.getElementById('eventIncomeEventId').value;
+    const name = document.getElementById('eventIncomeName').value;
+    const amount = parseAmount(document.getElementById('eventIncomeAmount').value);
+
+    if (!name || amount <= 0) { showToast('Lengkapi nama dan nominal yang valid', 'warning'); return; }
+
+    const btn = document.querySelector('#eventIncomeForm button[type="submit"]');
+    const origText = btn.textContent;
+    btn.textContent = 'Menyimpan...';
+    btn.disabled = true;
+
+    try {
+        const API = window.FinansialKuAPI;
+        const event = state.events.find(ev => ev.id === eventId);
+
+        const { data, error } = await API.eventIncomes.create(eventId, { name, amount });
+        if (error) throw error;
+
+        if (!event.incomes) event.incomes = [];
+        event.incomes.push(data);
+
+        // Update total event budget
+        const newBudget = event.incomes.reduce((sum, inc) => sum + Number(inc.amount), 0);
+        event.budget = newBudget;
+        await API.events.update(eventId, { budget: newBudget });
+
+        document.getElementById('eventIncomeName').value = '';
+        document.getElementById('eventIncomeAmount').value = '';
+
+        renderEventIncomes(eventId);
+        updateEvents();
+        if (document.getElementById('eventDetailModal').classList.contains('active')) {
+            openEventDetail(eventId);
+        }
+        showToast('Pemasukan ditambahkan');
+    } catch (err) {
+        console.error('Failed to add income:', err);
+        showToast('Gagal menambahkan pemasukan', 'error');
+    } finally {
+        btn.textContent = origText;
+        btn.disabled = false;
+    }
+}
+
+async function deleteEventIncome(eventId, incomeId) {
+    if (!confirm('Hapus pemasukan ini?')) return;
+    try {
+        const API = window.FinansialKuAPI;
+        const event = state.events.find(ev => ev.id === eventId);
+
+        const { error } = await API.eventIncomes.delete(incomeId);
+        if (error) throw error;
+
+        event.incomes = event.incomes.filter(i => i.id !== incomeId);
+
+        const newBudget = event.incomes.reduce((sum, inc) => sum + Number(inc.amount), 0);
+        event.budget = newBudget;
+        await API.events.update(eventId, { budget: newBudget });
+
+        renderEventIncomes(eventId);
+        updateEvents();
+        if (document.getElementById('eventDetailModal').classList.contains('active')) {
+            openEventDetail(eventId);
+        }
+        showToast('Pemasukan dihapus');
+    } catch (err) {
+        console.error('Failed to delete income:', err);
+        showToast('Gagal menghapus pemasukan', 'error');
     }
 }
 
@@ -2462,10 +2589,12 @@ function initEventListeners() {
     // Forms
     document.getElementById('transactionForm').addEventListener('submit', handleTransactionFormSubmit);
     document.getElementById('budgetForm').addEventListener('submit', saveBudget);
-    document.getElementById('savingsForm').addEventListener('submit', saveSavingsGoal);
-    document.getElementById('eventForm').addEventListener('submit', saveEvent);
-    document.getElementById('eventItemForm').addEventListener('submit', saveEventItem);
-    document.getElementById('addToSavingsForm').addEventListener('submit', confirmAddToSavings);
+    if (document.getElementById('eventForm')) {
+        document.getElementById('eventForm').addEventListener('submit', saveEvent);
+        document.getElementById('eventItemForm').addEventListener('submit', saveEventItem);
+        document.getElementById('eventIncomeForm').addEventListener('submit', saveEventIncome);
+        document.getElementById('addToSavingsForm').addEventListener('submit', confirmAddToSavings);
+    }
     document.getElementById('categoryForm').addEventListener('submit', handleSaveCategoryForm);
 
     // Cancel buttons
@@ -2474,6 +2603,7 @@ function initEventListeners() {
     document.getElementById('cancelSavings').addEventListener('click', () => closeModal('savingsModal'));
     document.getElementById('cancelEvent').addEventListener('click', () => closeModal('eventModal'));
     document.getElementById('cancelEventItem').addEventListener('click', () => closeModal('eventItemModal'));
+    document.getElementById('cancelEventIncome').addEventListener('click', () => closeModal('eventIncomeModal'));
     document.getElementById('cancelAddToSavings').addEventListener('click', () => closeModal('addToSavingsModal'));
     document.getElementById('cancelCategory').addEventListener('click', () => closeModal('categoryModal'));
 

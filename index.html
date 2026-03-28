@@ -1324,14 +1324,6 @@
                     <input type="date" id="eventDate" required>
                 </div>
 
-                <div class="form-group">
-                    <label>Anggaran Total</label>
-                    <div class="amount-input">
-                        <span class="currency">Rp</span>
-                        <input type="text" id="eventBudget" placeholder="0" required>
-                    </div>
-                </div>
-
                 <div class="form-actions">
                     <button type="button" class="btn-secondary" id="cancelEvent">Batal</button>
                     <button type="submit" class="btn-primary">Simpan</button>
@@ -1449,10 +1441,26 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Anggaran</label>
+                    <label>Harga Satuan</label>
                     <div class="amount-input">
                         <span class="currency">Rp</span>
-                        <input type="text" id="eventItemBudget" placeholder="0" required>
+                        <input type="text" id="eventItemUnitPrice" placeholder="0" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Kuantitas</label>
+                    <input type="number" id="eventItemQty" placeholder="1" min="1" value="1" required
+                        class="form-control"
+                        style="width: 100%; border: 1px solid var(--gray-300); padding: 12px; border-radius: 8px;">
+                </div>
+
+                <div class="form-group">
+                    <label>Total Anggaran</label>
+                    <div class="amount-input disabled">
+                        <span class="currency">Rp</span>
+                        <input type="text" id="eventItemBudget" placeholder="0" readonly
+                            style="background: var(--gray-100);">
                     </div>
                 </div>
 
@@ -1467,6 +1475,46 @@
                 <div class="form-actions">
                     <button type="button" class="btn-secondary" id="cancelEventItem">Batal</button>
                     <button type="submit" class="btn-primary">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Event Income Modal -->
+    <div class="modal" id="eventIncomeModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h3>Atur Pemasukan Acara</h3>
+                <button class="btn-close" id="closeEventIncomeModal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+            </div>
+            <div style="margin-bottom: 16px;">
+                <div id="eventIncomeList" style="display:flex; flex-direction:column; gap:8px;"></div>
+            </div>
+            <form id="eventIncomeForm">
+                <input type="hidden" id="eventIncomeEventId" value="">
+
+                <div class="form-group">
+                    <label>Nama Pemasukan (Misal: Uang Sendiri, Donasi)</label>
+                    <input type="text" id="eventIncomeName" placeholder="Contoh: Dana Pribadi" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Nominal</label>
+                    <div class="amount-input">
+                        <span class="currency">Rp</span>
+                        <input type="text" id="eventIncomeAmount" placeholder="0" required>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="cancelEventIncome">Tutup</button>
+                    <button type="submit" class="btn-primary">Tambah</button>
                 </div>
             </form>
         </div>

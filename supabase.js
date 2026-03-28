@@ -319,7 +319,7 @@
         async getAll(includeArchived = false) {
             let query = supabaseClient
                 .from('events')
-                .select(`*, items:event_items(*)`)
+                .select(`*, items:event_items(*), incomes:event_incomes(*)`)
                 .order('date');
 
             if (!includeArchived) {
@@ -398,6 +398,26 @@
 
         async togglePaid(id, isPaid) {
             return await this.update(id, { is_paid: isPaid });
+        }
+    };
+
+    // ========== EVENT INCOMES API ==========
+    const eventIncomesAPI = {
+        async create(eventId, income) {
+            const { data, error } = await supabaseClient
+                .from('event_incomes')
+                .insert({ ...income, event_id: eventId })
+                .select()
+                .single();
+            return { data, error };
+        },
+
+        async delete(id) {
+            const { data, error } = await supabaseClient
+                .from('event_incomes')
+                .delete()
+                .eq('id', id);
+            return { data, error };
         }
     };
 
@@ -944,6 +964,7 @@
         savings: savingsAPI,
         events: eventsAPI,
         eventItems: eventItemsAPI,
+        eventIncomes: eventIncomesAPI,
         telegram: telegramAPI,
         telegramGroup: telegramGroupAPI,
         whatsapp: whatsappAPI,
