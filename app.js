@@ -2056,9 +2056,15 @@ function calculateFinancialHealth() {
     const totalBalance = totalIncome - totalExpense;
     
     // 1. Rasio Tabungan (Savings Ratio) - Target: >20%
+    const catTabungan = state.categories.find(c => c.name.toLowerCase() === 'tabungan' || c.id === 'savings');
+    let totalAllTimeSavings = 0;
+    if (catTabungan) {
+        totalAllTimeSavings = expTx.filter(t => t.categoryId === catTabungan.id).reduce((s, t) => s + t.amount, 0);
+    }
+
     let savingsRatio = 0;
     if (totalIncome > 0) {
-        savingsRatio = Math.max(0, (totalBalance / totalIncome) * 100);
+        savingsRatio = Math.max(0, (totalAllTimeSavings / totalIncome) * 100);
     }
     const savingsScore = Math.min(savingsRatio / 20 * 100, 100); // 20% ratio gives 100 score
     
@@ -2213,7 +2219,16 @@ function renderComparisonChart() {
     const elNet = document.getElementById('reportNetSavings');
     const elRatio = document.getElementById('reportSavingsRatio');
     
-    const monthlyNet = monthlyIncome - monthlyExpense;
+    const catTabungan = state.categories.find(c => c.name.toLowerCase() === 'tabungan' || c.id === 'savings');
+    let monthlySavingsExp = 0;
+    if (catTabungan) {
+        monthlySavingsExp = state.transactions.filter(t => {
+            const date = new Date(t.date);
+            return date.getFullYear() === year && date.getMonth() === month && t.type === 'expense' && t.categoryId === catTabungan.id;
+        }).reduce((acc, t) => acc + t.amount, 0);
+    }
+    
+    const monthlyNet = monthlySavingsExp;
     const monthlyRatio = monthlyIncome > 0 ? (monthlyNet / monthlyIncome) * 100 : 0;
     
     if (elInc) elInc.innerText = formatCurrency(monthlyIncome);

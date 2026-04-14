@@ -6900,8 +6900,16 @@ details[open] summary {
 }
 
 .report-card.dark-accent {
-    background: #111827; /* Darker background */
-    border-color: #1f2937;
+    background: var(--accent-primary); /* Blue background */
+    border-color: var(--accent-primary);
+}
+
+.report-card.dark-accent .card-label {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.report-card.dark-accent .card-amount {
+    color: white !important;
 }
 
 .report-card .card-label {
@@ -6919,7 +6927,7 @@ details[open] summary {
 }
 
 .report-card .success-text {
-    color: #a3e635; /* Lime green for dark background */
+    color: var(--success);
 }
 
 .report-card .warning-text {
@@ -7017,10 +7025,20 @@ details[open] summary {
 }
 
 @media (max-width: 640px) {
+    .health-score-card {
+        padding: var(--space-4);
+        gap: var(--space-4);
+    }
+    .score-circle-container {
+        width: 100px;
+        height: 100px;
+    }
     .score-metrics-row {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr; /* Stack metrics vertically on tiny screens */
+        gap: var(--space-2);
     }
     .report-summary-cards {
+        grid-template-columns: 1fr 1fr; /* 2 col grid */
         gap: var(--space-3);
     }
     .report-card {
