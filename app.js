@@ -2065,13 +2065,12 @@ function calculateFinancialHealth() {
     // 2. Disiplin Anggaran (Budget Discipline - current month)
     const now = new Date();
     const currMonthStr = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
-    const currBudgets = state.budgets ? state.budgets.filter(b => b.month === currMonthStr) : [];
     let budgetScore = 100;
     let budgetPercentString = "-";
     
-    if (currBudgets.length > 0) { 
-        const totalBudget = currBudgets.reduce((s, b) => s + b.amount, 0);
-        const budgetCatIds = currBudgets.map(b => b.category_id);
+    const budgetCatIds = Object.keys(state.budgets || {});
+    if (budgetCatIds.length > 0) { 
+        const totalBudget = budgetCatIds.reduce((s, id) => s + (state.budgets[id] || 0), 0);
         const usedBudget = state.transactions
             .filter(t => t.type === 'expense' && t.date.startsWith(currMonthStr) && budgetCatIds.includes(t.categoryId))
             .reduce((s, t) => s + t.amount, 0);
@@ -2080,6 +2079,9 @@ function calculateFinancialHealth() {
             const usedRatio = (usedBudget / totalBudget) * 100;
             budgetPercentString = `${Math.round(usedRatio)}%`;
             budgetScore = Math.max(0, 100 - Math.max(0, usedRatio - 100)); // Drop score if over budget
+        } else {
+            budgetPercentString = "0%";
+            budgetScore = 100;
         }
     } else {
         budgetPercentString = "N/A";
