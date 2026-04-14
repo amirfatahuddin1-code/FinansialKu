@@ -708,19 +708,35 @@ function initSettings() {
     document.getElementById('resetDataSettingsBtn')?.addEventListener('click', resetAllData);
     document.getElementById('settingsLogoutBtn')?.addEventListener('click', logout);
 
-    // Theme Toggle
-    const themeToggle = document.getElementById('settingsThemeToggle');
-    // Sync with existing main theme toggle state
-    if (document.body.classList.contains('light-theme')) {
-        if (themeToggle) themeToggle.checked = false;
-    } else {
-        if (themeToggle) themeToggle.checked = true; // Dark by default in CSS variables
+    // Theme Toggle State
+    const isLightTheme = document.body.classList.contains('light-theme');
+    
+    // 1. Settings Panel Toggle (Checkbox)
+    const settingsThemeToggle = document.getElementById('settingsThemeToggle');
+    if (settingsThemeToggle) {
+        settingsThemeToggle.checked = !isLightTheme; // Checked = Dark Mode (default)
+        settingsThemeToggle.addEventListener('change', (e) => {
+            const wantDark = e.target.checked;
+            document.body.classList.toggle('light-theme', !wantDark);
+            localStorage.setItem('theme', wantDark ? 'dark' : 'light');
+        });
     }
-    if (themeToggle) {
-        themeToggle.addEventListener('change', (e) => {
-            // Toggle body class
-            document.body.classList.toggle('light-theme', !e.target.checked);
-            localStorage.setItem('theme', e.target.checked ? 'dark' : 'light');
+
+    // 2. Main Header Toggle (Button)
+    const mainThemeToggle = document.getElementById('themeToggle');
+    if (mainThemeToggle) {
+        // Prevent multiple bindings if called multiple times
+        mainThemeToggle.replaceWith(mainThemeToggle.cloneNode(true));
+        const newMainThemeToggle = document.getElementById('themeToggle');
+        
+        newMainThemeToggle.addEventListener('click', () => {
+            const isNowLight = document.body.classList.toggle('light-theme');
+            localStorage.setItem('theme', isNowLight ? 'light' : 'dark');
+            
+            // Sync the settings checkbox if it exists
+            if (document.getElementById('settingsThemeToggle')) {
+                document.getElementById('settingsThemeToggle').checked = !isNowLight;
+            }
         });
     }
 

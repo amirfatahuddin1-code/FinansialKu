@@ -34,7 +34,6 @@ Deno.serve(async (req) => {
         // Evolution API Webhook Payload Structure
         // Event: messages.upsert
         const eventType = body.event || body.type
-        const messageData = body.data
 
         if (eventType !== 'messages.upsert' && eventType !== 'MESSAGES_UPSERT') {
             console.log(`Ignoring event type: ${eventType}`)
@@ -43,8 +42,18 @@ Deno.serve(async (req) => {
 
         const instanceName = body.instance || Deno.env.get('EVOLUTION_INSTANCE') || 'Karsafin'
 
+        // Robust parsing for different Evolution API versions (v1 vs v2)
+        let messageData = body.data
+        if (body.data?.message?.key) {
+            messageData = body.data.message
+        } else if (Array.isArray(body.data) && body.data.length > 0) {
+            messageData = body.data[0].message || body.data[0]
+        } else if (body.data?.messages && Array.isArray(body.data.messages) && body.data.messages.length > 0) {
+            messageData = body.data.messages[0]
+        }
+
         if (!messageData || !messageData.key) {
-            console.log('Invalid message data structure')
+            console.log('Invalid message data structure', JSON.stringify(body))
             return new Response('ok', { headers: corsHeaders })
         }
 
@@ -75,7 +84,8 @@ Deno.serve(async (req) => {
         }
 
         // Extract Message Content
-        const messageContent = messageData.message
+        // In some versions, the message itself might be wrapped again.
+        const messageContent = messageData.message || messageData
         if (!messageContent) {
             console.log('No message content found')
             return new Response('ok', { headers: corsHeaders })
@@ -142,10 +152,10 @@ Deno.serve(async (req) => {
                     `• Tambah detail kalo mau hasil maksimal.\n` +
                     `Selamat mencatat! 🚀`
             } else if (command === 'id') {
-                replyText = `🆔 ID Anda: \`${senderNumber}\`\n\nSilakan masukkan nomor ini di menu *Pengaturan > WhatsApp* aplikasi Karsafin.`
+                replyText = `🆔 ID Anda: \`${senderNumber}\`\n\nSilakan masukkan nomor ini di menu *Pengaturan > WhatsApp/Telegram* aplikasi Karsafin.`
             } else if (command === 'info' && isGroup) {
                 const groupId = remoteJid.split('@')[0]
-                replyText = `👥 *Info Grup*\nID Grup: \`${groupId}\`\n\nMasukkan ID ini di menu *Pengaturan > Grup WhatsApp* aplikasi Karsafin.`
+                replyText = `👥 *Info Grup*\nID Grup: \`${groupId}\`\n\nMasukkan ID ini di menu *Pengaturan > Grup Chat* aplikasi Karsafin.`
             } else if (command === 'info' && !isGroup) {
                 replyText = `Perintah /info hanya untuk grup. Gunakan /id untuk info personal.`
             }
@@ -204,7 +214,7 @@ Deno.serve(async (req) => {
                     ? `ID Grup: \`${remoteJid.split('@')[0]}\``
                     : `ID Anda: \`${senderNumber}\``
 
-                await sendEvolutionMessage(evoApiUrl, evoApiKey, remoteJid, `⚠️ Belum terhubung.\n\n${idInfo}\nSilakan hubungkan di aplikasi Karsafin.`, instanceName)
+                await sendEvolutionMessage(evoApiUrl, evoApiKey, remoteJid, `⚠️ Belum terhubung.\n\n${idInfo}\nSilakan hubungkan di menu Pengaturan aplikasi Karsafin agar bot ini bisa mencatat transaksi Anda.`, instanceName)
             }
             return new Response('ok', { headers: corsHeaders })
         }
@@ -218,7 +228,7 @@ Deno.serve(async (req) => {
         const subscription = sub && sub.length > 0 ? sub[0] : null
 
         if (!subscription || (subscription.status !== 'active' && subscription.status !== 'trial')) {
-            await sendEvolutionMessage(evoApiUrl, evoApiKey, remoteJid, '❌ Langganan Anda tidak aktif/habis.', instanceName)
+            await sendEvolutionMessage(evoApiUrl, evoApiKey, remoteJid, '❌ Langganan Anda tidak aktif/habis. Silakan perbarui di aplikasi.', instanceName)
             return new Response('ok', { headers: corsHeaders })
         }
 
@@ -226,7 +236,7 @@ Deno.serve(async (req) => {
             const { data: usage } = await supabase.rpc('get_messaging_usage', { p_user_id: userId })
             const currentUsage = usage && usage.length > 0 ? usage[0].total_count : 0
             if (currentUsage >= 300) {
-                await sendEvolutionMessage(evoApiUrl, evoApiKey, remoteJid, `⛔ Kuota bulanan habis (${currentUsage}/300). Upgrade ke Pro untuk unlimited!`, instanceName)
+                await sendEvolutionMessage(evoApiUrl, evoApiKey, remoteJid, `⛔ Kuota chat bulanan habis (${currentUsage}/300). Upgrade ke Pro untuk unlimited!`, instanceName)
                 return new Response('ok', { headers: corsHeaders })
             }
         }
@@ -348,7 +358,7 @@ Deno.serve(async (req) => {
 
             if (aiRes.error || !aiRes.data) {
                 const debugMsg = aiRes.error ? `Error: ${aiRes.error}` : 'No Data Returned'
-                await sendEvolutionMessage(evoApiUrl, evoApiKey, remoteJid, `⚠️ Debug AI Image Error: ${debugMsg}`, instanceName)
+                await sendEvolutionMessage(evoApiUrl, evoApiKey, remoteJid, `⚠️ Debug AI Image Error: ${debugMsg}\nPastikan gambar cukup jelas.`, instanceName)
                 return new Response('ok', { headers: corsHeaders })
             }
 
@@ -398,13 +408,13 @@ Deno.serve(async (req) => {
                     return new Response('ok', { headers: corsHeaders })
                 }
             } else {
-                await sendEvolutionMessage(evoApiUrl, evoApiKey, remoteJid, `⚠️ Tidak dapat membaca item transaksi.`, instanceName)
+                await sendEvolutionMessage(evoApiUrl, evoApiKey, remoteJid, `⚠️ Tidak dapat membaca item transaksi pada foto.`, instanceName)
                 return new Response('ok', { headers: corsHeaders })
             }
 
         } else if (text.length > 0) {
             console.log('Processing Text:', text)
-            // Use DeepSeek for Text (User preference)
+            // Use DeepSeek for Text
             const aiRes = await runDeepSeekText(deepseekApiKey, text)
             console.log('AI Text Result:', JSON.stringify(aiRes))
 
@@ -442,7 +452,7 @@ Deno.serve(async (req) => {
                     `📂 ${catName}\n` +
                     `📝 ${parsed.description}`
             } else {
-                await sendEvolutionMessage(evoApiUrl, evoApiKey, remoteJid, `⚠️ Tidak ditemukan nominal transaksi.`, instanceName)
+                await sendEvolutionMessage(evoApiUrl, evoApiKey, remoteJid, `⚠️ Tidak ditemukan nominal transaksi yang valid.`, instanceName)
                 return new Response('ok', { headers: corsHeaders })
             }
         }
@@ -454,7 +464,7 @@ Deno.serve(async (req) => {
 
             if (insertError) {
                 console.error('DB Insert Error:', insertError)
-                await sendEvolutionMessage(evoApiUrl, evoApiKey, remoteJid, `⚠️ Gagal menyimpan ke database.`, instanceName)
+                await sendEvolutionMessage(evoApiUrl, evoApiKey, remoteJid, `⚠️ Gagal menyimpan ke database Supabase.`, instanceName)
             } else {
                 console.log('Transactions saved successfully.')
                 await supabase.rpc('increment_messaging_count', { p_user_id: userId, p_type: 'wa' })
@@ -473,10 +483,6 @@ Deno.serve(async (req) => {
 // --- HELPERS ---
 
 async function sendEvolutionMessage(baseUrl: string, apiKey: string, remoteJid: string, text: string, instanceName: string) {
-    // Evolution API: /message/sendText
-    // We use the Dynamic 'instanceName' passed from the payload/Logic
-
-    // Clean base URL (remove trailing slash)
     const cleanBaseUrl = baseUrl.replace(/\/$/, '')
     const url = `${cleanBaseUrl}/message/sendText/${instanceName}`
 
@@ -484,20 +490,33 @@ async function sendEvolutionMessage(baseUrl: string, apiKey: string, remoteJid: 
 
     try {
         const body = {
-            number: remoteJid, // Evolution API uses 'number' which can be the full JID
-            text: text
+            number: remoteJid,
+            textMessage: {
+                text: text
+            },
+            text: text, // Provide both formats to ensure compatibility with Evolution v1 and v2
+            options: {
+                delay: 0,
+                presence: "composing"
+            }
         }
 
-        await fetch(url, {
+        const response = await fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'apikey': apiKey
+                'apikey': apiKey,
+                'Authorization': `Bearer ${apiKey}`
             },
             body: JSON.stringify(body)
         })
+        
+        if (!response.ok) {
+           const errText = await response.text();
+           console.error(`Evolution API Send Error (${response.status}):`, errText)
+        }
     } catch (e) {
-        console.error('Failed to send Evolution message:', e)
+        console.error('Failed to send Evolution message fetch error:', e)
     }
 }
 
