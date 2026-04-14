@@ -724,6 +724,41 @@ function initSettings() {
         });
     }
 
+    // Nav Position Setup
+    const savedNavPos = localStorage.getItem('navPosition') || 'bottom';
+    if (savedNavPos === 'left') {
+        document.body.classList.add('nav-left');
+    }
+
+    const navRadios = document.querySelectorAll('input[name="navPosition"]');
+    if (navRadios.length > 0) {
+        navRadios.forEach(radio => {
+            // Init state
+            if (radio.value === savedNavPos) {
+                radio.checked = true;
+                document.querySelectorAll('.nav-position-card').forEach(c => c.classList.remove('active'));
+                radio.closest('.nav-position-card').classList.add('active');
+            }
+            
+            // Event listener
+            radio.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    const pos = e.target.value;
+                    localStorage.setItem('navPosition', pos);
+                    
+                    if (pos === 'left') {
+                        document.body.classList.add('nav-left');
+                    } else {
+                        document.body.classList.remove('nav-left');
+                    }
+                    
+                    document.querySelectorAll('.nav-position-card').forEach(c => c.classList.remove('active'));
+                    e.target.closest('.nav-position-card').classList.add('active');
+                }
+            });
+        });
+    }
+
     // Notifications Init
     // initNotificationSettings(); // Optional, ensure defined
 

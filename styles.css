@@ -449,6 +449,287 @@ body.nav-hidden .nav-expand-btn {
     color: white !important;
 }
 
+/* ========== Nav Position Picker (Settings) ========== */
+.nav-position-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-4);
+}
+
+.nav-position-card {
+    position: relative;
+    cursor: pointer;
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-xl);
+    padding: var(--space-4);
+    background: var(--bg-secondary);
+    transition: all var(--transition-base);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.nav-position-card input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.nav-position-card:hover {
+    border-color: var(--accent-primary-light);
+    background: var(--bg-card-hover);
+}
+
+.nav-position-card.active {
+    border-color: var(--accent-primary);
+    background: rgba(37, 99, 235, 0.08);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.nav-position-preview {
+    width: 100%;
+}
+
+.preview-screen {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border-color);
+}
+
+.nav-position-card[data-position="left"] .preview-screen {
+    flex-direction: row;
+}
+
+.preview-content {
+    flex: 1;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    justify-content: center;
+}
+
+.preview-line {
+    height: 6px;
+    background: var(--border-color);
+    border-radius: 3px;
+    width: 100%;
+}
+
+.preview-line.short {
+    width: 60%;
+}
+
+.preview-nav-bottom {
+    display: flex;
+    gap: 4px;
+    padding: 6px 8px;
+    background: var(--bg-primary);
+    border-top: 1px solid var(--border-color);
+    justify-content: space-around;
+}
+
+.preview-nav-bottom span {
+    width: 12px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--accent-primary);
+    opacity: 0.6;
+}
+
+.preview-nav-bottom span:first-child {
+    opacity: 1;
+}
+
+.preview-nav-left {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 6px;
+    background: var(--bg-primary);
+    border-right: 1px solid var(--border-color);
+    justify-content: center;
+    min-width: 24px;
+}
+
+.preview-nav-left span {
+    width: 12px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--accent-primary);
+    opacity: 0.6;
+}
+
+.preview-nav-left span:first-child {
+    opacity: 1;
+}
+
+.nav-position-label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.nav-position-card.active .nav-position-label {
+    color: var(--accent-primary);
+}
+
+/* ========== Left Navigation Layout ========== */
+body.nav-left .main-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: auto;
+    width: 80px;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--space-4) var(--space-2);
+    gap: var(--space-1);
+    border-radius: 0;
+    border-top: none;
+    border-right: 1px solid var(--border-color);
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.2);
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: unset;
+    z-index: 5000;
+}
+
+body.nav-left .main-nav::-webkit-scrollbar {
+    display: none;
+}
+
+body.nav-left .main-nav {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+body.nav-left .nav-item {
+    flex: 0 0 auto;
+    width: 100%;
+    padding: var(--space-2) var(--space-1);
+    border-radius: var(--radius-md);
+}
+
+body.nav-left .nav-item svg {
+    width: 20px;
+    height: 20px;
+}
+
+body.nav-left .nav-item span {
+    font-size: 10px;
+    line-height: 1.2;
+    text-align: center;
+}
+
+body.nav-left .nav-item:hover svg {
+    transform: translateX(2px);
+}
+
+body.nav-left .nav-toggle-btn {
+    width: 100%;
+    flex: 0 0 auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+    padding: var(--space-2);
+    margin-bottom: var(--space-2);
+}
+
+body.nav-left .nav-toggle-btn svg {
+    transform: rotate(-90deg);
+}
+
+body.nav-left .app-container {
+    margin-left: 80px;
+    padding-bottom: var(--space-8);
+}
+
+body.nav-left .fab-container {
+    left: 100px !important;
+    bottom: var(--space-8) !important;
+}
+
+body.nav-left .nav-expand-btn {
+    left: 20px;
+    bottom: auto;
+    top: 20px;
+}
+
+body.nav-left.nav-hidden .main-nav {
+    transform: translateX(-100%);
+}
+
+body.nav-left:not(.nav-hidden) .fab-container {
+    bottom: var(--space-8) !important;
+}
+
+/* Force bottom nav on small screens even if left is selected */
+@media (max-width: 768px) {
+    body.nav-left .main-nav {
+        position: fixed;
+        top: auto;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        flex-direction: row;
+        padding: 0;
+        border-right: none;
+        border-top: 1px solid var(--border-color);
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.2);
+        min-height: 60px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        border-radius: 0;
+    }
+
+    body.nav-left .nav-item {
+        width: auto;
+        flex: 1;
+        min-width: 70px;
+        padding: var(--space-2);
+    }
+
+    body.nav-left .nav-toggle-btn {
+        border-bottom: none;
+        border-right: none;
+        margin-bottom: 0;
+        flex: 0 0 auto;
+        min-width: 60px;
+    }
+
+    body.nav-left .nav-toggle-btn svg {
+        transform: none;
+    }
+
+    body.nav-left .app-container {
+        margin-left: 0;
+        padding-bottom: 110px;
+    }
+
+    body.nav-left .fab-container {
+        left: auto !important;
+    }
+
+    body.nav-left:not(.nav-hidden) .fab-container {
+        bottom: calc(var(--space-8) + 75px) !important;
+    }
+
+    body.nav-left.nav-hidden .main-nav {
+        transform: translateY(100%);
+    }
+}
+
 /* ========== Main Content ========== */
 .main-content {
     position: relative;
