@@ -2027,8 +2027,12 @@ var pieChart = null;
 
 
 function updateReports() {
+    // 1. All-time calculations for Health Score
+    calculateFinancialHealth();
+
+    // 2. Monthly specific calculations
     renderComparisonChart();
-    renderCategoryPie();
+    renderTopCategories();
     renderTimeline();
 
     // Update chart title based on selected month
@@ -2037,18 +2041,139 @@ function updateReports() {
         const selectedOption = select.options[select.selectedIndex];
         if (selectedOption) {
             const chartContainer = document.querySelector('.chart-container h3');
-            if (chartContainer) chartContainer.textContent = `Analisis Bulan ${selectedOption.text}`;
+            if (chartContainer) chartContainer.textContent = `Tren Pemasukan vs Pengeluaran (${selectedOption.text})`;
         }
     }
+}
+
+function calculateFinancialHealth() {
+    // Basic sums (All-time)
+    const incTx = state.transactions.filter(t => t.type === 'income');
+    const expTx = state.transactions.filter(t => t.type === 'expense');
+    
+    const totalIncome = incTx.reduce((s, t) => s + t.amount, 0);
+    const totalExpense = expTx.reduce((s, t) => s + t.amount, 0);
+    const totalBalance = totalIncome - totalExpense;
+    
+    // 1. Rasio Tabungan (Savings Ratio) - Target: >20%
+    let savingsRatio = 0;
+    if (totalIncome > 0) {
+        savingsRatio = Math.max(0, (totalBalance / totalIncome) * 100);
+    }
+    const savingsScore = Math.min(savingsRatio / 20 * 100, 100); // 20% ratio gives 100 score
+    
+    // 2. Disiplin Anggaran (Budget Discipline - current month)
+    const now = new Date();
+    const currMonthStr = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
+    const currBudgets = state.budgets ? state.budgets.filter(b => b.month === currMonthStr) : [];
+    let budgetScore = 100;
+    let budgetPercentString = "-";
+    
+    if (currBudgets.length > 0) { 
+        const totalBudget = currBudgets.reduce((s, b) => s + b.amount, 0);
+        const budgetCatIds = currBudgets.map(b => b.category_id);
+        const usedBudget = state.transactions
+            .filter(t => t.type === 'expense' && t.date.startsWith(currMonthStr) && budgetCatIds.includes(t.categoryId))
+            .reduce((s, t) => s + t.amount, 0);
+        
+        if (totalBudget > 0) {
+            const usedRatio = (usedBudget / totalBudget) * 100;
+            budgetPercentString = `${Math.round(usedRatio)}%`;
+            budgetScore = Math.max(0, 100 - Math.max(0, usedRatio - 100)); // Drop score if over budget
+        }
+    } else {
+        budgetPercentString = "N/A";
+    }
+
+    // 3. Keamanan & Runway (Emergency Fund) - Target: 6 months of expenses
+    let monthsActive = 1;
+    if (state.transactions.length > 0) {
+        const sortedTx = [...state.transactions].sort((a,b) => new Date(a.date) - new Date(b.date));
+        const firstDate = new Date(sortedTx[0].date);
+        monthsActive = Math.max(1, (now.getFullYear() - firstDate.getFullYear()) * 12 + (now.getMonth() - firstDate.getMonth()) + 1);
+    }
+    const avgMonthlyExpense = totalExpense / monthsActive;
+    let runwayMonths = 0;
+    if (avgMonthlyExpense > 0) {
+        runwayMonths = totalBalance / avgMonthlyExpense;
+    }
+    const runwayScore = Math.min((runwayMonths / 6) * 100, 100); 
+
+    // 4. Kesehatan Utang (Debt Health) - Target: Debt Installments < 30% of Income
+    const debts = state.debts || [];
+    const unpaidPayables = debts.filter(d => d.type === 'payable' && d.status !== 'paid');
+    const totalDebtAmount = unpaidPayables.reduce((s, d) => s + (d.amount - d.amount_paid), 0);
+    
+    const expectedMonthlyDebt = totalDebtAmount / 12; // Rough estimate
+    const avgMonthlyIncome = totalIncome / monthsActive;
+    
+    let debtRatio = 0;
+    if (avgMonthlyIncome > 0) {
+        debtRatio = (expectedMonthlyDebt / avgMonthlyIncome) * 100;
+    }
+    let debtScore = 100; 
+    if (debtRatio > 0) {
+        debtScore = Math.max(0, 100 - (debtRatio / 30 * 100));
+    }
+    
+    // Final Composite Score Calculation
+    const finalScore = Math.round((savingsScore * 0.35) + (runwayScore * 0.3) + (budgetScore * 0.2) + (debtScore * 0.15));
+
+    // Update DOM (Score Circle)
+    const elScoreVal = document.getElementById('healthScoreValue');
+    const elScoreCircle = document.getElementById('healthScoreCircle');
+    const elScoreBadge = document.getElementById('healthScoreBadge');
+    
+    if (elScoreVal) {
+        // Simple count up animation
+        let current = 0;
+        const interval = setInterval(() => {
+            current += 2;
+            if (current >= finalScore) {
+                current = finalScore;
+                clearInterval(interval);
+            }
+            elScoreVal.innerText = current;
+        }, 15);
+    }
+    
+    if (elScoreCircle) {
+        const offset = Math.max(0, 251.2 - (251.2 * (finalScore / 100)));
+        setTimeout(() => elScoreCircle.style.strokeDashoffset = offset, 100);
+        
+        if (finalScore >= 80) elScoreCircle.style.stroke = 'var(--success)';
+        else if (finalScore >= 50) elScoreCircle.style.stroke = 'var(--warning)';
+        else elScoreCircle.style.stroke = 'var(--danger)';
+    }
+    
+    if (elScoreBadge) {
+        if (finalScore >= 80) { elScoreBadge.innerText = 'SEHAT'; elScoreBadge.style.color = 'var(--success)'; elScoreBadge.style.background = 'var(--success-light)'; }
+        else if (finalScore >= 50) { elScoreBadge.innerText = 'WASPADA'; elScoreBadge.style.color = 'var(--warning)'; elScoreBadge.style.background = 'var(--warning-light)'; }
+        else { elScoreBadge.innerText = 'KRITIS'; elScoreBadge.style.color = 'var(--danger)'; elScoreBadge.style.background = 'var(--danger-light)'; }
+    }
+
+    // Update DOM (Mini Metric Bars)
+    const setMetric = (idPrefix, valFormatted, percent, color) => {
+        const valEl = document.getElementById(`metric${idPrefix}Val`);
+        const barEl = document.getElementById(`metric${idPrefix}Bar`);
+        if (valEl) { valEl.innerText = valFormatted; valEl.style.color = color; }
+        if (barEl) { 
+            setTimeout(() => barEl.style.width = `${Math.min(100, Math.max(0, percent))}%`, 200); 
+            barEl.style.background = color;
+        }
+    };
+    
+    setMetric('Savings', `${savingsRatio.toFixed(1)}%`, savingsScore, savingsScore > 50 ? 'var(--success)' : 'var(--warning)');
+    setMetric('Budget', budgetPercentString, budgetScore, '#a855f7');
+    setMetric('Emergency', `${runwayMonths.toFixed(1)} bln`, runwayScore, runwayScore > 50 ? 'var(--accent-primary)' : 'var(--warning)');
+    setMetric('Debt', totalDebtAmount === 0 ? 'Bersih' : `Rasio ${debtRatio.toFixed(1)}%`, debtScore, debtScore > 50 ? 'var(--text-muted)' : 'var(--danger)');
 }
 
 function renderComparisonChart() {
     const select = document.getElementById('monthlyReportSelect');
     if (!select || !select.value) return;
 
-    // Parse YYYY-MM
     const [year, month] = select.value.split('-').map(Number);
-
     const ctxEl = document.getElementById('monthlyComparisonChart');
     if (!ctxEl) return;
     const ctx = ctxEl.getContext('2d');
@@ -2057,11 +2182,13 @@ function renderComparisonChart() {
     const labels = [];
     const incData = [];
     const expData = [];
+    
+    let monthlyIncome = 0;
+    let monthlyExpense = 0;
 
     for (let d = 1; d <= daysInMonth; d++) {
         labels.push(d);
 
-        // Filter transactions for this day
         const dayInc = state.transactions.filter(t => {
             const date = new Date(t.date);
             return date.getFullYear() === year && date.getMonth() === month && date.getDate() === d && t.type === 'income';
@@ -2074,7 +2201,23 @@ function renderComparisonChart() {
 
         incData.push(dayInc);
         expData.push(dayExp);
+        monthlyIncome += dayInc;
+        monthlyExpense += dayExp;
     }
+
+    // UPDATE MONTHLY SUMMARY CARDS
+    const elInc = document.getElementById('reportTotalIncome');
+    const elExp = document.getElementById('reportTotalExpense');
+    const elNet = document.getElementById('reportNetSavings');
+    const elRatio = document.getElementById('reportSavingsRatio');
+    
+    const monthlyNet = monthlyIncome - monthlyExpense;
+    const monthlyRatio = monthlyIncome > 0 ? (monthlyNet / monthlyIncome) * 100 : 0;
+    
+    if (elInc) elInc.innerText = formatCurrency(monthlyIncome);
+    if (elExp) elExp.innerText = formatCurrency(monthlyExpense);
+    if (elNet) elNet.innerText = formatCurrency(monthlyNet);
+    if (elRatio) elRatio.innerText = `${monthlyRatio.toFixed(1)}%`;
 
     if (monthlyChart) monthlyChart.destroy();
     monthlyChart = new Chart(ctx, {
@@ -2082,38 +2225,63 @@ function renderComparisonChart() {
         data: {
             labels: labels,
             datasets: [
-                { label: 'Pemasukan', data: incData, backgroundColor: '#10b981', borderRadius: 4 },
-                { label: 'Pengeluaran', data: expData, backgroundColor: '#ef4444', borderRadius: 4 }
+                { 
+                    label: 'Pemasukan', 
+                    data: incData, 
+                    backgroundColor: '#a3e635', 
+                    borderRadius: 4,
+                    barPercentage: 0.6,
+                    categoryPercentage: 0.8
+                },
+                { 
+                    label: 'Pengeluaran', 
+                    data: expData, 
+                    backgroundColor: '#ef4444', 
+                    borderRadius: 4,
+                    barPercentage: 0.6,
+                    categoryPercentage: 0.8
+                }
             ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
             plugins: {
-                legend: { labels: { color: '#94a3b8' } },
+                legend: { display: false },
                 tooltip: {
                     callbacks: {
                         label: function (context) {
-                            let label = context.dataset.label || '';
-                            if (label) label += ': ';
-                            if (context.parsed.y !== null) label += formatCurrency(context.parsed.y);
-                            return label;
+                            return `${context.dataset.label}: ${formatCurrency(context.parsed.y)}`;
                         }
                     }
                 }
             },
             scales: {
-                x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
-                y: { grid: { color: 'rgba(148,163,184,0.1)' }, ticks: { color: '#94a3b8', callback: v => formatCurrency(v) } }
+                x: { 
+                    grid: { display: false, drawBorder: false }, 
+                    ticks: { color: 'rgba(148,163,184,0.7)', font: { size: 10 } } 
+                },
+                y: { 
+                    grid: { color: 'rgba(148,163,184,0.05)', drawBorder: false }, 
+                    ticks: { color: 'rgba(148,163,184,0.7)', font: { size: 10 }, callback: v => {
+                        if (v >= 1000000) return 'Rp ' + (v/1000000).toFixed(1).replace(/\.0$/, '') + 'JT';
+                        if (v >= 1000) return 'Rp ' + (v/1000).toFixed(0) + 'K';
+                        return 'Rp ' + v;
+                    }} 
+                }
             }
         }
     });
 }
 
-function renderCategoryPie() {
+function renderTopCategories() {
     const select = document.getElementById('monthlyReportSelect');
     if (!select || !select.value) return;
-    const [year, month] = select.value.split('-').map(Number); // Month is 0-indexed here
+    const [year, month] = select.value.split('-').map(Number);
 
     const expCats = state.categories.filter(c => c.type === 'expense');
     const data = expCats.map(c => ({
@@ -2124,58 +2292,38 @@ function renderCategoryPie() {
         }).reduce((s, t) => s + t.amount, 0)
     })).filter(c => c.total > 0).sort((a, b) => b.total - a.total);
 
-    const ctxEl = document.getElementById('categoryPieChart');
-    if (!ctxEl) return;
-    const ctx = ctxEl.getContext('2d');
+    const listContainer = document.getElementById('reportTopCategoriesList');
+    if (!listContainer) return;
 
-    if (pieChart) pieChart.destroy();
-
-    const legend = document.getElementById('categoryLegend');
-    if (legend) {
-        if (data.length) {
-            const total = data.reduce((s, c) => s + c.total, 0);
-            legend.innerHTML = data.map(c => `<div class="legend-item"><div class="legend-color" style="background:${c.color}"></div><span class="legend-name">${c.name}</span><span class="legend-value">${total > 0 ? Math.round((c.total / total) * 100) : 0}%</span></div>`).join('');
-        } else {
-            legend.innerHTML = '<div class="empty-state small">Belum ada pengeluaran periode ini</div>';
-        }
+    if (data.length === 0) {
+        listContainer.innerHTML = '<div class="empty-state small">Tidak ada pengeluaran di periode ini</div>';
+        return;
     }
 
-    if (data.length) {
-        pieChart = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: data.map(c => c.name),
-                datasets: [{
-                    data: data.map(c => c.total),
-                    backgroundColor: data.map(c => c.color),
-                    borderWidth: 0,
-                    hoverOffset: 4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '70%',
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            label: function (context) {
-                                let label = context.label || '';
-                                if (label) label += ': ';
-                                if (context.parsed !== null) {
-                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                    const percentage = Math.round((context.parsed / total) * 100);
-                                    label += formatCurrency(context.parsed) + ' (' + percentage + '%)';
-                                }
-                                return label;
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    }
+    const maxTotal = data[0].total;
+    const sumTotal = data.reduce((sum, item) => sum + item.total, 0);
+    
+    listContainer.innerHTML = data.slice(0, 5).map(c => {
+        const percentOfMax = (c.total / maxTotal) * 100;
+        const percentOfTotal = sumTotal > 0 ? (c.total / sumTotal) * 100 : 0;
+        return `
+            <div class="top-category-item" style="margin-bottom: var(--space-4);">
+                <div class="top-cat-icon" style="background: ${c.color}22; color: ${c.color};">${c.icon}</div>
+                <div class="top-cat-details">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+                        <span class="top-cat-name">${c.name}</span>
+                        <div class="top-cat-amount">
+                            <div class="top-cat-total" style="font-weight: 600;">${formatCurrency(c.total)}</div>
+                            <div class="top-cat-percent">${percentOfTotal.toFixed(1)}%</div>
+                        </div>
+                    </div>
+                    <div class="top-cat-progress">
+                        <div class="top-cat-bar" style="width: ${percentOfMax}%; background: ${c.color}"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
 }
 
 function renderTimeline() {

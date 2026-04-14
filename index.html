@@ -693,29 +693,103 @@
                     </div>
                 </div>
 
-                <!-- Monthly Comparison Chart -->
-                <div class="chart-container glass-card">
-                    <h3>Perbandingan Bulanan</h3>
-                    <canvas id="monthlyComparisonChart"></canvas>
-                </div>
-
-                <!-- Category Breakdown -->
-                <div class="chart-container glass-card">
-                    <h3>Pengeluaran per Kategori</h3>
-                    <div class="pie-chart-wrapper">
-                        <div class="pie-chart-container">
-                            <canvas id="categoryPieChart"></canvas>
+                <!-- 1. Health Score Card -->
+                <div class="health-score-card glass-card">
+                    <div class="score-circle-container">
+                        <svg class="score-svg" viewBox="0 0 100 100">
+                            <circle class="score-bg" cx="50" cy="50" r="40"></circle>
+                            <circle class="score-progress" id="healthScoreCircle" cx="50" cy="50" r="40"></circle>
+                        </svg>
+                        <div class="score-text">
+                            <div class="score-value" id="healthScoreValue">0</div>
+                            <div class="score-max">/ 100</div>
                         </div>
-                        <div class="category-legend" id="categoryLegend"></div>
+                    </div>
+                    
+                    <div class="score-details">
+                        <div class="score-title">
+                            <h3><span class="icon">❤️</span> Skor Kesehatan Finansial</h3>
+                            <span class="score-badge" id="healthScoreBadge">PROSES</span>
+                        </div>
+                        <p class="score-desc">Skor hitungan berdasarkan tabungan, disiplin budget, dana darurat, dan kesehatan utang secara keseluruhan.</p>
+                        
+                        <div class="score-metrics-row">
+                            <div class="metric-item">
+                                <div class="metric-header">
+                                    <span>Rasio Tabungan</span>
+                                    <span class="metric-val" id="metricSavingsVal" style="color: var(--success);">0%</span>
+                                </div>
+                                <div class="metric-bar-bg"><div class="metric-bar" id="metricSavingsBar" style="background: var(--success); width: 0%;"></div></div>
+                            </div>
+                            
+                            <div class="metric-item">
+                                <div class="metric-header">
+                                    <span>Disiplin Anggaran</span>
+                                    <span class="metric-val" id="metricBudgetVal" style="color: #a855f7;">0%</span>
+                                </div>
+                                <div class="metric-bar-bg"><div class="metric-bar" id="metricBudgetBar" style="background: #a855f7; width: 0%;"></div></div>
+                            </div>
+                            
+                            <div class="metric-item">
+                                <div class="metric-header">
+                                    <span>Keamanan & Runway</span>
+                                    <span class="metric-val" id="metricEmergencyVal" style="color: var(--accent-primary);">0%</span>
+                                </div>
+                                <div class="metric-bar-bg"><div class="metric-bar" id="metricEmergencyBar" style="background: var(--accent-primary); width: 0%;"></div></div>
+                            </div>
+                            
+                            <div class="metric-item">
+                                <div class="metric-header">
+                                    <span>Kesehatan Utang</span>
+                                    <span class="metric-val" id="metricDebtVal" style="color: var(--text-muted);">-</span>
+                                </div>
+                                <div class="metric-bar-bg"><div class="metric-bar" id="metricDebtBar" style="background: var(--text-muted); width: 0%;"></div></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Timeline -->
-                <div class="timeline-section glass-card">
-                    <h3>Timeline Target & Acara</h3>
-                    <div class="timeline-container" id="timelineContainer">
-                        <div class="empty-state small">
-                            <p>Belum ada target atau acara</p>
+                <!-- 2. Summary Cards -->
+                <div class="report-summary-cards">
+                    <div class="report-card dark-accent">
+                        <span class="card-label">YANG DITABUNG</span>
+                        <h3 class="card-amount success-text" id="reportNetSavings">Rp 0</h3>
+                    </div>
+                    <div class="report-card">
+                        <span class="card-label">RASIO MENABUNG</span>
+                        <h3 class="card-amount warning-text" id="reportSavingsRatio">0.0%</h3>
+                    </div>
+                    <div class="report-card">
+                        <span class="card-label">↗ PEMASUKAN</span>
+                        <h3 class="card-amount" id="reportTotalIncome">Rp 0</h3>
+                    </div>
+                    <div class="report-card">
+                        <span class="card-label">↘ PENGELUARAN</span>
+                        <h3 class="card-amount" id="reportTotalExpense">Rp 0</h3>
+                    </div>
+                </div>
+
+                <!-- 3. Main Chart -->
+                <div class="chart-container glass-card">
+                    <h3>Tren Pemasukan vs Pengeluaran</h3>
+                    <canvas id="monthlyComparisonChart"></canvas>
+                </div>
+
+                <!-- 4. Bottom Grid -->
+                <div class="report-bottom-grid">
+                    <div class="breakdown-card glass-card">
+                        <h3>Kategori Teratas (Pengeluaran)</h3>
+                        <div class="top-categories-list" id="reportTopCategoriesList">
+                            <div class="empty-state small">Tidak ada data</div>
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-section glass-card" style="margin-top: 0;">
+                        <h3>Timeline Target & Acara</h3>
+                        <div class="timeline-container" id="timelineContainer">
+                            <div class="empty-state small">
+                                <p>Belum ada target atau acara</p>
+                            </div>
                         </div>
                     </div>
                 </div>
