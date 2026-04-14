@@ -729,6 +729,11 @@ body.nav-left:not(.nav-hidden) .fab-container {
     body.nav-left.nav-hidden .main-nav {
         transform: translateY(100%);
     }
+
+    body.nav-left .nav-expand-btn {
+        top: auto;
+        bottom: 20px;
+    }
 }
 
 /* ========== Main Content ========== */
