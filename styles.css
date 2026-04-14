@@ -701,6 +701,7 @@ body.nav-left:not(.nav-hidden) .fab-container {
     }
 
     body.nav-left .nav-toggle-btn {
+        width: auto;
         border-bottom: none;
         border-right: none;
         margin-bottom: 0;
