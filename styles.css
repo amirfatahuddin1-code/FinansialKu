@@ -1780,8 +1780,10 @@ input:checked+.slider:before {
     position: absolute;
     bottom: 70px;
     right: 0;
+    left: auto;
     display: flex;
     flex-direction: column;
+    align-items: flex-end;
     gap: var(--space-3);
     opacity: 0;
     visibility: hidden;
@@ -1813,7 +1815,7 @@ input:checked+.slider:before {
 }
 
 .fab-option:hover {
-    transform: translateX(-5px);
+    transform: translateX(0) scale(1.03);
 }
 
 .fab-option.income {
