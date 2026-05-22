@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "446817582716",
+    "project_id": "finansialku-484407",
+    "storage_bucket": "finansialku-484407.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:446817582716:android:0249e28133c805add9d3f9",
+        "android_client_info": {
+          "package_name": "com.karsafin.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "446817582716-t6uppfc460c2ukf1p714b846fodks59a.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC9OenUTssQlivlWkV_nWt6oQ9zD-SJjic"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "446817582716-t6uppfc460c2ukf1p714b846fodks59a.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

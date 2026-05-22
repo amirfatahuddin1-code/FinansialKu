@@ -1,0 +1,42 @@
+{
+  "name": "karsafin",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Karsafin - Atur Keuangan, Wujudkan Mimpi (Monorepo)",
+  "workspaces": [
+    "packages/shared",
+    "packages/web",
+    "packages/mobile"
+  ],
+  "scripts": {
+    "shared:build": "npm run build --workspace=packages/shared",
+    "web:dev": "npm run dev --workspace=packages/web",
+    "web:build": "npm run build --workspace=packages/web",
+    "mobile:start": "npm run start --workspace=packages/mobile",
+    "mobile:android": "npm run android --workspace=packages/mobile",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
+  },
+  "overrides": {
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  },
+  "devDependencies": {
+    "@radix-ui/react-slot": "^1.2.4"
+  },
+  "dependencies": {
+    "@react-native-community/datetimepicker": "^9.1.0",
+    "color": "^5.0.3",
+    "expo": "~54.0.34",
+    "expo-auth-session": "~7.0.11",
+    "expo-clipboard": "~8.0.8",
+    "expo-image-picker": "~17.0.11",
+    "expo-linear-gradient": "^55.0.14",
+    "expo-system-ui": "~6.0.9",
+    "react": "19.1.0",
+    "react-native": "0.81.5",
+    "react-native-gifted-charts": "^1.4.76",
+    "react-native-google-mobile-ads": "^16.3.3",
+    "react-native-svg": "^15.15.5"
+  }
+}
