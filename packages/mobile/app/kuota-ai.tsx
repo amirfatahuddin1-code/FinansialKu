@@ -40,7 +40,7 @@ export default function KuotaAIScreen() {
       if (quotaRes.data) setAiQuota(quotaRes.data);
       const activeSub = subRes.data?.find((s: any) => s.status === 'active');
       const planName = activeSub?.subscription_plans?.name || '';
-      setIsUnlimitedAi(planName === 'Trial' || planName.includes('Pro'));
+      setIsUnlimitedAi(planName.includes('Pro'));
     } catch (e) {
       console.warn('Load quota error:', e);
     }

@@ -615,42 +615,15 @@ export default function SettingsScreen() {
     if (!features) return null;
 
     const items = [
-      { label: 'Pencatatan Keuangan Lengkap', allowed: true },
-      { label: 'Catat Hutang & Piutang', allowed: !!features.debts },
-      { label: 'Kelola Anggaran & Acara', allowed: !!features.budgeting || !!features.events },
-      { label: 'Target Tabungan', allowed: !!features.savings },
-      { label: 'Kalkulator Finansial', allowed: !!features.financial_calculator },
-      { 
-        label: `Asisten AI Karsafin: ${
-          features.ai_assistant === 'unlimited' ? 'Tanpa Batas' : `${features.ai_assistant}/hari`
-        }`, 
-        allowed: !!features.ai_assistant 
-      },
-      { label: 'Laporan Keuangan', allowed: !!features.reports },
-      {
-        label: `Pesan WA/Telegram: ${
-          features.messaging_transactions === 'unlimited' 
-            ? 'Tanpa Batas' 
-            : `${features.messaging_transactions}/hari`
-        }`,
-        allowed: true
-      },
-      {
-        label: `Ubah Tema Aplikasi: ${
-          features.theme_changes === 'unlimited' 
-            ? 'Tanpa Batas' 
-            : `${features.theme_changes} Kali`
-        }`,
-        allowed: !!features.theme_changes
-      },
-      {
-        label: `Maksimal Workspace: ${
-          features.workspace_max === 'unlimited' 
-            ? 'Tanpa Batas' 
-            : `${features.workspace_max}`
-        }`,
-        allowed: !!features.workspace_max
-      }
+      { label: 'transaksi aplikasi manual tanpa batas', allowed: true },
+      { label: `transaksi aplikasi AI Asisten ${features.ai_assistant === 'unlimited' ? 'tanpa batas' : 'maksimal 20 per hari'}`, allowed: true },
+      { label: `transaksi lewat whatsapp/telegram ${features.messaging_transactions === 'unlimited' ? 'tanpa batas' : 'masing-masing maksimal 20 per hari'}`, allowed: true },
+      { label: 'kelola rencana anggaran, acara, dan tabungan', allowed: true },
+      { label: 'catat hutang piutang', allowed: true },
+      { label: 'laporan keuangan', allowed: true },
+      { label: 'kalkulator finansial', allowed: true },
+      { label: `ubah tema aplikasi ${features.theme_changes === 'unlimited' ? 'tanpa batas' : '1 kali'}`, allowed: true },
+      { label: `fitur workspace ${features.workspace_max === 'unlimited' ? 'maksimal tanpa batas' : 'maksimal 2'}`, allowed: true },
     ];
 
     return (
@@ -696,7 +669,7 @@ export default function SettingsScreen() {
     </View>
   );
 
-  const isUnlimitedAi = subscription?.subscription_plans?.name === 'Trial' || subscription?.subscription_plans?.name?.includes('Pro');
+  const isUnlimitedAi = subscription?.subscription_plans?.name?.includes('Pro');
 
   if (loading) {
     return (
@@ -737,13 +710,17 @@ export default function SettingsScreen() {
           <View style={[styles.profileCard, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 }]}>
             {/* Avatar Ring */}
             <View style={[styles.avatarRing, { borderColor: colors.card, backgroundColor: colors.card }]}>
-              <View style={[styles.avatarInner, { backgroundColor: colors.tint + '20', borderColor: colors.tint + '40' }]}>
-                <Text style={{ fontSize: 32, fontWeight: '800', color: colors.tint }}>{profileName.charAt(0).toUpperCase() || 'U'}</Text>
+              <View style={[styles.avatarInner, { 
+                backgroundColor: isUnlimitedAi ? '#fefce8' : colors.tint + '20', 
+                borderColor: isUnlimitedAi ? '#eab308' : colors.tint + '40',
+                borderWidth: isUnlimitedAi ? 3 : 1.5 
+              }]}>
+                <Text style={{ fontSize: 32, fontWeight: '800', color: isUnlimitedAi ? '#ca8a04' : colors.tint }}>{profileName.charAt(0).toUpperCase() || 'U'}</Text>
               </View>
               {/* Active Premium badge pill below avatar */}
-              <View style={styles.premiumPill}>
-                <Text style={styles.premiumPillText}>
-                  {subscription ? 'Premium 🌟' : 'Personal 👤'}
+              <View style={[styles.premiumPill, { backgroundColor: isUnlimitedAi ? '#0f172a' : '#f1f5f9' }]}>
+                <Text style={[styles.premiumPillText, { color: isUnlimitedAi ? '#facc15' : '#64748b' }]}>
+                  {isUnlimitedAi ? 'PRO 🌟' : 'BASIC 👤'}
                 </Text>
               </View>
             </View>
@@ -774,26 +751,28 @@ export default function SettingsScreen() {
 
             {/* Subscription Plan Active Status Card */}
             <LinearGradient
-              colors={['#0f172a', '#1e293b']}
+              colors={isUnlimitedAi ? ['#0f172a', '#1e293b'] : ['#374151', '#4b5563']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.subStatusCard}
             >
               <View style={{ flex: 1, paddingRight: 8 }}>
-                <Text style={styles.subStatusTitle}>
-                  {subscription ? 'Paket kamu saat ini:\nPremium' : 'Paket kamu saat ini:\nPersonal'}
+                <Text style={[styles.subStatusTitle, { color: '#fff' }]}>
+                  {isUnlimitedAi ? 'Paket kamu saat ini:\nPro' : 'Paket kamu saat ini:\nBasic'}
                 </Text>
-                <Text style={styles.subStatusDesc}>
-                  {subscription 
-                    ? `Berlaku sampai ${new Date(subscription.expires_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}`
-                    : 'Nikmati fitur lengkap dengan Karsafin Premium'
+                <Text style={[styles.subStatusDesc, { color: isUnlimitedAi ? '#94a3b8' : '#e5e7eb' }]}>
+                  {subscription && isUnlimitedAi
+                    ? subscription.subscription_plans?.name?.includes('Lifetime') 
+                      ? 'Berlaku selamanya (Lifetime)' 
+                      : `Berlaku sampai ${new Date(subscription.expires_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}`
+                    : 'Nikmati fitur tanpa batas dengan paket Pro'
                   }
                 </Text>
               </View>
               {/* Astro-robot scene on the right */}
               <View style={styles.astroContainer}>
-                <View style={[styles.astroCircleBg, { backgroundColor: colors.tint + '20' }]}>
-                  <Text style={{ fontSize: 32 }}>🤖</Text>
+                <View style={[styles.astroCircleBg, { backgroundColor: isUnlimitedAi ? '#facc1520' : '#ffffff20' }]}>
+                  <Text style={{ fontSize: 32 }}>{isUnlimitedAi ? '🚀' : '🤖'}</Text>
                 </View>
               </View>
             </LinearGradient>
@@ -1380,7 +1359,7 @@ export default function SettingsScreen() {
                 </Text>
               </View>
               <Text style={[styles.integrationDesc, { color: colors.textSecondary, marginTop: 4, marginBottom: 16 }]}>
-                Berlangganan hingga {new Date(subscription.expires_at).toLocaleDateString('id-ID')}
+                Paket {subscription.subscription_plans?.name || 'Pro'} {subscription.subscription_plans?.name?.includes('Lifetime') ? 'aktif selamanya' : `aktif hingga ${new Date(subscription.expires_at).toLocaleDateString('id-ID')}`}
               </Text>
             </>
           ) : (
@@ -1392,6 +1371,29 @@ export default function SettingsScreen() {
                 Nikmati fitur lengkap Karsafin dengan berlangganan
               </Text>
             </>
+          )}
+
+          {(!subscription || subscription.subscription_plans?.name?.includes('Basic')) && (
+            <View style={{ width: '100%', marginBottom: 24, padding: 16, backgroundColor: colors.inputBg, borderRadius: 12, borderWidth: 1, borderColor: colors.border }}>
+              <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 12 }}>Fitur Paket Basic Saat Ini</Text>
+              
+              {[
+                { label: 'Transaksi aplikasi manual tanpa batas', icon: 'check-circle', color: '#10b981' },
+                { label: 'Transaksi aplikasi AI Asisten maksimal 20 per hari', icon: 'exclamation-circle', color: '#f59e0b' },
+                { label: 'Transaksi lewat whatsapp/telegram maksimal masing-masing 20 per hari', icon: 'exclamation-circle', color: '#f59e0b' },
+                { label: 'Kelola rencana anggaran, acara, dan tabungan', icon: 'check-circle', color: '#10b981' },
+                { label: 'Catat hutang piutang', icon: 'check-circle', color: '#10b981' },
+                { label: 'Laporan keuangan', icon: 'check-circle', color: '#10b981' },
+                { label: 'Kalkulator finansial', icon: 'check-circle', color: '#10b981' },
+                { label: 'Ubah tema aplikasi 1 kali', icon: 'exclamation-circle', color: '#f59e0b' },
+                { label: 'Fitur workspace maksimal 2', icon: 'exclamation-circle', color: '#f59e0b' }
+              ].map((item, idx) => (
+                <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                  <FontAwesome name={item.icon as any} size={14} color={item.color} style={{ marginRight: 8, width: 16, textAlign: 'center' }} />
+                  <Text style={{ color: colors.textSecondary, fontSize: 13, flex: 1 }}>{item.label}</Text>
+                </View>
+              ))}
+            </View>
           )}
 
           {plans.length > 0 && (
@@ -1420,7 +1422,9 @@ export default function SettingsScreen() {
               </View>
 
               {plans.filter((p) => {
-                if (p.name === 'Trial') return false;
+                const validPlans = ['Pro - Bulanan', 'Pro - Tahunan', 'Pro - Lifetime'];
+                if (!validPlans.includes(p.name)) return false;
+
                 if (planDurationTab === 'Bulanan' && p.duration_days === 30) return true;
                 if (planDurationTab === 'Tahunan' && p.duration_days === 365) return true;
                 if (planDurationTab === 'Lifetime' && p.duration_days > 10000) return true;
