@@ -61,7 +61,7 @@ BEGIN
   LIMIT 1;
 
   IF v_basic_plan_id IS NOT NULL THEN
-    INSERT INTO public.subscriptions (user_id, plan_id, status, started_at, expires_at)
+    INSERT INTO public.subscriptions (user_id, plan_id, status, starts_at, expires_at)
     VALUES (
       new.id,
       v_basic_plan_id,

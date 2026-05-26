@@ -26,9 +26,10 @@ import { useWorkspace } from '@/providers/WorkspaceProvider';
 import type { Category, Transaction, Budget, FinancialAccount } from '@karsafin/shared';
 import { getLocalToday } from '@karsafin/shared';
 import { formatCurrency } from '@karsafin/shared';
-import { RewardedAd, RewardedAdEventType, AdEventType, TestIds } from 'react-native-google-mobile-ads';
+import { RewardedAd, RewardedAdEventType, AdEventType, TestIds } from '@/utils/mobile-ads-wrapper';
 import { ADS } from '@/constants/Ads';
 import AdBanner from '@/components/AdBanner';
+import * as ImagePicker from 'expo-image-picker';
 
 type ChatMode = 'normal' | 'catalog_transaction' | 'financial_simulation' | 'set_budget' | 'apply_budget_reco';
 
@@ -65,8 +66,9 @@ const SUGGESTED_QUESTIONS = [
 ];
 
 const QUICK_REPLIES = [
+  { icon: '📷', text: 'Scan struk' },
   { icon: '📒', text: 'Catat transaksi' },
-  { icon: '🧾', text: 'Cek riwayat transaksi' },
+  { icon: '🧶', text: 'Cek riwayat transaksi' },
   { icon: '📊', text: 'Bandingkan keuangan per periode' },
   { icon: '💵', text: 'Cek keuangan per kategori' },
   { icon: '❓', text: 'Simulasi rencana keuangan' },
@@ -149,6 +151,7 @@ export default function AIScreen() {
   const [aiQuota, setAiQuota] = useState<{ quota: number; max: number; rewardAmount: number } | null>(null);
   const [showQuotaModal, setShowQuotaModal] = useState(false);
   const [adLoading, setAdLoading] = useState(false);
+  const [receiptScanning, setReceiptScanning] = useState(false);
   const rewardedAdRef = useRef<RewardedAd | null>(null);
   const scrollRef = useRef<ScrollView>(null);
 
@@ -174,7 +177,7 @@ export default function AIScreen() {
 
   const loadQuota = useCallback(async () => {
     if (!user) return;
-    const { data } = await api.profiles.getAiQuota(user.id, { refresh: true });
+    const { data } = await api.profiles.getAiQuota(user.id);
     if (data) setAiQuota(data);
   }, [user, api]);
 
@@ -529,6 +532,12 @@ const handleQuickReply = async (text: string) => {
     // Refresh data
     await loadAllData();
 
+    if (text === 'Scan struk') {
+      setIsTyping(false);
+      showImagePickerOptions(handleReceiptScan);
+      return;
+    }
+
     if (text === 'Catat transaksi') {
       setIsTyping(false);
       setChatMode('catalog_transaction');
@@ -550,8 +559,8 @@ const handleQuickReply = async (text: string) => {
         const catName = tx.category?.name || 'Tanpa Kategori';
         detail += `\n${icon} ${dateStr} — ${tx.description || 'Tanpa keterangan'} Rp ${formatCurrency(tx.amount)} (${catName})`;
       }
-      const totalIn = recent.filter(t => t.type === 'income' && t.type !== 'savings').reduce((s, t) => s + t.amount, 0);
-      const totalOut = recent.filter(t => t.type === 'expense' && t.type !== 'savings').reduce((s, t) => s + t.amount, 0);
+      const totalIn = recent.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+      const totalOut = recent.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
       detail += `\n\n💰 Total Pemasukan: Rp ${formatCurrency(totalIn)}`;
       detail += `\n💳 Total Pengeluaran: Rp ${formatCurrency(totalOut)}`;
       addAiMessage(detail);
@@ -569,10 +578,10 @@ const handleQuickReply = async (text: string) => {
       const curTx = getTxByMonth(allTransactions, curY, curM);
       const prevTx = getTxByMonth(allTransactions, prevY, prevM);
 
-      const curIn = curTx.filter(t => t.type === 'income' && t.type !== 'savings').reduce((s, t) => s + t.amount, 0);
-      const curOut = curTx.filter(t => t.type === 'expense' && t.type !== 'savings').reduce((s, t) => s + t.amount, 0);
-      const prevIn = prevTx.filter(t => t.type === 'income' && t.type !== 'savings').reduce((s, t) => s + t.amount, 0);
-      const prevOut = prevTx.filter(t => t.type === 'expense' && t.type !== 'savings').reduce((s, t) => s + t.amount, 0);
+      const curIn = curTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+      const curOut = curTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+      const prevIn = prevTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+      const prevOut = prevTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
 
       let msg = `📊 Perbandingan Keuangan\n\n`;
       msg += `📅 ${getMonthName(prevM)} ${prevY}:\n`;
@@ -601,7 +610,7 @@ const handleQuickReply = async (text: string) => {
       const now = new Date();
       const curM = now.getMonth() + 1;
       const curY = now.getFullYear();
-      const curTx = getTxByMonth(allTransactions, curY, curM).filter(t => t.type === 'expense' && t.type !== 'savings');
+      const curTx = getTxByMonth(allTransactions, curY, curM).filter(t => t.type === 'expense');
 
       if (curTx.length === 0) {
         addAiMessage(`📭 Belum ada pengeluaran di bulan ${getMonthName(curM)} ${curY}.`);
@@ -673,7 +682,7 @@ const handleQuickReply = async (text: string) => {
 
       const catSpending: Record<string, { name: string; icon: string; totals: number[] }> = {};
       for (const period of months) {
-        const txs = getTxByMonth(allTransactions, period.y, period.m).filter(t => t.type === 'expense' && t.type !== 'savings');
+        const txs = getTxByMonth(allTransactions, period.y, period.m).filter(t => t.type === 'expense');
         const periodCats: Record<string, number> = {};
         for (const tx of txs) {
           const catName = tx.category?.name || 'Lainnya';
@@ -868,8 +877,8 @@ const handleQuickReply = async (text: string) => {
           const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
           const txs = getTxByMonth(allTransactions, d.getFullYear(), d.getMonth() + 1);
           if (txs.length > 0) {
-            totalIncome += txs.filter(t => t.type === 'income' && t.type !== 'savings').reduce((s, t) => s + t.amount, 0);
-            totalExpense += txs.filter(t => t.type === 'expense' && t.type !== 'savings').reduce((s, t) => s + t.amount, 0);
+            totalIncome += txs.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+            totalExpense += txs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
             monthCount++;
           }
         }
@@ -963,6 +972,7 @@ const handleQuickReply = async (text: string) => {
         const { error } = await api.budgets.upsert(user.id, {
           category_id: matchedCat.id,
           amount: budgetAmount,
+          mode: 'nominal',
           month: now.getMonth() + 1,
           year: now.getFullYear(),
         });
@@ -1006,6 +1016,7 @@ const handleQuickReply = async (text: string) => {
             const { error } = await api.budgets.upsert(user.id, {
               category_id: reco.category_id,
               amount: reco.amount,
+              mode: 'nominal',
               month: now.getMonth() + 1,
               year: now.getFullYear(),
             });
@@ -1068,6 +1079,7 @@ const handleQuickReply = async (text: string) => {
         const { error } = await api.budgets.upsert(user.id, {
           category_id: matchedCat.id,
           amount: budgetAmount,
+          mode: 'nominal',
           month: now.getMonth() + 1,
           year: now.getFullYear(),
         });
@@ -1141,7 +1153,7 @@ const handleQuickReply = async (text: string) => {
       const now = new Date();
       const curM = now.getMonth() + 1;
       const curY = now.getFullYear();
-      const curTx = getTxByMonth(allTransactions, curY, curM).filter(t => t.type === 'expense' && t.type !== 'savings');
+      const curTx = getTxByMonth(allTransactions, curY, curM).filter(t => t.type === 'expense');
 
       if (budgets.length === 0) {
         addAiMessage(`📭 Anda belum mengatur budget untuk ${getMonthName(curM)} ${curY}.\n\nGunakan "Atur budget bulan ini" atau "Minta rekomendasi budget" untuk mulai.`);
@@ -1222,8 +1234,8 @@ const handleQuickReply = async (text: string) => {
       // Add personal context if available
       const now = new Date();
       const curTx = getTxByMonth(allTransactions, now.getFullYear(), now.getMonth() + 1);
-      const monthlyIncome = curTx.filter(t => t.type === 'income' && t.type !== 'savings').reduce((s, t) => s + t.amount, 0);
-      const monthlyExpense = curTx.filter(t => t.type === 'expense' && t.type !== 'savings').reduce((s, t) => s + t.amount, 0);
+      const monthlyIncome = curTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+      const monthlyExpense = curTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
       if (monthlyIncome > 0) {
         const surplus = monthlyIncome - monthlyExpense;
         if (surplus > 0) {
@@ -1239,7 +1251,7 @@ const handleQuickReply = async (text: string) => {
       const now = new Date();
       const curM = now.getMonth() + 1;
       const curY = now.getFullYear();
-      const curTx = getTxByMonth(allTransactions, curY, curM).filter(t => t.type === 'expense' && t.type !== 'savings');
+      const curTx = getTxByMonth(allTransactions, curY, curM).filter(t => t.type === 'expense');
       const foodTx = curTx.filter(t => {
         const catName = (t.category?.name || '').toLowerCase();
         return catName.includes('makanan') || catName.includes('makan') || catName.includes('food');
@@ -1299,6 +1311,165 @@ const handleQuickReply = async (text: string) => {
         editAccountName: tx.accountName,
       },
     });
+  };
+
+  const pickReceiptImage = async (source: 'camera' | 'gallery'): Promise<{ uri: string; base64: string; mimeType: string | null } | null> => {
+    try {
+      if (source === 'camera') {
+        const perm = await ImagePicker.requestCameraPermissionsAsync();
+        if (!perm.granted) {
+          Alert.alert('Izin Diperlukan', 'Izinkan akses kamera untuk foto struk.');
+          return null;
+        }
+      }
+      const result = source === 'camera'
+        ? await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.3, base64: true })
+        : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.3, base64: true });
+      if (result.canceled || !result.assets?.[0]) return null;
+      const asset = result.assets[0];
+      if (!asset.base64) return null;
+      return { uri: asset.uri, base64: asset.base64, mimeType: asset.mimeType || 'image/jpeg' };
+    } catch {
+      return null;
+    }
+  };
+
+  const handleReceiptScan = async (imageData: { uri: string; base64: string; mimeType: string | null }) => {
+    if (!user || !api) return;
+
+    // Check quota
+    if (!aiQuota || aiQuota.quota <= 0) {
+      setShowQuotaModal(true);
+      return;
+    }
+
+    // Show user message with image thumbnail
+    const userMsg: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: '📷 Scan struk',
+      imageUri: imageData.uri,
+    };
+    setMessages((prev) => [...prev, userMsg]);
+    setReceiptScanning(true);
+    setIsTyping(true);
+
+    try {
+      // Decrement quota first
+      const { data: newQuota, error: decError } = await api.profiles.decrementAiQuota(user.id);
+      if (decError || newQuota === null) {
+        setAiQuota((prev) => prev ? { ...prev, quota: 0 } : prev);
+        setIsTyping(false);
+        setReceiptScanning(false);
+        setShowQuotaModal(true);
+        return;
+      }
+      setAiQuota((prev) => prev ? { ...prev, quota: newQuota } : prev);
+
+      // Call scan-receipt edge function
+      const { data: scanResult, error: scanError } = await api.supabase.functions.invoke('scan-receipt', {
+        body: { image: imageData.base64, mimeType: imageData.mimeType },
+      });
+
+      if (scanError || !scanResult?.transactions || scanResult.transactions.length === 0) {
+        setIsTyping(false);
+        setReceiptScanning(false);
+        addAiMessage('❌ Maaf, tidak bisa membaca struk ini. Pastikan foto struk jelas dan coba lagi.');
+        return;
+      }
+
+      // Refresh data
+      await loadAllData();
+
+      // Save transactions
+      const savedTxs: SavedTransaction[] = [];
+      let details = '';
+      const today = getLocalToday();
+
+      for (const item of scanResult.transactions) {
+        const txType = item.type === 'income' ? 'income' : 'expense';
+        const matchedCat = categories.find(
+          (c) => c.name.toLowerCase() === (item.category || '').toLowerCase() && c.type === txType
+        ) || categories.find((c) => c.name === 'Lainnya' && c.type === txType);
+        if (!matchedCat) continue;
+
+        const matchedAcc = item.account
+          ? accounts.find((a) => a.name.toUpperCase().includes(item.account.toUpperCase()))
+          : undefined;
+
+        const txDate = item.date || today;
+        const { data: txData } = await api.transactions.create(user.id, {
+          type: txType,
+          amount: item.amount,
+          description: item.description || 'Tanpa keterangan',
+          date: txDate,
+          category_id: matchedCat.id,
+          account_id: matchedAcc?.id,
+          source: 'ai',
+        });
+
+        if (txData) {
+          savedTxs.push({
+            id: txData.id,
+            type: txType,
+            amount: item.amount,
+            description: item.description || 'Tanpa keterangan',
+            date: txDate,
+            categoryName: matchedCat.name,
+            accountName: matchedAcc?.name || '',
+          });
+          const icon = txType === 'income' ? '💰' : '💳';
+          const dateParts = txDate.split('-');
+          const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : txDate;
+          const accountStr = matchedAcc?.name ? ` | ${matchedAcc.name}` : '';
+          details += `\n${icon} ${item.description || 'Item'} — Rp ${formatCurrency(item.amount)} (${categories.find(c => c.id === matchedCat.id)?.name || matchedCat.name}${accountStr} | ${formattedDate})`;
+        }
+      }
+
+      setIsTyping(false);
+      setReceiptScanning(false);
+
+      if (savedTxs.length > 0) {
+        const storeName = scanResult.store ? `\n🏪 Toko: ${scanResult.store}` : '';
+        const aiMsg: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: `✅ ${savedTxs.length} transaksi berhasil dicatat dari struk:${storeName}${details}\n\nKetuk item untuk edit.`,
+          savedTransactions: savedTxs,
+        };
+        setMessages((prev) => [...prev, aiMsg]);
+      } else {
+        addAiMessage('⚠️ Struk berhasil dibaca tapi tidak ada transaksi yang bisa disimpan. Periksa kategori Anda.');
+      }
+    } catch (err) {
+      setIsTyping(false);
+      setReceiptScanning(false);
+      addAiMessage('❌ Terjadi kesalahan saat memproses struk. Silakan coba lagi.');
+    }
+  };
+
+  const showImagePickerOptions = (onPick: (data: { uri: string; base64: string; mimeType: string | null }) => void) => {
+    Alert.alert(
+      '📷 Pilih Sumber Gambar',
+      'Ambil foto struk dari:',
+      [
+        {
+          text: '📸 Kamera',
+          onPress: async () => {
+            const data = await pickReceiptImage('camera');
+            if (data) onPick(data);
+          },
+        },
+        {
+          text: '🖼️ Galeri',
+          onPress: async () => {
+            const data = await pickReceiptImage('gallery');
+            if (data) onPick(data);
+          },
+        },
+        { text: 'Batal', style: 'cancel' },
+      ]
+    );
   };
 
   const renderMessage = (msg: Message) => {
@@ -1498,6 +1669,18 @@ const handleQuickReply = async (text: string) => {
           ]}
         >
           <View style={[styles.inputRow, { backgroundColor: colors.inputBg, borderColor: colors.border }]}>
+            <TouchableOpacity
+              style={[styles.cameraBtn, { opacity: receiptScanning ? 0.5 : 1 }]}
+              onPress={() => showImagePickerOptions(handleReceiptScan)}
+              disabled={receiptScanning}
+              activeOpacity={0.7}
+            >
+              {receiptScanning ? (
+                <ActivityIndicator size="small" color={colors.tint} />
+              ) : (
+                <FontAwesome name="camera" size={18} color={colors.textSecondary} />
+              )}
+            </TouchableOpacity>
             <TextInput
               style={[styles.input, { color: colors.text }]}
               placeholder={
@@ -1788,7 +1971,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingRight: 4,
     paddingVertical: 4,
-    paddingLeft: 16,
+    paddingLeft: 8,
+  },
+  cameraBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   input: {
     flex: 1,

@@ -4,6 +4,7 @@ import { makeRedirectUri } from 'expo-auth-session';
 import * as Linking from 'expo-linking';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { createKarsafinAPI, getSupabaseClient, KarsafinAPI } from '@karsafin/shared';
+import Purchases from 'react-native-purchases';
 WebBrowser.maybeCompleteAuthSession();
 
 const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || 'YOUR_WEB_CLIENT_ID_HERE.apps.googleusercontent.com';
@@ -210,6 +211,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     setUser(null);
   };
+
+  useEffect(() => {
+    const syncRevenueCat = async () => {
+      try {
+        const configured = await Purchases.isConfigured();
+        if (!configured) return;
+
+        if (user) {
+          await Purchases.logIn(user.id);
+        } else {
+          await Purchases.logOut();
+        }
+      } catch (err) {
+        console.warn('Gagal sinkronisasi status login ke RevenueCat:', err);
+      }
+    };
+    syncRevenueCat();
+  }, [user]);
 
   return (
     <AuthContext.Provider value={{ user, loading, api, signIn, signUp, signInWithGoogle, signOut }}>

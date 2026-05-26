@@ -5,8 +5,9 @@ import { useAuth } from '@/providers/AuthProvider';
 import { useWorkspace } from '@/providers/WorkspaceProvider';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
-import { formatCurrency, formatCurrencyCompact } from '@karsafin/shared';
+import { formatCurrency, formatCurrencyCompact, getMonthlyRange, getFundingMonth } from '@karsafin/shared';
 import type { Transaction, Savings, Debt } from '@karsafin/shared';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PieChart, BarChart } from 'react-native-gifted-charts';
 import { SkeletonCard, CategoryIcon, AccountIcon } from '@/components';
 import { Spacing, BorderRadius } from '@/constants/DesignSystem';
@@ -28,10 +29,19 @@ export default function AnalysisScreen() {
   const [debts, setDebts] = useState<Debt[]>([]);
   const [selectedMonth, setSelectedMonth] = useState('');
   const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const [selectedTab, setSelectedTab] = useState<'pengeluaran' | 'pemasukan'>('pengeluaran');
+  const [payday, setPayday] = useState(1);
 
   const loadData = useCallback(async () => {
     if (!user) return;
     try {
+      const savedPayday = await AsyncStorage.getItem('@karsafin_income_date');
+      if (savedPayday) {
+        setPayday(parseInt(savedPayday, 10));
+      } else {
+        setPayday(1);
+      }
+
       const [txRes, savRes, debtRes] = await Promise.all([
         api.transactions.getAll(),
         api.savings.getAll(),
@@ -55,10 +65,12 @@ export default function AnalysisScreen() {
 
   useEffect(() => {
     if (!selectedMonth && transactions.length > 0) {
-      const months = Array.from(new Set(transactions.map((t) => t.date?.substring(0, 7)))).sort();
+      const months = Array.from(new Set(transactions.map((t) => {
+        return t.date ? getFundingMonth(t.date, payday) : '';
+      }).filter(Boolean))).sort();
       setSelectedMonth(months[months.length - 1] || '');
     }
-  }, [transactions, selectedMonth]);
+  }, [transactions, selectedMonth, payday]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -76,28 +88,32 @@ export default function AnalysisScreen() {
   const monthOptions = useMemo(() => {
     const months = new Set<string>();
     transactions.forEach((t) => {
-      if (t.date) months.add(t.date.substring(0, 7));
+      if (t.date) months.add(getFundingMonth(t.date, payday));
     });
     return Array.from(months).sort().reverse();
-  }, [transactions]);
+  }, [transactions, payday]);
 
   const [year, month] = selectedMonth ? selectedMonth.split('-').map(Number) : [0, 0];
-  const startDate = year ? new Date(year, month - 1, 1).toISOString().split('T')[0] : '';
-  const endDate = year ? new Date(year, month, 0).toISOString().split('T')[0] : '';
+  const { startDate, endDate } = useMemo(() => {
+    if (year && month) {
+      return getMonthlyRange(payday, new Date(year, month - 1, payday));
+    }
+    return { startDate: '', endDate: '' };
+  }, [year, month, payday]);
 
   const monthlyTx = useMemo(
     () => transactions.filter(t => t.date >= startDate && t.date <= endDate),
     [transactions, startDate, endDate]
   );
-  const monthlyIncome = monthlyTx.filter(t => t.type === 'income' && t.type !== 'savings').reduce((s, t) => s + t.amount, 0);
-  const monthlyExpense = monthlyTx.filter(t => t.type === 'expense' && t.type !== 'savings').reduce((s, t) => s + t.amount, 0);
+  const monthlyIncome = monthlyTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+  const monthlyExpense = monthlyTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
   const monthlyBalance = monthlyIncome - monthlyExpense;
 
-  const allIncome = transactions.filter(t => t.type === 'income' && t.type !== 'savings').reduce((s, t) => s + t.amount, 0);
-  const allExpense = transactions.filter(t => t.type === 'expense' && t.type !== 'savings').reduce((s, t) => s + t.amount, 0);
+  const allIncome = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+  const allExpense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
 
   // Category Expenses
-  const catExpenses = monthlyTx.filter(t => t.type === 'expense' && t.type !== 'savings').reduce((acc, t) => {
+  const catExpenses = monthlyTx.filter(t => t.type === 'expense').reduce((acc, t) => {
     const cat = t.category?.name || 'Lainnya';
     acc[cat] = (acc[cat] || 0) + t.amount;
     return acc;
@@ -116,9 +132,28 @@ export default function AnalysisScreen() {
 
   const totalCatExpense = Object.values(catExpenses).reduce((a, b) => a + b, 0);
 
+  // Category Income
+  const catIncome = monthlyTx.filter(t => t.type === 'income').reduce((acc, t) => {
+    const cat = t.category?.name || 'Lainnya';
+    acc[cat] = (acc[cat] || 0) + t.amount;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const pieIncomeData = Object.entries(catIncome).length > 0 
+    ? Object.entries(catIncome)
+        .sort((a,b) => b[1] - a[1])
+        .map(([name, amount], index) => ({
+          value: amount,
+          color: chartColors[index % chartColors.length],
+          text: name,
+        }))
+    : [{ value: 1, color: '#e5e7eb', text: 'Kosong' }];
+
+  const totalCatIncome = Object.values(catIncome).reduce((a, b) => a + b, 0);
+
   // Account Expenses
   const accountExpenses = useMemo(() => {
-    return monthlyTx.filter(t => t.type === 'expense' && t.type !== 'savings').reduce((acc, t) => {
+    return monthlyTx.filter(t => t.type === 'expense').reduce((acc, t) => {
       const accountName = t.account?.name || 'Tunai/Lainnya';
       const accountIcon = t.account?.icon || '💵';
       const accountType = t.account?.type || 'other';
@@ -156,30 +191,75 @@ export default function AnalysisScreen() {
 
   const totalAccountExpense = Object.values(accountExpenses).reduce((a, b) => a + b.amount, 0);
 
+  // Account Income
+  const accountIncome = useMemo(() => {
+    return monthlyTx.filter(t => t.type === 'income').reduce((acc, t) => {
+      const accountName = t.account?.name || 'Tunai/Lainnya';
+      const accountIcon = t.account?.icon || '💵';
+      const accountType = t.account?.type || 'other';
+      const accountId = t.account_id || 'none';
+
+      if (!acc[accountId]) {
+        acc[accountId] = {
+          id: accountId,
+          name: accountName,
+          icon: accountIcon,
+          type: accountType,
+          amount: 0,
+        };
+      }
+      acc[accountId].amount += t.amount;
+      return acc;
+    }, {} as Record<string, { id: string; name: string; icon: string; type: string; amount: number }>);
+  }, [monthlyTx]);
+
+  const accountIncomePieData = useMemo(() => {
+    const list = Object.values(accountIncome);
+    if (list.length === 0) {
+      return [{ value: 1, color: '#e5e7eb', text: 'Kosong', icon: '💵', type: 'other' }];
+    }
+    return list
+      .sort((a, b) => b.amount - a.amount)
+      .map((item, index) => ({
+        value: item.amount,
+        color: chartColors[index % chartColors.length],
+        text: item.name,
+        icon: item.icon,
+        type: item.type,
+      }));
+  }, [accountIncome]);
+
+  const totalAccountIncome = Object.values(accountIncome).reduce((a, b) => a + b.amount, 0);
+
   // Monthly trend (last 6 months)
   const sixMonths = useMemo(() => {
     const list: string[] = [];
     const now = new Date();
+    const { startDate } = getMonthlyRange(payday, now);
+    const [y, m] = startDate.split('-').map(Number);
+    const startMonth = m - 1; // 0-indexed
+
     for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const d = new Date(y, startMonth - i, 1);
       list.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
     }
     return list;
-  }, []);
+  }, [payday]);
 
   const barData = useMemo(() => {
     return sixMonths.map((ym, i) => {
       const [y, m] = ym.split('-').map(Number);
-      const s = new Date(y, m - 1, 1).toISOString().split('T')[0];
-      const e = new Date(y, m, 0).toISOString().split('T')[0];
+      const range = getMonthlyRange(payday, new Date(y, m - 1, payday));
+      const s = range.startDate;
+      const e = range.endDate;
       const expense = transactions
-        .filter(t => t.date >= s && t.date <= e && t.type === 'expense' && t.type !== 'savings')
+        .filter(t => t.date >= s && t.date <= e && t.type === 'expense')
         .reduce((sum, t) => sum + t.amount, 0);
       const label = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'][m - 1];
       const isCurrent = ym === selectedMonth;
       return { value: expense || 0, label, frontColor: isCurrent ? '#fdc003' : '#0062ff' };
     });
-  }, [transactions, sixMonths, selectedMonth]);
+  }, [transactions, sixMonths, selectedMonth, payday]);
 
   // Detailed Financial Health Score
   const healthScore = useMemo(() => {
@@ -421,85 +501,188 @@ export default function AnalysisScreen() {
           </View>
         </View>
 
-        {/* Top Categories Pie Chart */}
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.cardTitle, { color: colors.text }]}>Pengeluaran per Kategori</Text>
-          <View style={{ alignItems: 'center', marginVertical: 16 }}>
-            <PieChart key={`pie-${selectedMonth || 'empty'}`}
-              data={pieData}
-              donut
-              innerRadius={50}
-              radius={80}
-              centerLabelComponent={() => (
-                <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-                  <Text style={{ fontSize: 12, color: colors.textMuted }}>Total</Text>
-                  <Text style={{ fontSize: 18, color: colors.text, fontWeight: 'bold' }}>
-                    {totalCatExpense > 0 ? formatCurrencyCompact(totalCatExpense) : '0'}
-                  </Text>
-                </View>
-              )}
-            />
+        {/* Group: Pengeluaran / Pemasukan with tabs */}
+        <View style={[styles.groupCard, { borderColor: colors.border }]}>
+          <View style={[styles.tabRow, { backgroundColor: colors.border + '50' }]}>
+            <TouchableOpacity
+              style={[styles.tabButton, selectedTab === 'pengeluaran' ? { backgroundColor: Colors.primary } : { backgroundColor: colors.card }]}
+              onPress={() => setSelectedTab('pengeluaran')}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.tabText, { color: selectedTab === 'pengeluaran' ? '#fff' : colors.text }]}>Pengeluaran</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tabButton, selectedTab === 'pemasukan' ? { backgroundColor: Colors.primary } : { backgroundColor: colors.card }]}
+              onPress={() => setSelectedTab('pemasukan')}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.tabText, { color: selectedTab === 'pemasukan' ? '#fff' : colors.text }]}>Pemasukan</Text>
+            </TouchableOpacity>
           </View>
-          
-          <View style={styles.legendContainer}>
-            {pieData.map((item, idx) => {
-              if (item.text === 'Kosong') return null;
-              const pct = totalCatExpense > 0 ? Math.round((item.value / totalCatExpense) * 100) : 0;
-              return (
-                <View key={idx} style={styles.legendRow}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                    <View style={[styles.legendDot, { backgroundColor: item.color }]} />
-                    <Text style={[styles.legendText, { color: colors.text }]} numberOfLines={1}>{item.text}</Text>
-                  </View>
-                  <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={[styles.legendAmount, { color: colors.text }]}>Rp {formatCurrency(item.value)}</Text>
-                    <Text style={[styles.legendPct, { color: colors.textMuted }]}>{pct}%</Text>
-                  </View>
-                </View>
-              );
-            })}
-          </View>
-        </View>
 
-        {/* Top Accounts Pie Chart */}
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.cardTitle, { color: colors.text }]}>Pengeluaran per Akun</Text>
-          <View style={{ alignItems: 'center', marginVertical: 16 }}>
-            <PieChart key={`account-pie-${selectedMonth || 'empty'}`}
-              data={accountPieData}
-              donut
-              innerRadius={50}
-              radius={80}
-              centerLabelComponent={() => (
-                <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-                  <Text style={{ fontSize: 12, color: colors.textMuted }}>Total</Text>
-                  <Text style={{ fontSize: 18, color: colors.text, fontWeight: 'bold' }}>
-                    {totalAccountExpense > 0 ? formatCurrencyCompact(totalAccountExpense) : '0'}
-                  </Text>
+          {selectedTab === 'pengeluaran' ? (
+            <>
+              {/* Pengeluaran per Kategori */}
+              <View style={[styles.chartSection, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.cardTitle, { color: colors.text }]}>Pengeluaran per Kategori</Text>
+                <View style={{ alignItems: 'center', marginVertical: 16 }}>
+                  <PieChart key={`pie-${selectedMonth || 'empty'}`}
+                    data={pieData}
+                    donut
+                    innerRadius={50}
+                    radius={80}
+                    centerLabelComponent={() => (
+                      <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+                        <Text style={{ fontSize: 12, color: colors.textMuted }}>Total</Text>
+                        <Text style={{ fontSize: 18, color: colors.text, fontWeight: 'bold' }}>
+                          {totalCatExpense > 0 ? formatCurrencyCompact(totalCatExpense) : '0'}
+                        </Text>
+                      </View>
+                    )}
+                  />
                 </View>
-              )}
-            />
-          </View>
-          
-          <View style={styles.legendContainer}>
-            {accountPieData.map((item, idx) => {
-              if (item.text === 'Kosong') return null;
-              const pct = totalAccountExpense > 0 ? Math.round((item.value / totalAccountExpense) * 100) : 0;
-              return (
-                <View key={idx} style={styles.legendRow}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: 8 }}>
-                    <View style={[styles.legendDot, { backgroundColor: item.color }]} />
-                    <AccountIcon icon={item.icon} type={item.type as any} size={16} />
-                    <Text style={[styles.legendText, { color: colors.text }]} numberOfLines={1}>{item.text}</Text>
-                  </View>
-                  <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={[styles.legendAmount, { color: colors.text }]}>Rp {formatCurrency(item.value)}</Text>
-                    <Text style={[styles.legendPct, { color: colors.textMuted }]}>{pct}%</Text>
-                  </View>
+                <View style={styles.legendContainer}>
+                  {pieData.map((item, idx) => {
+                    if (item.text === 'Kosong') return null;
+                    const pct = totalCatExpense > 0 ? Math.round((item.value / totalCatExpense) * 100) : 0;
+                    return (
+                      <View key={idx} style={styles.legendRow}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                          <View style={[styles.legendDot, { backgroundColor: item.color }]} />
+                          <Text style={[styles.legendText, { color: colors.text }]} numberOfLines={1}>{item.text}</Text>
+                        </View>
+                        <View style={{ alignItems: 'flex-end' }}>
+                          <Text style={[styles.legendAmount, { color: colors.text }]}>Rp {formatCurrency(item.value)}</Text>
+                          <Text style={[styles.legendPct, { color: colors.textMuted }]}>{pct}%</Text>
+                        </View>
+                      </View>
+                    );
+                  })}
                 </View>
-              );
-            })}
-          </View>
+              </View>
+
+              {/* Pengeluaran per Akun */}
+              <View style={styles.chartSectionLast}>
+                <Text style={[styles.cardTitle, { color: colors.text }]}>Pengeluaran per Akun</Text>
+                <View style={{ alignItems: 'center', marginVertical: 16 }}>
+                  <PieChart key={`account-pie-${selectedMonth || 'empty'}`}
+                    data={accountPieData}
+                    donut
+                    innerRadius={50}
+                    radius={80}
+                    centerLabelComponent={() => (
+                      <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+                        <Text style={{ fontSize: 12, color: colors.textMuted }}>Total</Text>
+                        <Text style={{ fontSize: 18, color: colors.text, fontWeight: 'bold' }}>
+                          {totalAccountExpense > 0 ? formatCurrencyCompact(totalAccountExpense) : '0'}
+                        </Text>
+                      </View>
+                    )}
+                  />
+                </View>
+                <View style={styles.legendContainer}>
+                  {accountPieData.map((item, idx) => {
+                    if (item.text === 'Kosong') return null;
+                    const pct = totalAccountExpense > 0 ? Math.round((item.value / totalAccountExpense) * 100) : 0;
+                    return (
+                      <View key={idx} style={styles.legendRow}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: 8 }}>
+                          <View style={[styles.legendDot, { backgroundColor: item.color }]} />
+                          <AccountIcon icon={item.icon} type={item.type as any} size={16} />
+                          <Text style={[styles.legendText, { color: colors.text }]} numberOfLines={1}>{item.text}</Text>
+                        </View>
+                        <View style={{ alignItems: 'flex-end' }}>
+                          <Text style={[styles.legendAmount, { color: colors.text }]}>Rp {formatCurrency(item.value)}</Text>
+                          <Text style={[styles.legendPct, { color: colors.textMuted }]}>{pct}%</Text>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
+            </>
+          ) : (
+            <>
+              {/* Pemasukan per Kategori */}
+              <View style={[styles.chartSection, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.cardTitle, { color: colors.text }]}>Pemasukan per Kategori</Text>
+                <View style={{ alignItems: 'center', marginVertical: 16 }}>
+                  <PieChart key={`income-pie-${selectedMonth || 'empty'}`}
+                    data={pieIncomeData}
+                    donut
+                    innerRadius={50}
+                    radius={80}
+                    centerLabelComponent={() => (
+                      <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+                        <Text style={{ fontSize: 12, color: colors.textMuted }}>Total</Text>
+                        <Text style={{ fontSize: 18, color: colors.text, fontWeight: 'bold' }}>
+                          {totalCatIncome > 0 ? formatCurrencyCompact(totalCatIncome) : '0'}
+                        </Text>
+                      </View>
+                    )}
+                  />
+                </View>
+                <View style={styles.legendContainer}>
+                  {pieIncomeData.map((item, idx) => {
+                    if (item.text === 'Kosong') return null;
+                    const pct = totalCatIncome > 0 ? Math.round((item.value / totalCatIncome) * 100) : 0;
+                    return (
+                      <View key={idx} style={styles.legendRow}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                          <View style={[styles.legendDot, { backgroundColor: item.color }]} />
+                          <Text style={[styles.legendText, { color: colors.text }]} numberOfLines={1}>{item.text}</Text>
+                        </View>
+                        <View style={{ alignItems: 'flex-end' }}>
+                          <Text style={[styles.legendAmount, { color: colors.text }]}>Rp {formatCurrency(item.value)}</Text>
+                          <Text style={[styles.legendPct, { color: colors.textMuted }]}>{pct}%</Text>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
+
+              {/* Pemasukan per Akun */}
+              <View style={styles.chartSectionLast}>
+                <Text style={[styles.cardTitle, { color: colors.text }]}>Pemasukan per Akun</Text>
+                <View style={{ alignItems: 'center', marginVertical: 16 }}>
+                  <PieChart key={`income-account-pie-${selectedMonth || 'empty'}`}
+                    data={accountIncomePieData}
+                    donut
+                    innerRadius={50}
+                    radius={80}
+                    centerLabelComponent={() => (
+                      <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+                        <Text style={{ fontSize: 12, color: colors.textMuted }}>Total</Text>
+                        <Text style={{ fontSize: 18, color: colors.text, fontWeight: 'bold' }}>
+                          {totalAccountIncome > 0 ? formatCurrencyCompact(totalAccountIncome) : '0'}
+                        </Text>
+                      </View>
+                    )}
+                  />
+                </View>
+                <View style={styles.legendContainer}>
+                  {accountIncomePieData.map((item, idx) => {
+                    if (item.text === 'Kosong') return null;
+                    const pct = totalAccountIncome > 0 ? Math.round((item.value / totalAccountIncome) * 100) : 0;
+                    return (
+                      <View key={idx} style={styles.legendRow}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: 8 }}>
+                          <View style={[styles.legendDot, { backgroundColor: item.color }]} />
+                          <AccountIcon icon={item.icon} type={item.type as any} size={16} />
+                          <Text style={[styles.legendText, { color: colors.text }]} numberOfLines={1}>{item.text}</Text>
+                        </View>
+                        <View style={{ alignItems: 'flex-end' }}>
+                          <Text style={[styles.legendAmount, { color: colors.text }]}>Rp {formatCurrency(item.value)}</Text>
+                          <Text style={[styles.legendPct, { color: colors.textMuted }]}>{pct}%</Text>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
+            </>
+          )}
         </View>
 
         </View>
@@ -667,6 +850,38 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.xl,
     borderWidth: 1,
     marginBottom: 24,
+  },
+  groupCard: {
+    padding: 20,
+    borderRadius: BorderRadius.xl,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    marginBottom: 24,
+  },
+  tabRow: {
+    flexDirection: 'row',
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 20,
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  chartSection: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingBottom: 16,
+    marginBottom: 16,
+  },
+  chartSectionLast: {
+    paddingBottom: 0,
+    marginBottom: 0,
   },
   cardTitle: {
     fontSize: 16,

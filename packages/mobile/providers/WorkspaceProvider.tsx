@@ -64,8 +64,35 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         workspaceContext.setActiveWorkspaceId(selected.id);
         setActiveWorkspace(selected);
       } else {
-        workspaceContext.setActiveWorkspaceId(null);
-        setActiveWorkspace(null);
+        // Create default personal workspace for new users if it doesn't exist
+        try {
+          const createRes = await api.workspaces.create(user.id, 'Catatan Pribadi', 'personal');
+          if (createRes.data) {
+            const newWs = createRes.data;
+            workspaceContext.setActiveWorkspaceId(newWs.id);
+            setActiveWorkspace(newWs);
+            setWorkspaces([newWs]);
+
+            // Also create a default cash account for this new workspace
+            try {
+              await api.accounts.create(user.id, {
+                name: 'Tunai',
+                type: 'other',
+                is_default: true,
+                color: '#10b981',
+              });
+            } catch (accErr) {
+              console.error('Failed to create default account in new workspace:', accErr);
+            }
+          } else {
+            workspaceContext.setActiveWorkspaceId(null);
+            setActiveWorkspace(null);
+          }
+        } catch (createErr) {
+          console.error('Failed to create default personal workspace:', createErr);
+          workspaceContext.setActiveWorkspaceId(null);
+          setActiveWorkspace(null);
+        }
       }
     } catch (err) {
       console.warn('Failed to load workspaces:', err);

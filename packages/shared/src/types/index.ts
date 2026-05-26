@@ -39,6 +39,10 @@ export interface Profile {
   avatar_url?: string;
   ai_quota: number;
   last_ai_reset?: string;
+  telegram_quota?: number;
+  last_telegram_reset?: string;
+  whatsapp_quota?: number;
+  last_whatsapp_reset?: string;
   created_at: string;
   updated_at?: string;
 }
@@ -68,11 +72,13 @@ export interface Transaction {
   description: string;
   date: string;
   category_id: string;
-  account_id?: string;
-  sender_name?: string;
-  source?: string;
-  savings_id?: string;
-  created_at: string;
+   account_id?: string;
+   sender_name?: string;
+   source?: string;
+   savings_id?: string;
+   destination_account_id?: string;
+   debt_id?: string;
+   created_at: string;
   // Joined
   category?: Category;
   account?: FinancialAccount;
@@ -185,6 +191,13 @@ export interface EventIncome {
 export type CreateEventIncomeInput = Omit<EventIncome, 'id' | 'event_id' | 'created_at'>;
 
 // ========== Debt ==========
+export interface DebtPayment {
+  id: string;
+  amount: number;
+  date: string;
+  notes?: string;
+}
+
 export interface Debt {
   id: string;
   user_id: string;
@@ -198,6 +211,7 @@ export interface Debt {
   notes?: string;
   status: 'unpaid' | 'paid';
   account_id?: string;
+  payments?: DebtPayment[];
   created_at: string;
   // Joined
   account?: FinancialAccount;
@@ -308,7 +322,7 @@ export interface Subscription {
   user_id: string;
   plan_id: string;
   status: 'active' | 'expired' | 'cancelled';
-  started_at: string;
+  starts_at: string;
   expires_at: string;
   created_at: string;
   // Joined

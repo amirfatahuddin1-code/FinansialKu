@@ -3,7 +3,7 @@ import type { Category, CreateCategoryInput } from '../types';
 import { workspaceContext } from './workspaceContext';
 
 export function createCategoriesAPI(supabase: SupabaseClient) {
-  return {
+  const api = {
     async getAll() {
       let query = supabase
         .from('categories')
@@ -52,5 +52,21 @@ export function createCategoriesAPI(supabase: SupabaseClient) {
         .eq('id', id);
       return { data, error };
     },
+
+    async getOrCreateByName(userId: string, categoryInput: { name: string; type: 'income' | 'expense'; icon: string; color: string }) {
+      const { data: existingCats, error: getError } = await api.getAll();
+      if (getError) return { data: null, error: getError };
+
+      const found = existingCats?.find(
+        (c) => c.name.toLowerCase() === categoryInput.name.toLowerCase() && c.type === categoryInput.type
+      );
+
+      if (found) {
+        return { data: found, error: null };
+      }
+
+      return api.create(userId, categoryInput);
+    }
   };
+  return api;
 }

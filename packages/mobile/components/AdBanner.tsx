@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
+import { BannerAd, BannerAdSize, TestIds } from '@/utils/mobile-ads-wrapper';
 import { ADS } from '@/constants/Ads';
 
 export default function AdBanner() {

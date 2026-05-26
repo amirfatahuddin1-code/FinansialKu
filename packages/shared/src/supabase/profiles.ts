@@ -97,6 +97,117 @@ export function createProfilesAPI(supabase: SupabaseClient) {
           .update({ ai_quota: newQuota })
           .eq('id', userId);
         error = res.error;
+        if (error) {
+          return { data: null, error };
+        }
+      }
+
+      return { data: { quota: newQuota, applied: !alreadyMax }, error };
+    },
+
+    async getTelegramQuota(userId: string): Promise<{ data: { quota: number; max: number; rewardAmount: number } | null; error: any }> {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('telegram_quota, last_telegram_reset')
+        .eq('id', userId)
+        .single();
+
+      if (error) return { data: null, error };
+      if (!data) return { data: null, error: 'Profile not found' };
+
+      const today = getDateString();
+      let quota = data.telegram_quota ?? 20;
+
+      if (data.last_telegram_reset !== today) {
+        quota = 20;
+        await supabase
+          .from('profiles')
+          .update({ telegram_quota: quota, last_telegram_reset: today })
+          .eq('id', userId);
+      }
+
+      return {
+        data: { quota, max: 50, rewardAmount: 5 },
+        error: null,
+      };
+    },
+
+    async addTelegramQuota(userId: string, amount: number): Promise<{ data: { quota: number; applied: boolean } | null; error: any }> {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('telegram_quota')
+        .eq('id', userId)
+        .single();
+
+      if (!profile) return { data: null, error: 'Profile not found' };
+
+      const current = profile.telegram_quota ?? 20;
+      const alreadyMax = current >= 50;
+      const newQuota = alreadyMax ? current : Math.min(50, current + amount);
+      let error = null;
+      if (!alreadyMax) {
+        const res = await supabase
+          .from('profiles')
+          .update({ telegram_quota: newQuota })
+          .eq('id', userId);
+        error = res.error;
+        if (error) {
+          return { data: null, error };
+        }
+      }
+
+      return { data: { quota: newQuota, applied: !alreadyMax }, error };
+    },
+
+    async getWhatsappQuota(userId: string): Promise<{ data: { quota: number; max: number; rewardAmount: number } | null; error: any }> {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('whatsapp_quota, last_whatsapp_reset')
+        .eq('id', userId)
+        .single();
+
+      if (error) return { data: null, error };
+      if (!data) return { data: null, error: 'Profile not found' };
+
+      const today = getDateString();
+      let quota = data.whatsapp_quota ?? 20;
+
+      if (data.last_whatsapp_reset !== today) {
+        quota = 20;
+        await supabase
+          .from('profiles')
+          .update({ whatsapp_quota: quota, last_whatsapp_reset: today })
+          .eq('id', userId);
+      }
+
+      return {
+        data: { quota, max: 50, rewardAmount: 5 },
+        error: null,
+      };
+    },
+
+    async addWhatsappQuota(userId: string, amount: number): Promise<{ data: { quota: number; applied: boolean } | null; error: any }> {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('whatsapp_quota')
+        .eq('id', userId)
+        .single();
+
+      if (!profile) return { data: null, error: 'Profile not found' };
+
+      const current = profile.whatsapp_quota ?? 20;
+      const alreadyMax = current >= 50;
+      const newQuota = alreadyMax ? current : Math.min(50, current + amount);
+      let error = null;
+      if (!alreadyMax) {
+        const res = await supabase
+          .from('profiles')
+          .update({ whatsapp_quota: newQuota })
+          .eq('id', userId);
+        error = res.error;
+        if (error) {
+          return { data: null, error };
+        }
       }
 
       return { data: { quota: newQuota, applied: !alreadyMax }, error };

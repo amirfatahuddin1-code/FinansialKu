@@ -126,7 +126,9 @@ export default function TransactionRow({
   const colors = Colors[colorScheme]
   const isIncome = transaction.type === 'income'
   const isSavings = transaction.type === 'savings'
-  const cat = transaction.category
+  const cat = isSavings
+    ? (transaction.category || (transaction.savings ? { name: transaction.savings.name, icon: '🏦', color: Colors.warning } : { name: 'Tabungan', icon: '🏦', color: Colors.warning }))
+    : transaction.category
 
   const catColor = cat?.color || (isIncome ? Colors.success : isSavings ? Colors.warning : Colors.danger)
   const content = (

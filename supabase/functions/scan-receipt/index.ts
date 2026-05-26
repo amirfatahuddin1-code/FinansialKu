@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
 
         const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-        const { image } = await req.json()
+        const { image, mimeType } = await req.json()
 
         if (!image) {
             return new Response(
@@ -37,7 +37,8 @@ Deno.serve(async (req) => {
             )
         }
 
-        const dataUrl = `data:image/jpeg;base64,${image}`
+        const actualMimeType = mimeType || 'image/jpeg'
+        const dataUrl = `data:${actualMimeType};base64,${image}`
 
         const chatCompletion = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
@@ -89,11 +90,22 @@ Rules:
         if (!chatCompletion.ok) {
             const errorText = await chatCompletion.text()
             console.error('Groq API error:', chatCompletion.status, errorText)
-            throw new Error(`Groq API error: ${chatCompletion.status}`)
+            throw new Error(`Groq API error: ${chatCompletion.status} - ${errorText}`)
         }
 
         const result = await chatCompletion.json()
-        const content = JSON.parse(result.choices[0].message.content)
+        const rawContent = result.choices?.[0]?.message?.content || ''
+        
+        let cleanJson = rawContent.trim()
+        if (cleanJson.startsWith('```')) {
+            const firstBrace = cleanJson.indexOf('{')
+            const lastBrace = cleanJson.lastIndexOf('}')
+            if (firstBrace !== -1 && lastBrace !== -1) {
+                cleanJson = cleanJson.substring(firstBrace, lastBrace + 1)
+            }
+        }
+
+        const content = JSON.parse(cleanJson)
 
         return new Response(
             JSON.stringify(content),

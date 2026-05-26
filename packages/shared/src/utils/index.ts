@@ -8,6 +8,8 @@ export {
   getLocalToday,
   isToday,
   isYesterday,
+  getMonthlyRange,
+  getFundingMonth,
 } from './date';
 export {
   SUPABASE_URL,

@@ -242,6 +242,19 @@ export default function WorkspaceMembersScreen() {
     if (!user || !newFamilyName.trim()) return;
     setActionLoading(true);
     try {
+      const { data: subs } = await api.subscription.getSubscriptionHistory(user.id);
+      const activeSub = subs?.find((s: any) => s.status === 'active') || null;
+      const isPro = activeSub?.plan_id && activeSub.plan_id !== 'basic';
+
+      if (!isPro && workspaces.length >= 2) {
+        Alert.alert(
+          'Batas Workspace Tercapai',
+          'Pengguna paket Basic hanya dapat memiliki maksimal 2 workspace. Silakan upgrade ke paket Pro untuk membuat workspace baru!'
+        );
+        setActionLoading(false);
+        return;
+      }
+
       const { data, error } = await api.workspaces.create(user.id, newFamilyName.trim(), 'family');
       if (error) throw error;
       setNewFamilyName('');
@@ -260,6 +273,19 @@ export default function WorkspaceMembersScreen() {
     if (!user || !joinInviteCode.trim()) return;
     setActionLoading(true);
     try {
+      const { data: subs } = await api.subscription.getSubscriptionHistory(user.id);
+      const activeSub = subs?.find((s: any) => s.status === 'active') || null;
+      const isPro = activeSub?.plan_id && activeSub.plan_id !== 'basic';
+
+      if (!isPro && workspaces.length >= 2) {
+        Alert.alert(
+          'Batas Workspace Tercapai',
+          'Pengguna paket Basic hanya dapat memiliki maksimal 2 workspace. Silakan upgrade ke paket Pro untuk bergabung ke workspace baru!'
+        );
+        setActionLoading(false);
+        return;
+      }
+
       const { data, error } = await api.workspaces.join(user.id, joinInviteCode.trim());
       if (error) throw error;
       setJoinInviteCode('');

@@ -15,6 +15,7 @@ import {
   hsvToHex, hexToHsv, isValidHex, getHueColor,
   SPECTRUM_COLORS, GRADIENT_DIRECTIONS, GradientDirection,
 } from '@/utils/colorUtils';
+import { useAuth } from '@/providers/AuthProvider';
 
 const PADDING = 20;
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -31,6 +32,7 @@ export default function PilihWarnaScreen() {
   const { width: winWidth } = useWindowDimensions();
   const pickerWidth = Math.min(winWidth - PADDING * 2 - 40, 320);
   const pickerHeight = Math.round(pickerWidth * 0.78);
+  const { user, api } = useAuth();
 
   const [activeTab, setActiveTab] = useState<'solid' | 'gradient'>('solid');
 
@@ -46,6 +48,8 @@ export default function PilihWarnaScreen() {
   ]);
   const [gradDirection, setGradDirection] = useState<GradientDirection>(GRADIENT_DIRECTIONS[2]);
   const [themeName, setThemeName] = useState('');
+  const [isPro, setIsPro] = useState(false);
+  const [themeChangeCount, setThemeChangeCount] = useState(0);
 
   const uid = useRef(Date.now().toString(36)).current;
 
@@ -57,12 +61,42 @@ export default function PilihWarnaScreen() {
   const currentSat = activeTab === 'solid' ? sat : currentGradStop.sat;
   const currentVal = activeTab === 'solid' ? val : currentGradStop.val;
 
+  useEffect(() => {
+    if (!user) return;
+    const loadSubAndCount = async () => {
+      try {
+        const [subRes, countRes] = await Promise.all([
+          api.subscription.getSubscriptionHistory(user.id),
+          AsyncStorage.getItem('@karsafin_theme_changes_count'),
+        ]);
+        const subs = subRes.data || [];
+        const activeSub = subs.find((s: any) => s.status === 'active') || null;
+        const pro = !!(activeSub?.plan_id && activeSub.plan_id !== 'basic');
+        setIsPro(pro);
+        if (countRes) {
+          setThemeChangeCount(parseInt(countRes, 10));
+        }
+      } catch (err) {
+        console.error('Failed to load subscription/count in pilih-warna:', err);
+      }
+    };
+    loadSubAndCount();
+  }, [user]);
+
   const applyColor = async (hex: string) => {
     setAppPrimaryColor(hex, colorScheme === 'dark');
     await AsyncStorage.setItem('@karsafin_theme_color', hex);
   };
 
   const handleSave = async () => {
+    if (!isPro && themeChangeCount >= 1) {
+      Alert.alert(
+        'Batas Ubah Tema Tercapai',
+        'Pengguna paket Basic hanya dapat mengubah tema aplikasi sebanyak 1 kali. Silakan upgrade ke paket Pro untuk mengubah tema tanpa batas!'
+      );
+      return;
+    }
+
     const name = themeName.trim() || (activeTab === 'solid'
       ? `Warna ${solidHex}`
       : `Gradasi ${grad1Hex} - ${grad2Hex}`);
@@ -85,6 +119,10 @@ export default function PilihWarnaScreen() {
           colors: [grad1Hex, grad2Hex],
           direction: gradDirection,
         }));
+      }
+
+      if (!isPro) {
+        await AsyncStorage.setItem('@karsafin_theme_changes_count', String(themeChangeCount + 1));
       }
 
       Alert.alert('Tema Tersimpan', `Tema "${name}" berhasil disimpan!`, [

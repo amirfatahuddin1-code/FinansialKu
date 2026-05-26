@@ -1,11 +1,10 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import {
   View,
   Text,
   TouchableOpacity,
   Modal,
-  KeyboardAvoidingView,
-  Platform,
+  Keyboard,
   ScrollView,
   StyleSheet,
   Animated,
@@ -36,6 +35,8 @@ export default function BottomSheet({
   const insets = useSafeAreaInsets()
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current
 
+  const [keyboardHeight, setKeyboardHeight] = useState(0)
+
   useEffect(() => {
     if (visible) {
       Animated.spring(slideAnim, {
@@ -46,15 +47,23 @@ export default function BottomSheet({
       }).start()
     } else {
       slideAnim.setValue(SCREEN_HEIGHT)
+      setKeyboardHeight(0)
     }
   }, [visible])
 
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', e =>
+      setKeyboardHeight(e.endCoordinates.height)
+    )
+    const hide = Keyboard.addListener('keyboardDidHide', () =>
+      setKeyboardHeight(0)
+    )
+    return () => { show.remove(); hide.remove() }
+  }, [])
+
   return (
     <Modal visible={visible} animationType="fade" transparent onRequestClose={onClose}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.overlay}
-      >
+      <View style={styles.overlay}>
         <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
         <Animated.View
           style={[
@@ -81,12 +90,15 @@ export default function BottomSheet({
           <ScrollView
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={[
+              styles.scrollContent,
+              keyboardHeight > 0 && { paddingBottom: keyboardHeight },
+            ]}
           >
             {children}
           </ScrollView>
         </Animated.View>
-      </KeyboardAvoidingView>
+      </View>
     </Modal>
   )
 }

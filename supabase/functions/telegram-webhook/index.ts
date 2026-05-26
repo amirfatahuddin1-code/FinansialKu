@@ -167,12 +167,36 @@ Selamat mencatat! 🚀`;
             return new Response(JSON.stringify({ method: 'sendMessage', chat_id: message.chat.id, text: '❌ Langganan tidak aktif.' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
         }
 
-        // Helper: Check Usage Limit (Basic Plan)
+        // Helper: Check Usage Limit (Basic Plan: Dynamic Telegram quota)
         if (subscription.plan_id && subscription.plan_id.startsWith('basic') && subscription.status !== 'trial') {
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('telegram_quota, last_telegram_reset')
+                .eq('id', userId)
+                .single();
+
+            const todayStr = getWibToday();
+            let limit = 20;
+
+            if (profile) {
+                limit = profile.telegram_quota ?? 20;
+                if (profile.last_telegram_reset !== todayStr) {
+                    limit = 20;
+                    await supabase
+                        .from('profiles')
+                        .update({ telegram_quota: 20, last_telegram_reset: todayStr })
+                        .eq('id', userId);
+                }
+            }
+
             const { data: usage } = await supabase.rpc('get_messaging_usage', { p_user_id: userId })
-            const currentUsage = usage && usage.length > 0 ? usage[0].total_count : 0
-            if (currentUsage >= 300) {
-                return new Response(JSON.stringify({ method: 'sendMessage', chat_id: message.chat.id, text: `⛔ Kuota tercapai (${currentUsage}/300). Upgrade ke Pro!` }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+            const telegramUsage = usage && usage.length > 0 ? usage[0].telegram_count : 0
+            if (telegramUsage >= limit) {
+                return new Response(JSON.stringify({ 
+                    method: 'sendMessage', 
+                    chat_id: message.chat.id, 
+                    text: `⛔ Batas harian tercapai. Pengguna paket Basic hanya dapat mencatat maksimal ${limit} transaksi per hari lewat Telegram. Silakan upgrade ke Pro atau tonton video di menu Kuota AI untuk menambah kuota!` 
+                }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
             }
         }
 
@@ -289,12 +313,13 @@ Selamat mencatat! 🚀`;
             let txDate = parsedDate;
             let parsed: any = null;
 
-            // 2. Try Groq Text Parsing first (passing cleanedText)
+            // 2. Try Groq Text Parsing first (passing original text for full context, including date)
             if (groqApiKey) {
-                const aiRes = await runGroqText(groqApiKey, cleanedText, todayStr);
+                const aiRes = await runGroqText(groqApiKey, message.text, todayStr);
                 if (aiRes.data && aiRes.data.amount > 0) {
                     parsed = aiRes.data;
-                    txDate = aiRes.data.date || parsedDate;
+                    // Prioritize locally parsed specific date if found; otherwise fallback to Groq parsed date
+                    txDate = parsedDate !== todayStr ? parsedDate : (aiRes.data.date || parsedDate);
                 }
             }
 
@@ -381,7 +406,7 @@ Selamat mencatat! 🚀`;
                 const typeLabel = firstTx.type === 'income' ? 'Pemasukan' : 'Pengeluaran';
                 const matchedAcc = allAccounts?.find(a => a.id === firstTx.account_id);
                 const accLabel = matchedAcc ? `💳 Akun: *${matchedAcc.name}*\n` : '';
-                replyText = `✅ *Tercatat!*\n${typeEmoji} ${typeLabel}\n💵 Rp ${firstTx.amount.toLocaleString('id-ID')}\n${accLabel}📂 ${displayCat}\n📝 ${firstTx.description}`;
+                replyText = `✅ *Tercatat!*\n${typeEmoji} ${typeLabel}\n💵 Rp ${firstTx.amount.toLocaleString('id-ID')}\n📅 ${txDateDisplay}\n${accLabel}📂 ${displayCat}\n📝 ${firstTx.description}`;
             }
 
             return new Response(JSON.stringify({

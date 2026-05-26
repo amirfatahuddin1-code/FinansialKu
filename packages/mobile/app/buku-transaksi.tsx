@@ -72,27 +72,63 @@ export default function BukuTransaksiScreen() {
 
   const isAccountSelected = selectedAccountIds.size > 0;
 
+  const getTxImpact = (t: Transaction) => {
+    if (isAccountSelected) {
+      const isSource = t.account_id && selectedAccountIds.has(t.account_id);
+      const isDest = t.destination_account_id && selectedAccountIds.has(t.destination_account_id);
+      
+      let diff = 0;
+      if (isSource) {
+        diff += (t.type === 'income' ? t.amount : -t.amount);
+      }
+      if (isDest) {
+        diff += t.amount;
+      }
+      return diff;
+    }
+    
+    if (t.type === 'savings' && t.destination_account_id) {
+      return 0;
+    }
+    return t.type === 'income' ? t.amount : -t.amount;
+  };
+
   const openingBalance = transactions
     .filter(t => {
-      const txDate = new Date(t.date);
       const txStr = t.date.split('T')[0];
-      if (isAccountSelected && (!t.account_id || !selectedAccountIds.has(t.account_id))) return false;
-      return txStr < monthStart;
+      if (txStr >= monthStart) return false;
+      if (isAccountSelected) {
+        const matchesSource = t.account_id && selectedAccountIds.has(t.account_id);
+        const matchesDest = t.destination_account_id && selectedAccountIds.has(t.destination_account_id);
+        if (!matchesSource && !matchesDest) return false;
+      }
+      return true;
     })
-    .reduce((sum, t) => sum + (t.type === 'income' ? t.amount : -t.amount), 0);
+    .reduce((sum, t) => sum + getTxImpact(t), 0);
 
   const monthTx = transactions
     .filter(t => {
-      const txDate = new Date(t.date);
       const txStr = t.date.split('T')[0];
       if (txStr < monthStart || txStr > monthEnd) return false;
-      if (isAccountSelected && (!t.account_id || !selectedAccountIds.has(t.account_id))) return false;
+      if (isAccountSelected) {
+        const matchesSource = t.account_id && selectedAccountIds.has(t.account_id);
+        const matchesDest = t.destination_account_id && selectedAccountIds.has(t.destination_account_id);
+        if (!matchesSource && !matchesDest) return false;
+      }
       return true;
     })
     .sort((a, b) => a.date.localeCompare(b.date));
 
-  const monthIncome = monthTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-  const monthExpense = monthTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+  const monthIncome = monthTx.reduce((sum, t) => {
+    const impact = getTxImpact(t);
+    return sum + (impact > 0 ? impact : 0);
+  }, 0);
+
+  const monthExpense = monthTx.reduce((sum, t) => {
+    const impact = getTxImpact(t);
+    return sum + (impact < 0 ? -impact : 0);
+  }, 0);
+
   const closingBalance = openingBalance + monthIncome - monthExpense;
 
   const monthName = new Date(viewYear, viewMonth - 1).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
@@ -182,7 +218,7 @@ export default function BukuTransaksiScreen() {
           <View style={styles.summaryRow}>
             <View style={styles.summaryItem}>
               <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>Saldo Awal</Text>
-              <Text style={[styles.summaryValue, { color: colors.text }]}>Rp {formatCurrency(openingBalance)}</Text>
+              <Text style={[styles.summaryValue, { color: colors.text }]}>{openingBalance < 0 ? '- ' : ''}Rp {formatCurrency(openingBalance)}</Text>
             </View>
           </View>
           <View style={styles.summaryDivider} />
@@ -200,7 +236,7 @@ export default function BukuTransaksiScreen() {
           <View style={styles.summaryRow}>
             <View style={styles.summaryItem}>
               <Text style={[styles.summaryLabel, { color: colors.text }]}>Saldo Akhir</Text>
-              <Text style={[styles.summaryValue, { color: closingBalance >= 0 ? Colors.success : Colors.danger, fontSize: 20 }]}>Rp {formatCurrency(closingBalance)}</Text>
+              <Text style={[styles.summaryValue, { color: closingBalance >= 0 ? Colors.success : Colors.danger, fontSize: 20 }]}>{closingBalance < 0 ? '- ' : ''}Rp {formatCurrency(closingBalance)}</Text>
             </View>
           </View>
         </View>
@@ -224,11 +260,17 @@ export default function BukuTransaksiScreen() {
             </View>
           ) : (
             monthTx.map((t, idx) => {
-              let runningBalance = openingBalance;
-              for (let i = 0; i <= idx; i++) {
-                const tx = monthTx[i];
-                runningBalance += tx.type === 'income' ? tx.amount : -tx.amount;
-              }
+              const runningBalance = monthTx.slice(0, idx + 1).reduce((sum, tx) => sum + getTxImpact(tx), openingBalance);
+              const sourceAcc = t.account?.name || (t.account_id ? accounts.find(a => a.id === t.account_id)?.name : '');
+              const destAcc = t.destination_account_id ? accounts.find(a => a.id === t.destination_account_id)?.name : '';
+              
+              const isDebit = isAccountSelected 
+                ? getTxImpact(t) > 0 
+                : (t.type === 'income' || !!t.destination_account_id);
+              const isCredit = isAccountSelected 
+                ? getTxImpact(t) < 0 
+                : (t.type === 'expense' || t.type === 'savings');
+
               return (
                 <TouchableOpacity
                   key={t.id}
@@ -238,16 +280,24 @@ export default function BukuTransaksiScreen() {
                   <Text style={[styles.colDate, { color: colors.text }]}>{formatDate(t.date)}</Text>
                   <View style={styles.colDesc}>
                     <Text style={{ fontSize: 12, fontWeight: '600', color: colors.text }} numberOfLines={1}>{t.description || t.category?.name || '-'}</Text>
-                    {t.category && <Text style={{ fontSize: 10, color: colors.textMuted }}>{t.category.icon} {t.category.name}</Text>}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 4, marginTop: 2 }}>
+                      {t.category && <Text style={{ fontSize: 10, color: colors.textMuted }}>{t.category.icon} {t.category.name}</Text>}
+                      {t.category && (sourceAcc || destAcc) && <Text style={{ fontSize: 10, color: colors.textMuted }}>•</Text>}
+                      {(sourceAcc || destAcc) && (
+                        <Text style={{ fontSize: 10, color: colors.textMuted, fontWeight: '500' }}>
+                          {sourceAcc || '-'}{destAcc ? ` ➔ ${destAcc}` : ''}
+                        </Text>
+                      )}
+                    </View>
                   </View>
-                  <Text style={[styles.colDebit, { color: t.type === 'income' ? Colors.success : colors.textMuted }]}>
-                    {t.type === 'income' ? `Rp ${formatCurrency(t.amount)}` : '-'}
+                  <Text style={[styles.colDebit, { color: isDebit ? Colors.success : colors.textMuted }]}>
+                    {isDebit ? `Rp ${formatCurrency(t.amount)}` : '-'}
                   </Text>
-                  <Text style={[styles.colCredit, { color: t.type === 'expense' ? Colors.danger : colors.textMuted }]}>
-                    {t.type === 'expense' ? `Rp ${formatCurrency(t.amount)}` : '-'}
+                  <Text style={[styles.colCredit, { color: isCredit ? Colors.danger : colors.textMuted }]}>
+                    {isCredit ? `Rp ${formatCurrency(t.amount)}` : '-'}
                   </Text>
                   <Text style={[styles.colBalance, { color: colors.text, fontWeight: '700' }]}>
-                    Rp {formatCurrency(runningBalance)}
+                    {runningBalance < 0 ? '- ' : ''}Rp {formatCurrency(runningBalance)}
                   </Text>
                 </TouchableOpacity>
               );

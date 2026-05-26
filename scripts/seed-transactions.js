@@ -118,12 +118,17 @@ async function main() {
 
   let totalInserted = 0;
 
-  for (let month = 1; month <= 12; month++) {
-    const daysInMonth = getDaysInMonth(2026, month);
+  const today = new Date('2026-05-23');
+  const currentMonth = today.getMonth() + 1;
+  const currentDay = today.getDate();
+
+  for (let month = 1; month <= currentMonth; month++) {
+    const isCurrentMonth = month === currentMonth;
+    const daysInMonth = isCurrentMonth ? currentDay : getDaysInMonth(2026, month);
     const transactions = [];
 
     // Garansi: gaji masuk tiap bulan (between 1st-5th)
-    const salaryDay = rand(1, 5);
+    const salaryDay = rand(1, Math.min(5, daysInMonth));
     transactions.push({
       type: 'income',
       amount: rand(7500000, 8500000),
@@ -137,7 +142,7 @@ async function main() {
     const extraIncomeCount = rand(1, 3);
     for (let i = 0; i < extraIncomeCount; i++) {
       const tmpl = pick(incomeDesc.filter(d => d.desc !== 'Gaji bulanan'));
-      const day = rand(6, daysInMonth);
+      const day = rand(Math.min(6, daysInMonth), daysInMonth);
       transactions.push({
         type: 'income',
         amount: rand(tmpl.min, tmpl.max),

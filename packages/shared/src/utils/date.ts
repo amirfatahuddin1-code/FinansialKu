@@ -104,3 +104,73 @@ export function isYesterday(dateStr: string): boolean {
   yesterday.setDate(yesterday.getDate() - 1);
   return dateStr.startsWith(toLocalDateStr(yesterday));
 }
+
+/**
+ * Calculate dynamic monthly start and end date based on payday.
+ */
+export function getMonthlyRange(payday: number, referenceDate: Date = new Date()): {
+  startDate: string;
+  endDate: string;
+} {
+  const year = referenceDate.getFullYear();
+  const month = referenceDate.getMonth();
+  const day = referenceDate.getDate();
+
+  let startYear = year;
+  let startMonth = month;
+  
+  if (day < payday) {
+    startMonth = month - 1;
+    if (startMonth < 0) {
+      startMonth = 11;
+      startYear = year - 1;
+    }
+  }
+
+  const getClampedDate = (y: number, m: number, d: number) => {
+    const lastDayOfMonth = new Date(y, m + 1, 0).getDate();
+    return new Date(y, m, Math.min(d, lastDayOfMonth));
+  };
+
+  const startDate = getClampedDate(startYear, startMonth, payday);
+
+  let endYear = startYear;
+  let endMonth = startMonth + 1;
+  if (endMonth > 11) {
+    endMonth = 0;
+    endYear = startYear + 1;
+  }
+
+  const nextCycleStart = getClampedDate(endYear, endMonth, payday);
+  const endDate = new Date(nextCycleStart.getTime() - 24 * 60 * 60 * 1000);
+
+  const formatDateStr = (d: Date) => {
+    const yStr = d.getFullYear();
+    const mStr = String(d.getMonth() + 1).padStart(2, '0');
+    const dStr = String(d.getDate()).padStart(2, '0');
+    return `${yStr}-${mStr}-${dStr}`;
+  };
+
+  return {
+    startDate: formatDateStr(startDate),
+    endDate: formatDateStr(endDate),
+  };
+}
+
+/**
+ * Get funding month (YYYY-MM) for a transaction date based on payday.
+ */
+export function getFundingMonth(dateStr: string, payday: number): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  let startYear = y;
+  let startMonth = m - 1;
+  if (d < payday) {
+    startMonth = startMonth - 1;
+    if (startMonth < 0) {
+      startMonth = 11;
+      startYear = y - 1;
+    }
+  }
+  const monthStr = String(startMonth + 1).padStart(2, '0');
+  return `${startYear}-${monthStr}`;
+}

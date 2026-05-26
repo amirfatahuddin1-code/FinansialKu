@@ -2,13 +2,14 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Tabs, router } from 'expo-router';
-import { Platform, StyleSheet, View, TouchableOpacity, Text, Modal, Pressable, TextInput, ScrollView, Animated, Keyboard, ActivityIndicator, Image } from 'react-native';
+import { Platform, StyleSheet, View, TouchableOpacity, Text, Modal, Pressable, TextInput, ScrollView, Animated, Keyboard, ActivityIndicator, Image, Alert } from 'react-native';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/providers/AuthProvider';
 import { getLocalToday, formatCurrency } from '@karsafin/shared';
 import type { Category, FinancialAccount } from '@karsafin/shared';
+import * as ImagePicker from 'expo-image-picker';
 
 function TypingDots() {
   const dot1 = useRef(new Animated.Value(0)).current;
@@ -86,6 +87,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
   const [aiAccounts, setAiAccounts] = useState<FinancialAccount[]>([]);
   const aiScrollRef = useRef<ScrollView>(null);
   const [aiKeyboardHeight, setAiKeyboardHeight] = useState(0);
+  const [receiptScanning, setReceiptScanning] = useState(false);
 
   useEffect(() => {
     setTimeout(() => aiScrollRef.current?.scrollToEnd({ animated: true }), 100);
@@ -321,7 +323,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
     return results;
   }
 
-  const handleAiTransactionTap = (tx: AiMessage['savedTransactions'][0]) => {
+  const handleAiTransactionTap = (tx: NonNullable<AiMessage['savedTransactions']>[number]) => {
     if (!tx) return;
     router.push({
       pathname: '/add-transaction',
@@ -343,7 +345,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
 
     // Check quota
     if (!user || !api) return;
-    const { data: quotaData } = await api.profiles.getAiQuota(user.id, { refresh: true });
+    const { data: quotaData } = await api.profiles.getAiQuota(user.id);
     if (!quotaData || quotaData.quota <= 0) {
       setShowQuotaModal(true);
       return;
@@ -425,6 +427,166 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
         content: 'Maaf, terjadi kesalahan. Silakan coba lagi.',
       }]);
     }
+  };
+
+  const pickReceiptImage = async (source: 'camera' | 'gallery'): Promise<{ uri: string; base64: string; mimeType: string | null } | null> => {
+    try {
+      if (source === 'camera') {
+        const perm = await ImagePicker.requestCameraPermissionsAsync();
+        if (!perm.granted) {
+          Alert.alert('Izin Diperlukan', 'Izinkan akses kamera untuk foto struk.');
+          return null;
+        }
+      }
+      const result = source === 'camera'
+        ? await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.3, base64: true })
+        : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.3, base64: true });
+      if (result.canceled || !result.assets?.[0]) return null;
+      const asset = result.assets[0];
+      if (!asset.base64) return null;
+      return { uri: asset.uri, base64: asset.base64, mimeType: asset.mimeType || 'image/jpeg' };
+    } catch {
+      return null;
+    }
+  };
+
+  const handleReceiptScan = async (imageData: { uri: string; base64: string; mimeType: string | null }) => {
+    if (!user || !api) return;
+
+    // Check quota
+    const { data: quotaData } = await api.profiles.getAiQuota(user.id);
+    if (!quotaData || quotaData.quota <= 0) {
+      setShowQuotaModal(true);
+      return;
+    }
+
+    // Show user message with image thumbnail
+    const userMsg: AiMessage = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: '📷 Scan struk',
+      imageUri: imageData.uri,
+    };
+    setAiMessages((prev) => [...prev, userMsg]);
+    setReceiptScanning(true);
+    setAiTyping(true);
+
+    try {
+      // Call scan-receipt edge function
+      const { data: scanResult, error: scanError } = await api.supabase.functions.invoke('scan-receipt', {
+        body: { image: imageData.base64, mimeType: imageData.mimeType },
+      });
+
+      if (scanError || !scanResult?.transactions || scanResult.transactions.length === 0) {
+        setAiTyping(false);
+        setReceiptScanning(false);
+        setAiMessages((prev) => [...prev, {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: '❌ Maaf, tidak bisa membaca struk ini. Pastikan foto struk jelas dan coba lagi.',
+        }]);
+        return;
+      }
+
+      // Decrement quota
+      await api.profiles.decrementAiQuota(user.id);
+
+      // Save transactions
+      const savedTxs: Array<{ id: string; type: 'income' | 'expense'; amount: number; description: string; date: string; categoryName: string; accountName: string }> = [];
+      let details = '';
+      const today = getLocalToday();
+
+      for (const item of scanResult.transactions) {
+        const txType = item.type === 'income' ? 'income' : 'expense';
+        const matchedCat = aiCategories.find(
+          (c) => c.name.toLowerCase() === (item.category || '').toLowerCase() && c.type === txType
+        ) || aiCategories.find((c) => c.name === 'Lainnya' && c.type === txType);
+        if (!matchedCat) continue;
+
+        const matchedAcc = item.account
+          ? aiAccounts.find((a) => a.name.toUpperCase().includes(item.account.toUpperCase()))
+          : undefined;
+
+        const txDate = item.date || today;
+        const { data: txData } = await api.transactions.create(user.id, {
+          type: txType,
+          amount: item.amount,
+          description: item.description || 'Tanpa keterangan',
+          date: txDate,
+          category_id: matchedCat.id,
+          account_id: matchedAcc?.id,
+          source: 'ai',
+        });
+
+        if (txData) {
+          savedTxs.push({
+            id: txData.id,
+            type: txType,
+            amount: item.amount,
+            description: item.description || 'Tanpa keterangan',
+            date: txDate,
+            categoryName: matchedCat.name,
+            accountName: matchedAcc?.name || '',
+          });
+          const icon = txType === 'income' ? '💰' : '💳';
+          const dateParts = txDate.split('-');
+          const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : txDate;
+          const accountStr = matchedAcc?.name ? ` | ${matchedAcc.name}` : '';
+          details += `\n${icon} ${item.description || 'Item'} — Rp ${formatCurrency(item.amount)} (${matchedCat.name}${accountStr} | ${formattedDate})`;
+        }
+      }
+
+      setAiTyping(false);
+      setReceiptScanning(false);
+
+      if (savedTxs.length > 0) {
+        const storeName = scanResult.store ? `\n🏪 Toko: ${scanResult.store}` : '';
+        setAiMessages((prev) => [...prev, {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: `✅ ${savedTxs.length} transaksi berhasil dicatat dari struk:${storeName}${details}\n\nKetuk item untuk edit.`,
+          savedTransactions: savedTxs,
+        }]);
+      } else {
+        setAiMessages((prev) => [...prev, {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: '⚠️ Struk berhasil dibaca tapi tidak ada transaksi yang bisa disimpan. Periksa kategori Anda.',
+        }]);
+      }
+    } catch (err) {
+      setAiTyping(false);
+      setReceiptScanning(false);
+      setAiMessages((prev) => [...prev, {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: '❌ Terjadi kesalahan saat memproses struk. Silakan coba lagi.',
+      }]);
+    }
+  };
+
+  const showImagePickerOptions = (onPick: (data: { uri: string; base64: string; mimeType: string | null }) => void) => {
+    Alert.alert(
+      '📷 Pilih Sumber Gambar',
+      'Ambil foto struk dari:',
+      [
+        {
+          text: '📸 Kamera',
+          onPress: async () => {
+            const data = await pickReceiptImage('camera');
+            if (data) onPick(data);
+          },
+        },
+        {
+          text: '🖼️ Galeri',
+          onPress: async () => {
+            const data = await pickReceiptImage('gallery');
+            if (data) onPick(data);
+          },
+        },
+        { text: 'Batal', style: 'cancel' },
+      ]
+    );
   };
 
   const currentRoute = state.routes[state.index];
@@ -529,7 +691,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
                     return;
                   }
                   try {
-                    const { data } = await api.profiles.getAiQuota(user.id, { refresh: true });
+                    const { data } = await api.profiles.getAiQuota(user.id);
                     if (!data || data.quota <= 0) {
                       setShowQuotaModal(true);
                       return;
@@ -549,6 +711,44 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
                   <Text style={{ fontSize: 12, color: '#8b5cf6' }}>Catat transaksi cepat pakai teks</Text>
                 </View>
                 <Text style={{ fontSize: 22, color: '#a78bfa', fontWeight: '300' }}>›</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[styles.modalListItem, { backgroundColor: '#ecfdf5', borderColor: '#d1fae5' }]}
+                onPress={async () => {
+                  setShowAddModal(false);
+                  if (!user || !api) {
+                    setShowAiModal(true);
+                    return;
+                  }
+                  try {
+                    const { data } = await api.profiles.getAiQuota(user.id);
+                    if (!data || data.quota <= 0) {
+                      setShowQuotaModal(true);
+                      return;
+                    }
+                  } catch {}
+                  showImagePickerOptions(async (data) => {
+                    await loadAiData();
+                    setShowAiModal(true);
+                    setAiMessages([{
+                      id: '1',
+                      role: 'assistant',
+                      content: 'Halo! Saya asisten catat transaksi cepat. Ketik transaksi Anda seperti:\n\n• "Hari ini beli sepatu Rp250rb cash"\n• "Kemarin terima gaji 3jt lewat BRI"\n• "Beli beras 75rb dan minyak goreng 30rb"',
+                    }]);
+                    setTimeout(() => handleReceiptScan(data), 300);
+                  });
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.modalIconCircle, { backgroundColor: '#059669' }]}>
+                  <Text style={{ fontSize: 20 }}>📷</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 16, fontWeight: '700', color: '#047857', marginBottom: 2 }}>Scan Struk</Text>
+                  <Text style={{ fontSize: 12, color: '#10b981' }}>Foto struk & catat otomatis dengan AI</Text>
+                </View>
+                <Text style={{ fontSize: 22, color: '#34d399', fontWeight: '300' }}>›</Text>
               </TouchableOpacity>
 
               <TouchableOpacity 
@@ -722,7 +922,19 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
             </ScrollView>
 
             <View style={{ paddingHorizontal: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.card, paddingBottom: Math.max(insets.bottom, Platform.OS === 'ios' ? 24 : 12) + aiKeyboardHeight }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', borderRadius: 28, borderWidth: 1, borderColor: colors.border, paddingRight: 4, paddingVertical: 4, paddingLeft: 16, backgroundColor: colors.inputBg }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', borderRadius: 28, borderWidth: 1, borderColor: colors.border, paddingRight: 4, paddingVertical: 4, paddingLeft: 8, backgroundColor: colors.inputBg }}>
+                <TouchableOpacity
+                  style={{ width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', opacity: receiptScanning ? 0.5 : 1 }}
+                  onPress={() => showImagePickerOptions(handleReceiptScan)}
+                  disabled={receiptScanning}
+                  activeOpacity={0.7}
+                >
+                  {receiptScanning ? (
+                    <ActivityIndicator size="small" color={colors.tint} />
+                  ) : (
+                    <FontAwesome name="camera" size={18} color={colors.textSecondary} />
+                  )}
+                </TouchableOpacity>
                 <TextInput
                   style={{ flex: 1, fontSize: 15, paddingVertical: 8, paddingHorizontal: 8, color: colors.text }}
                   placeholder="Ketik transaksi..."

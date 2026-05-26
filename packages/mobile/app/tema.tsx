@@ -15,16 +15,17 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { router, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GRADIENT_DIRECTIONS, GradientDirection } from '@/utils/colorUtils';
+import { useAuth } from '@/providers/AuthProvider';
 
 const THEME_OPTIONS = [
   { id: 'navy', name: 'Biru Navy (Default)', hex: '#1E40AF' },
-  { id: 'indigo', name: 'Biru Indigo', hex: '#4F46E5' },
-  { id: 'emerald', name: 'Hijau Zamrud', hex: '#10B981' },
-  { id: 'sunset', name: 'Oranye Senja', hex: '#F97316' },
-  { id: 'purple', name: 'Ungu Royal', hex: '#8B5CF6' },
+  { id: 'indigo', name: 'Biru Indigo', hex: '#3730A3' },
+  { id: 'emerald', name: 'Hijau Zamrud', hex: '#047857' },
+  { id: 'sunset', name: 'Oranye Senja', hex: '#C2410C' },
+  { id: 'purple', name: 'Ungu Royal', hex: '#6D28D9' },
   { id: 'rose', name: 'Merah Muda', hex: '#F43F5E' },
   { id: 'ocean', name: 'Biru Samudra', hex: '#0EA5E9' },
-  { id: 'dark', name: 'Hitam Elegan', hex: '#334155' },
+  { id: 'dark', name: 'Hitam Elegan', hex: '#1E293B' },
 ];
 
 interface CustomTheme {
@@ -42,9 +43,12 @@ export default function TemaScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
+  const { user, api } = useAuth();
 
   const [selectedHex, setSelectedHex] = useState('#1E40AF');
   const [customThemes, setCustomThemes] = useState<CustomTheme[]>([]);
+  const [isPro, setIsPro] = useState(false);
+  const [themeChangeCount, setThemeChangeCount] = useState(0);
 
   const loadThemeData = useCallback(async () => {
     try {
@@ -59,19 +63,60 @@ export default function TemaScreen() {
     }
   }, []);
 
+  const loadSubscriptionAndCount = useCallback(async () => {
+    if (!user) return;
+    try {
+      const [subRes, countRes] = await Promise.all([
+        api.subscription.getSubscriptionHistory(user.id),
+        AsyncStorage.getItem('@karsafin_theme_changes_count'),
+      ]);
+      const subs = subRes.data || [];
+      const activeSub = subs.find((s: any) => s.status === 'active') || null;
+      const pro = !!(activeSub?.plan_id && activeSub.plan_id !== 'basic');
+      setIsPro(pro);
+      if (countRes) {
+        setThemeChangeCount(parseInt(countRes, 10));
+      }
+    } catch (err) {
+      console.error('Failed to load subscription/count in theme:', err);
+    }
+  }, [user]);
+
   useFocusEffect(
     useCallback(() => {
       loadThemeData();
-    }, [loadThemeData])
+      loadSubscriptionAndCount();
+    }, [loadThemeData, loadSubscriptionAndCount])
   );
+
+  const checkThemeChangeAllowed = async (): Promise<boolean> => {
+    if (isPro) return true;
+    if (themeChangeCount >= 1) {
+      Alert.alert(
+        'Batas Ubah Tema Tercapai',
+        'Pengguna paket Basic hanya dapat mengubah tema aplikasi sebanyak 1 kali. Silakan upgrade ke paket Pro untuk mengubah tema tanpa batas!'
+      );
+      return false;
+    }
+    return true;
+  };
 
   const applyColor = useCallback(async (hex: string) => {
     setSelectedHex(hex);
     setAppPrimaryColor(hex, colorScheme === 'dark');
     await AsyncStorage.setItem('@karsafin_theme_color', hex);
-  }, [colorScheme]);
+
+    if (!isPro) {
+      const newCount = themeChangeCount + 1;
+      setThemeChangeCount(newCount);
+      await AsyncStorage.setItem('@karsafin_theme_changes_count', String(newCount));
+    }
+  }, [colorScheme, isPro, themeChangeCount]);
 
   const handleSelectPreset = async (hex: string) => {
+    const allowed = await checkThemeChangeAllowed();
+    if (!allowed) return;
+
     await applyColor(hex);
     Alert.alert(
       'Tema Diperbarui',
@@ -81,6 +126,9 @@ export default function TemaScreen() {
   };
 
   const handleSelectCustom = async (theme: CustomTheme) => {
+    const allowed = await checkThemeChangeAllowed();
+    if (!allowed) return;
+
     if (theme.mode === 'solid' && theme.color) {
       await applyColor(theme.color);
     } else if (theme.mode === 'gradient' && theme.colors) {
@@ -201,7 +249,12 @@ export default function TemaScreen() {
         {/* Custom Color Picker Button */}
         <TouchableOpacity
           style={[styles.customBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-          onPress={() => router.push('/pilih-warna')}
+          onPress={async () => {
+            const allowed = await checkThemeChangeAllowed();
+            if (allowed) {
+              router.push('/pilih-warna');
+            }
+          }}
           activeOpacity={0.7}
         >
           <View style={[styles.customBtnIcon, { backgroundColor: colors.tint }]}>

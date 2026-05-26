@@ -4,6 +4,8 @@ import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
+import { Platform } from 'react-native';
+import Purchases, { LOG_LEVEL } from 'react-native-purchases';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
@@ -11,7 +13,7 @@ import { AuthProvider, useAuth } from '@/providers/AuthProvider';
 import { WorkspaceProvider } from '@/providers/WorkspaceProvider';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setAppPrimaryColor } from '@/constants/Colors';
-import { MobileAds } from 'react-native-google-mobile-ads';
+import { MobileAds } from '@/utils/mobile-ads-wrapper';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -82,6 +84,26 @@ export default function RootLayout() {
 
   useEffect(() => {
     MobileAds().initialize().catch(() => console.warn('AdMob init error'));
+    
+    // Initialize RevenueCat Purchases SDK
+    Purchases.setLogLevel(LOG_LEVEL.DEBUG);
+    
+    const androidApiKey = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY;
+    const iosApiKey = process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY;
+
+    if (Platform.OS === 'android') {
+      if (androidApiKey && !androidApiKey.startsWith('test_')) {
+        Purchases.configure({ apiKey: androidApiKey });
+      } else {
+        console.warn('RevenueCat: API Key Android tidak diset atau menggunakan placeholder. Pembelian via Google Play tidak aktif.');
+      }
+    } else if (Platform.OS === 'ios') {
+      if (iosApiKey && !iosApiKey.startsWith('test_')) {
+        Purchases.configure({ apiKey: iosApiKey });
+      } else {
+        console.warn('RevenueCat: API Key iOS tidak diset atau menggunakan placeholder. Pembelian via App Store tidak aktif.');
+      }
+    }
   }, []);
 
   useEffect(() => {

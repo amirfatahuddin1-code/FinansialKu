@@ -1,0 +1,40 @@
+{
+  "cli": {
+    "version": ">= 16.0.0"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "446817582716-t6uppfc460c2ukf1p714b846fodks59a.apps.googleusercontent.com",
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY": "test_iGArwOLKQiibvsWNXBnuLcHxWVW",
+        "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": ""
+      }
+    },
+    "preview": {
+      "android": {
+        "buildType": "apk"
+      },
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "446817582716-t6uppfc460c2ukf1p714b846fodks59a.apps.googleusercontent.com",
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY": "test_iGArwOLKQiibvsWNXBnuLcHxWVW",
+        "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": ""
+      }
+    },
+    "production": {
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "446817582716-t6uppfc460c2ukf1p714b846fodks59a.apps.googleusercontent.com",
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY": "test_iGArwOLKQiibvsWNXBnuLcHxWVW",
+        "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": ""
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

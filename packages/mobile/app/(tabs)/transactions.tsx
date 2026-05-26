@@ -252,7 +252,6 @@ export default function TransactionsScreen() {
 
   const totalIncome = filtered.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
   const totalExpense = filtered.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
-  const totalSavings = filtered.filter(t => t.type === 'savings').reduce((s, t) => s + t.amount, 0);
 
   const modalTitle = `${editId ? 'Edit' : 'Tambah'} ${modalType === 'income' ? 'Pemasukan' : modalType === 'expense' ? 'Pengeluaran' : 'Tabungan'}`;
 

@@ -22,6 +22,7 @@ export default function AddTransactionScreen() {
     editCategoryName?: string;
     editAccountName?: string;
     editSavingsId?: string;
+    editDestinationAccountId?: string;
   }>();
   const isEdit = !!params.editId;
   const { user, api } = useAuth();
@@ -45,8 +46,10 @@ export default function AddTransactionScreen() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
   const [accounts, setAccounts] = useState<FinancialAccount[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string>('');
+  const [selectedDestinationId, setSelectedDestinationId] = useState<string>('');
   const [savingsData, setSavingsData] = useState<Savings[]>([]);
   const [selectedSavingsId, setSelectedSavingsId] = useState<string>('');
+  const [showDestinationPicker, setShowDestinationPicker] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showAddCategory, setShowAddCategory] = useState(false);
@@ -96,6 +99,10 @@ export default function AddTransactionScreen() {
             setSelectedSavingsId(savRes.data[0].id);
           }
         }
+        if (params.editDestinationAccountId) {
+          setSelectedDestinationId(params.editDestinationAccountId);
+          setShowDestinationPicker(true);
+        }
       } catch (err) {
         console.error('Failed to load initial data', err);
       } finally {
@@ -135,6 +142,7 @@ export default function AddTransactionScreen() {
       };
       if (type === 'savings') {
         payload.savings_id = selectedSavingsId;
+        payload.destination_account_id = (showDestinationPicker && selectedDestinationId) ? selectedDestinationId : null;
         delete payload.category_id;
       }
       if (isEdit && params.editId) {
@@ -143,6 +151,13 @@ export default function AddTransactionScreen() {
       } else {
         const { error } = await api.transactions.create(user.id, payload as any);
         if (error) throw error;
+
+        if (type === 'savings' && selectedSavingsId) {
+          const target = savingsData.find(s => s.id === selectedSavingsId);
+          if (target) {
+            await api.savings.update(selectedSavingsId, { current: target.current + amount });
+          }
+        }
       }
       
       router.back();
@@ -170,13 +185,13 @@ export default function AddTransactionScreen() {
         <View style={styles.segmentContainer}>
           <TouchableOpacity
             style={[styles.segmentBtn, type === 'income' && { backgroundColor: '#10b981' }]}
-            onPress={() => { setType('income'); setSelectedCategoryId(''); setSelectedSavingsId(''); }}
+            onPress={() => { setType('income'); setSelectedCategoryId(''); setSelectedSavingsId(''); setSelectedDestinationId(''); setShowDestinationPicker(false); }}
           >
             <Text style={[styles.segmentText, type === 'income' && { color: '#fff' }]}>Pemasukan</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.segmentBtn, type === 'expense' && { backgroundColor: '#ef4444' }]}
-            onPress={() => { setType('expense'); setSelectedCategoryId(''); setSelectedSavingsId(''); }}
+            onPress={() => { setType('expense'); setSelectedCategoryId(''); setSelectedSavingsId(''); setSelectedDestinationId(''); setShowDestinationPicker(false); }}
           >
             <Text style={[styles.segmentText, type === 'expense' && { color: '#fff' }]}>Pengeluaran</Text>
           </TouchableOpacity>
@@ -307,6 +322,54 @@ export default function AddTransactionScreen() {
               );
             })}
           </ScrollView>
+        )}
+
+        {type === 'savings' && (
+          <>
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 16 }}
+              onPress={() => setShowDestinationPicker(!showDestinationPicker)}
+              activeOpacity={0.7}
+            >
+              <View style={{ width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: showDestinationPicker ? '#8b5cf6' : colors.border, backgroundColor: showDestinationPicker ? '#8b5cf6' : 'transparent', justifyContent: 'center', alignItems: 'center' }}>
+                {showDestinationPicker && <Text style={{ color: '#fff', fontSize: 12 }}>✓</Text>}
+              </View>
+              <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>Pindahkan ke rekening lain</Text>
+            </TouchableOpacity>
+
+            {showDestinationPicker && (
+              <>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>Akun Tujuan</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
+                  {accounts.filter(a => a.id !== selectedAccountId).map(acc => {
+                    const isSelected = selectedDestinationId === acc.id;
+                    return (
+                      <TouchableOpacity
+                        key={acc.id}
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          paddingHorizontal: 16,
+                          paddingVertical: 10,
+                          borderRadius: 20,
+                          borderWidth: 2,
+                          borderColor: isSelected ? '#8b5cf6' : 'transparent',
+                          backgroundColor: isSelected ? '#8b5cf6' + '15' : colors.inputBg,
+                          gap: 8,
+                        }}
+                        onPress={() => setSelectedDestinationId(acc.id)}
+                      >
+                        <AccountIcon icon={acc.icon} type={acc.type} size={16} />
+                        <Text style={{ color: colors.text, fontWeight: isSelected ? '700' : '400', fontSize: 13 }}>
+                          {acc.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </>
+            )}
+          </>
         )}
 
         {/* Tanggal */}

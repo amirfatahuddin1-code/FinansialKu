@@ -78,8 +78,37 @@ export default function AddDebtScreen() {
         status: 'unpaid' as const,
         account_id: selectedAccountId || undefined,
       };
-      const { error } = await api.debts.create(user.id, payload as any);
+      const { data: newDebt, error } = await api.debts.create(user.id, payload as any);
       if (error) throw error;
+      
+      if (newDebt) {
+        // Resolve category
+        const catConfig = type === 'payable'
+          ? { name: 'Terima Hutang', type: 'income' as const, icon: '📥', color: '#10b981' }
+          : { name: 'Beri Piutang', type: 'expense' as const, icon: '🤝', color: '#f59e0b' };
+
+        const { data: catData, error: catError } = await api.categories.getOrCreateByName(user.id, catConfig);
+        if (catError) {
+          console.error('Failed to resolve category for debt transaction:', catError);
+        } else if (catData) {
+          // Create transaction
+          const txPayload = {
+            type: catConfig.type,
+            amount,
+            category_id: catData.id,
+            description: type === 'payable' 
+              ? `Terima hutang dari ${counterpart.trim()}`
+              : `Beri piutang kepada ${counterpart.trim()}`,
+            date: getLocalToday(),
+            account_id: selectedAccountId || undefined,
+            debt_id: newDebt.id,
+          };
+          const { error: txError } = await api.transactions.create(user.id, txPayload);
+          if (txError) {
+            console.error('Failed to create automatic transaction for debt:', txError);
+          }
+        }
+      }
       
       router.back();
     } catch (err: any) {

@@ -114,6 +114,20 @@ export default function PlanningScreen() {
   const [showAddBalanceModal, setShowAddBalanceModal] = useState(false);
   const [addBalanceTargetId, setAddBalanceTargetId] = useState<string | null>(null);
   const [addBalanceAmount, setAddBalanceAmount] = useState('');
+  const [lockedAccountId, setLockedAccountId] = useState<string>('');
+  const [showDestinationPicker, setShowDestinationPicker] = useState(false);
+  const [selectedDestinationId, setSelectedDestinationId] = useState<string>('');
+
+  // Tabungan Transfer Modal State
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [transferTargetId, setTransferTargetId] = useState<string | null>(null);
+  const [transferAmount, setTransferAmount] = useState('');
+  const [transferSourceAccountId, setTransferSourceAccountId] = useState<string>('');
+  const [transferDestinationAccountId, setTransferDestinationAccountId] = useState<string>('');
+  const [transferSaving, setTransferSaving] = useState(false);
+
+  // Savings History State
+  const [showSavingsHistory, setShowSavingsHistory] = useState(false);
 
   // Budget History - Selected categories to apply
   const [selectedHistoryApplyIds, setSelectedHistoryApplyIds] = useState<Set<string>>(new Set());
@@ -145,6 +159,7 @@ export default function PlanningScreen() {
     setCurrent('');
     setDeadline(getLocalToday());
     setColor(Colors.primary);
+    setSelectedAccountId('');
     setShowModal(true);
   };
 
@@ -186,8 +201,30 @@ export default function PlanningScreen() {
         const { error } = await api.savings.update(editId, payload);
         if (error) throw error;
       } else {
-        const { error } = await api.savings.create(user.id, payload);
+        const { data: newSavings, error } = await api.savings.create(user.id, payload);
         if (error) throw error;
+
+        if (pCurrent > 0 && selectedAccountId && newSavings) {
+          // Create category with target name
+          const { data: newCat, error: catErr } = await api.categories.create(user.id, {
+            name: name.trim(),
+            icon: '🏦',
+            color: color,
+            type: 'savings',
+          });
+          if (catErr) throw catErr;
+
+          await api.transactions.create(user.id, {
+            type: 'savings',
+            amount: pCurrent,
+            savings_id: newSavings.id,
+            account_id: selectedAccountId,
+            category_id: newCat?.id || undefined,
+            date: new Date().toISOString().split('T')[0],
+            description: `Saldo awal tabungan ${name}`,
+            source: 'manual',
+          } as any);
+        }
       }
 
       setShowModal(false);
@@ -202,8 +239,10 @@ export default function PlanningScreen() {
   const openAddBalanceModal = (g: Savings) => {
     setAddBalanceTargetId(g.id);
     setAddBalanceAmount('');
-    const defaultAcc = accounts.find(a => a.is_default) || accounts[0];
-    setSelectedAccountId(defaultAcc?.id || '');
+    setLockedAccountId('');
+    setSelectedAccountId(accounts.find(a => a.is_default)?.id || accounts[0]?.id || '');
+    setShowDestinationPicker(false);
+    setSelectedDestinationId('');
     setShowAddBalanceModal(true);
   };
 
@@ -225,16 +264,16 @@ export default function PlanningScreen() {
       if (error) throw error;
       
       if (user) {
-        await api.transactions.create(user.id, {
+        const payload: any = {
           type: 'savings',
           amount: amount,
-          category_id: '',
           savings_id: target.id,
           date: new Date().toISOString(),
           description: `Menabung untuk: ${target.name}`,
           source: 'manual',
           account_id: selectedAccountId || undefined,
-        });
+        };
+        await api.transactions.create(user.id, payload);
       }
       
       setShowAddBalanceModal(false);
@@ -246,11 +285,104 @@ export default function PlanningScreen() {
     }
   };
 
+  const openTransferModal = (g: Savings) => {
+    setTransferTargetId(g.id);
+    setTransferAmount('');
+    
+    let defaultSourceId = accounts.find(a => a.is_default)?.id || accounts[0]?.id || '';
+    const firstTx = transactions
+      .filter(t => t.type === 'savings' && t.savings_id === g.id && t.account_id)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+    
+    if (firstTx && firstTx.account_id) {
+      defaultSourceId = firstTx.account_id;
+    }
+    
+    setTransferSourceAccountId(defaultSourceId);
+    
+    const destAcc = accounts.find(a => a.id !== defaultSourceId);
+    setTransferDestinationAccountId(destAcc?.id || '');
+    setShowTransferModal(true);
+  };
+
+  const handleSaveTransfer = async () => {
+    if (!transferTargetId) return;
+    const amount = parseAmount(transferAmount);
+    if (amount <= 0) {
+      Alert.alert('Error', 'Nominal harus lebih dari 0');
+      return;
+    }
+    if (!transferSourceAccountId) {
+      Alert.alert('Error', 'Pilih akun keuangan asal terlebih dahulu');
+      return;
+    }
+    if (!transferDestinationAccountId) {
+      Alert.alert('Error', 'Pilih akun keuangan tujuan terlebih dahulu');
+      return;
+    }
+    if (transferSourceAccountId === transferDestinationAccountId) {
+      Alert.alert('Error', 'Akun asal dan akun tujuan tidak boleh sama');
+      return;
+    }
+
+    setTransferSaving(true);
+    try {
+      const target = savings.find(s => s.id === transferTargetId);
+      if (!target) return;
+
+      const newCurrent = target.current + amount;
+      const { error } = await api.savings.update(target.id, { current: newCurrent });
+      if (error) throw error;
+
+      if (user) {
+        const payload: any = {
+          type: 'savings',
+          amount: amount,
+          savings_id: target.id,
+          date: new Date().toISOString(),
+          description: `Transfer menabung: ${target.name}`,
+          source: 'manual',
+          account_id: transferSourceAccountId,
+          destination_account_id: transferDestinationAccountId,
+        };
+        await api.transactions.create(user.id, payload);
+      }
+
+      setShowTransferModal(false);
+      await loadData();
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Gagal melakukan transfer tabungan');
+    } finally {
+      setTransferSaving(false);
+    }
+  };
+
   const handleDelete = (id: string) => {
-    Alert.alert('Hapus Target', 'Yakin ingin menghapus target tabungan ini?', [
+    const relatedCount = transactions.filter(t => t.type === 'savings' && t.savings_id === id).length;
+    const msg = relatedCount > 0
+      ? `Yakin ingin menghapus target tabungan ini?\n\n${relatedCount} transaksi tabungan terkait juga akan dihapus.`
+      : 'Yakin ingin menghapus target tabungan ini?';
+    Alert.alert('Hapus Target', msg, [
       { text: 'Batal', style: 'cancel' },
       {
         text: 'Hapus', style: 'destructive', onPress: async () => {
+          const target = savings.find(s => s.id === id);
+          const targetName = target?.name || '';
+
+          // Delete all related transactions first
+          const related = transactions.filter(t => t.type === 'savings' && t.savings_id === id);
+          for (const tx of related) {
+            await api.transactions.delete(tx.id);
+          }
+
+          // Delete the associated category (type: savings, name matches target)
+          if (targetName) {
+            const cat = categories.find(c => c.type === 'savings' && c.name === targetName);
+            if (cat) {
+              await api.categories.delete(cat.id);
+            }
+          }
+
           await api.savings.delete(id);
           await loadData();
         }
@@ -260,7 +392,7 @@ export default function PlanningScreen() {
 
   const openBudgetModal = () => {
     const initial: Record<string, string> = {};
-    categories.filter(c => c.type === 'expense' || c.type === 'income' || c.type === 'savings').forEach(c => {
+    categories.filter(c => c.type === 'expense').forEach(c => {
       const existing = budgets.find(b => b.category_id === c.id);
       initial[c.id] = existing ? existing.amount.toLocaleString('id-ID') : '';
     });
@@ -343,6 +475,7 @@ export default function PlanningScreen() {
         api.budgets.upsert(user.id, {
           category_id: b.category_id,
           amount: b.amount,
+          mode: 'nominal',
           month: currentMonth,
           year: currentYear,
         })
@@ -396,6 +529,7 @@ export default function PlanningScreen() {
         api.budgets.upsert(user.id, {
           category_id: b.category_id,
           amount: b.amount,
+          mode: 'nominal',
           month: currentMonth,
           year: currentYear,
         })
@@ -527,26 +661,6 @@ export default function PlanningScreen() {
     }
   }, [params.tab]);
 
-  const akumulasiSaldoCat = categories.find(c => c.name === 'Akumulasi Saldo');
-
-  const saldoAkhir = (() => {
-    const now = new Date();
-    const curMonth = now.getMonth() + 1;
-    const curYear = now.getFullYear();
-    let prevMonth = curMonth - 1;
-    let prevYear = curYear;
-    if (prevMonth === 0) { prevMonth = 12; prevYear--; }
-    const pi = transactions
-      .filter(t => t.type === 'income')
-      .filter(t => { const d = new Date(t.date); return d.getMonth() + 1 === prevMonth && d.getFullYear() === prevYear; })
-      .reduce((s, t) => s + t.amount, 0);
-    const pe = transactions
-      .filter(t => t.type === 'expense')
-      .filter(t => { const d = new Date(t.date); return d.getMonth() + 1 === prevMonth && d.getFullYear() === prevYear; })
-      .reduce((s, t) => s + t.amount, 0);
-    return pi - pe;
-  })();
-
   if (loading) {
     return (
       <View style={[styles.center, { backgroundColor: colors.background }]}>
@@ -590,9 +704,34 @@ export default function PlanningScreen() {
           <View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text }}>Daftar Tabungan</Text>
-              <TouchableOpacity onPress={openAddBalanceModal ? () => {} : openAddModal} style={{ backgroundColor: colors.tint + '20', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }}>
+              <TouchableOpacity onPress={openAddModal} style={{ backgroundColor: colors.tint + '20', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }}>
                 <Text style={{ color: colors.tint, fontWeight: '600', fontSize: 14 }}>+ Tambah Tabungan</Text>
               </TouchableOpacity>
+            </View>
+
+            <View style={{
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+              borderWidth: 1,
+              borderRadius: 16,
+              padding: 14,
+              marginBottom: 16,
+            }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6, gap: 6 }}>
+                <Text style={{ fontSize: 14 }}>💡</Text>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: colors.text }}>Tips Menabung:</Text>
+              </View>
+              <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 18, marginBottom: 8 }}>
+                Setelah membuat target tabungan, kamu bisa mulai menabung dengan 2 cara:
+              </Text>
+              <View style={{ gap: 6 }}>
+                <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 18 }}>
+                  <Text style={{ fontWeight: '700', color: colors.text }}>1. Tombol + Saldo:</Text> Jika kamu memiliki uang di akun A dan ingin disisihkan khusus untuk target ini.
+                </Text>
+                <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 18 }}>
+                  <Text style={{ fontWeight: '700', color: colors.text }}>2. Tombol Transfer:</Text> Jika kamu mentransfer uang dari akun A ke akun keuangan yang lain.
+                </Text>
+              </View>
             </View>
             {savings.length === 0 ? (
               <EmptyState
@@ -610,6 +749,7 @@ export default function PlanningScreen() {
                   onPress={() => openEditModal(g)}
                   onLongPress={() => handleDelete(g.id)}
                   onAddBalance={() => openAddBalanceModal(g)}
+                  onTransfer={() => openTransferModal(g)}
                   onDelete={() => handleDelete(g.id)}
                 />
               ))
@@ -641,71 +781,39 @@ export default function PlanningScreen() {
               />
             ) : (
               <>
-                {(['income', 'expense', 'savings'] as const).map(typeGroup => {
-                  const groupBudgets = budgets.filter(b => {
-                    const cat = categories.find(c => c.id === b.category_id);
-                    return cat?.type === typeGroup;
-                  });
-                  if (groupBudgets.length === 0) return null;
-                  const typeLabels = { income: '💰 Pemasukan', expense: '💳 Pengeluaran', savings: '🏦 Tabungan' };
+                {budgets.filter(b => {
+                  const cat = categories.find(c => c.id === b.category_id);
+                  return cat?.type === 'expense';
+                }).map(b => {
+                  const cat = categories.find(c => c.id === b.category_id) || b.category;
+                  const spent = transactions
+                    .filter(t => t.type === 'expense' && t.category_id === b.category_id)
+                    .filter(t => {
+                      const txDate = new Date(t.date);
+                      return txDate.getMonth() + 1 === b.month && txDate.getFullYear() === b.year;
+                    })
+                    .reduce((sum, t) => sum + t.amount, 0);
+                  const percentage = Math.min(100, Math.round((spent / b.amount) * 100));
+
                   return (
-                    <View key={typeGroup} style={{ marginBottom: 20 }}>
-                      <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text, marginBottom: 10 }}>{typeLabels[typeGroup]}</Text>
-                      {typeGroup === 'income' && saldoAkhir > 0 && akumulasiSaldoCat && (
-                        <View style={[styles.card, { backgroundColor: colors.card }]}>
-                          <View style={styles.cardHeader}>
-                            <View style={styles.cardTitleRow}>
-                              <CategoryIcon emoji={akumulasiSaldoCat.icon} size={20} color={akumulasiSaldoCat.color || colors.tint} />
-                              <Text style={[styles.cardTitle, { color: colors.text }]}>Akumulasi Saldo</Text>
-                            </View>
-                            <Text style={[styles.cardTarget, { color: colors.textSecondary }]}>Rp {saldoAkhir.toLocaleString('id-ID')}</Text>
-                          </View>
+                    <TouchableOpacity key={b.id} style={[styles.card, { backgroundColor: colors.card }]} onPress={openBudgetModal}>
+                      <View style={styles.cardHeader}>
+                        <View style={styles.cardTitleRow}>
+                          <CategoryIcon emoji={cat?.icon || '📦'} size={20} color={cat?.color || colors.tint} />
+                          <Text style={[styles.cardTitle, { color: colors.text }]}>{cat?.name || 'Kategori'}</Text>
                         </View>
-                      )}
-                      {typeGroup === 'expense' && saldoAkhir < 0 && akumulasiSaldoCat && (
-                        <View style={[styles.card, { backgroundColor: colors.card }]}>
-                          <View style={styles.cardHeader}>
-                            <View style={styles.cardTitleRow}>
-                              <CategoryIcon emoji={akumulasiSaldoCat.icon} size={20} color={akumulasiSaldoCat.color || colors.tint} />
-                              <Text style={[styles.cardTitle, { color: colors.text }]}>Akumulasi Saldo</Text>
-                            </View>
-                            <Text style={[styles.cardTarget, { color: colors.textSecondary }]}>Rp {Math.abs(saldoAkhir).toLocaleString('id-ID')}</Text>
-                          </View>
-                        </View>
-                      )}
-                      {groupBudgets.map(b => {
-                        const cat = categories.find(c => c.id === b.category_id) || b.category;
-                        const spent = transactions
-                          .filter(t => t.type === typeGroup && t.category_id === b.category_id)
-                          .filter(t => {
-                            const txDate = new Date(t.date);
-                            return txDate.getMonth() + 1 === b.month && txDate.getFullYear() === b.year;
-                          })
-                          .reduce((sum, t) => sum + t.amount, 0);
-                        const percentage = Math.min(100, Math.round((spent / b.amount) * 100));
-                        
-                        return (
-                          <TouchableOpacity key={b.id} style={[styles.card, { backgroundColor: colors.card }]} onPress={openBudgetModal}>
-                            <View style={styles.cardHeader}>
-                              <View style={styles.cardTitleRow}>
-                                <CategoryIcon emoji={cat?.icon || '📦'} size={20} color={cat?.color || colors.tint} />
-                                <Text style={[styles.cardTitle, { color: colors.text }]}>{cat?.name || 'Kategori'}</Text>
-                              </View>
-                              <Text style={[styles.cardTarget, { color: colors.textSecondary }]}>
-                                Rp {b.amount.toLocaleString('id-ID')}
-                              </Text>
-                            </View>
-                            <View style={[styles.progressContainer, { backgroundColor: colors.border }]}>
-                              <View style={[styles.progressBar, { width: `${percentage}%`, backgroundColor: percentage >= 90 ? Colors.danger : percentage >= 75 ? '#F59E0B' : Colors.success }]} />
-                            </View>
-                            <View style={styles.cardFooter}>
-                              <Text style={[styles.cardCurrent, { color: colors.textSecondary }]}>Terpakai: Rp {spent.toLocaleString('id-ID')}</Text>
-                              <Text style={[styles.cardCurrent, { color: percentage >= 90 ? Colors.danger : colors.textSecondary, fontWeight: '600' }]}>{percentage}%</Text>
-                            </View>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
+                        <Text style={[styles.cardTarget, { color: colors.textSecondary }]}>
+                          Rp {b.amount.toLocaleString('id-ID')}
+                        </Text>
+                      </View>
+                      <View style={[styles.progressContainer, { backgroundColor: colors.border }]}>
+                        <View style={[styles.progressBar, { width: `${percentage}%`, backgroundColor: percentage >= 90 ? Colors.danger : percentage >= 75 ? '#F59E0B' : Colors.success }]} />
+                      </View>
+                      <View style={styles.cardFooter}>
+                        <Text style={[styles.cardCurrent, { color: colors.textSecondary }]}>Terpakai: Rp {spent.toLocaleString('id-ID')}</Text>
+                        <Text style={[styles.cardCurrent, { color: percentage >= 90 ? Colors.danger : colors.textSecondary, fontWeight: '600' }]}>{percentage}%</Text>
+                      </View>
+                    </TouchableOpacity>
                   );
                 })}
               </>
@@ -768,7 +876,7 @@ export default function PlanningScreen() {
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      <View style={styles.fabContainer}>
+      <View style={styles.fabContainer} pointerEvents="box-none">
         <FAB 
           label={activeTab === 'anggaran' ? '+ Anggaran' : activeTab === 'acara' ? '+ Acara' : '+ Target'} 
           onPress={activeTab === 'anggaran' ? openBudgetModal : activeTab === 'acara' ? openAddEventModal : openAddModal} 
@@ -781,6 +889,7 @@ export default function PlanningScreen() {
         onClose={() => setShowModal(false)}
         title={editId ? 'Edit Target' : 'Target Baru'}
       >
+        <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Nama Target</Text>
         <TextInput
           style={[styles.input, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
@@ -800,15 +909,53 @@ export default function PlanningScreen() {
           onChangeText={(val) => setTarget(formatInputAmount(val))}
         />
 
-        <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Saldo Saat Ini (Rp)</Text>
-        <TextInput
-          style={[styles.input, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
-          placeholder="0"
-          placeholderTextColor={colors.textMuted}
-          keyboardType="numeric"
-          value={current}
-          onChangeText={(val) => setCurrent(formatInputAmount(val))}
-        />
+        {!editId && (
+          <>
+            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Saldo Saat Ini (Rp)</Text>
+            <TextInput
+              style={[styles.input, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
+              placeholder="0"
+              placeholderTextColor={colors.textMuted}
+              keyboardType="numeric"
+              value={current}
+              onChangeText={(val) => setCurrent(formatInputAmount(val))}
+            />
+
+            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Akun Keuangan</Text>
+            {accounts.length === 0 ? (
+              <Text style={{ color: colors.textMuted, fontSize: 13 }}>Belum ada akun keuangan. Atur di Pengaturan.</Text>
+            ) : (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
+                {accounts.map(acc => {
+                  const active = selectedAccountId === acc.id;
+                  return (
+                    <TouchableOpacity
+                      key={acc.id}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        paddingHorizontal: 16,
+                        paddingVertical: 10,
+                        borderRadius: 20,
+                        borderWidth: 2,
+                        borderColor: active ? (acc.color || colors.tint) : 'transparent',
+                        backgroundColor: active ? (acc.color || colors.tint) + '15' : colors.inputBg,
+                        gap: 8,
+                      }}
+                      onPress={() => setSelectedAccountId(acc.id)}
+                      activeOpacity={0.7}
+                    >
+                      <AccountIcon icon={acc.icon} type={acc.type} size={16} />
+                      <Text style={{ color: colors.text, fontWeight: active ? '700' : '400', fontSize: 13 }}>
+                        {acc.name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            )}
+          </>
+        )}
 
         <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Deadline</Text>
         <TouchableOpacity
@@ -852,6 +999,104 @@ export default function PlanningScreen() {
           ))}
         </View>
 
+        {editId && (
+          <>
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 20, paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.border }}
+              onPress={() => setShowSavingsHistory(!showSavingsHistory)}
+              activeOpacity={0.7}
+            >
+              <Text style={{ color: colors.text, fontSize: 15, fontWeight: '700', flex: 1 }}>
+                Riwayat Tambah Saldo
+              </Text>
+              <Text style={{ color: colors.textMuted, fontSize: 16, transform: [{ rotate: showSavingsHistory ? '180deg' : '0deg' }] }}>
+                ▼
+              </Text>
+            </TouchableOpacity>
+
+            {showSavingsHistory && (
+              <View style={{ marginTop: 8 }}>
+                {transactions.filter(t => t.type === 'savings' && t.savings_id === editId).length === 0 ? (
+                  <Text style={{ color: colors.textMuted, fontSize: 13, textAlign: 'center', paddingVertical: 16 }}>
+                    Belum ada riwayat tambah saldo
+                  </Text>
+                ) : (
+                  transactions
+                    .filter(t => t.type === 'savings' && t.savings_id === editId)
+                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                    .map(tx => {
+                      const acc = accounts.find(a => a.id === tx.account_id);
+                      return (
+                        <View key={tx.id} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, gap: 10 }}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text }}>
+                              Rp {tx.amount.toLocaleString('id-ID')}
+                            </Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                              <Text style={{ fontSize: 11, color: colors.textMuted }}>
+                                {new Date(tx.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              </Text>
+                              {acc && (
+                                <Text style={{ fontSize: 11, color: colors.textMuted }}>
+                                  · {acc.name}
+                                </Text>
+                              )}
+                            </View>
+                          </View>
+                          <TouchableOpacity
+                            style={{ padding: 6 }}
+                            onPress={() => {
+                              const targetAcc = accounts.find(a => a.id === tx.account_id);
+                              setShowModal(false);
+                              router.push({
+                                pathname: '/add-transaction',
+                                params: {
+                                  editId: tx.id,
+                                  editType: 'savings',
+                                  editAmount: tx.amount.toString(),
+                                  editDescription: tx.description,
+                                  editDate: tx.date,
+                                  editSavingsId: tx.savings_id,
+                                  editAccountName: targetAcc?.name || '',
+                                  editDestinationAccountId: tx.destination_account_id || '',
+                                },
+                              } as never);
+                            }}
+                            activeOpacity={0.6}
+                          >
+                            <Text style={{ color: colors.tint, fontSize: 13, fontWeight: '600' }}>Edit</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={{ padding: 6 }}
+                            onPress={() => {
+                              Alert.alert('Hapus Transaksi', 'Yakin ingin menghapus transaksi ini?', [
+                                { text: 'Batal', style: 'cancel' },
+                                {
+                                  text: 'Hapus', style: 'destructive', onPress: async () => {
+                                    await api.transactions.delete(tx.id);
+                                    const sav = savings.find(s => s.id === editId);
+                                    if (sav) {
+                                      const newCurrent = Math.max(0, sav.current - tx.amount);
+                                      await api.savings.update(editId, { current: newCurrent });
+                                    }
+                                    await loadData();
+                                  }
+                                },
+                              ]);
+                            }}
+                            activeOpacity={0.6}
+                          >
+                            <Text style={{ color: Colors.danger, fontSize: 13, fontWeight: '600' }}>Hapus</Text>
+                          </TouchableOpacity>
+                        </View>
+                      );
+                    })
+                )}
+              </View>
+            )}
+          </>
+        )}
+
         <TouchableOpacity
           style={[styles.saveBtn, { backgroundColor: Colors.primary, opacity: saving ? 0.7 : 1 }]}
           onPress={handleSave}
@@ -860,36 +1105,27 @@ export default function PlanningScreen() {
         >
           {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Simpan Target</Text>}
         </TouchableOpacity>
+        </ScrollView>
       </BottomSheet>
 
       {/* Budget Modal */}
       <BottomSheet visible={showBudgetModal} onClose={() => { setShowBudgetModal(false); setShowNewCategoryForm(false); }} title="Atur Anggaran Bulanan">
         <ScrollView style={{ maxHeight: 400, marginBottom: 16 }} showsVerticalScrollIndicator={false}>
-          {(['income', 'expense', 'savings'] as const).map(typeGroup => {
-            const typeLabels = { income: '💰 Pemasukan', expense: '💳 Pengeluaran', savings: '🏦 Tabungan' };
-            const groupCats = categories.filter(c => c.type === typeGroup);
-            if (groupCats.length === 0) return null;
+          {categories.filter(c => c.type === 'expense').map((c) => {
             return (
-              <View key={typeGroup} style={{ marginBottom: 16 }}>
-                <Text style={{ fontSize: 14, fontWeight: '700', color: colors.text, marginBottom: 8 }}>{typeLabels[typeGroup]}</Text>
-                {groupCats.map((c) => {
-                  return (
-                    <View key={c.id} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 12 }}>
-                      <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: (c.color || colors.tint) + '20', justifyContent: 'center', alignItems: 'center' }}>
-                        <CategoryIcon emoji={c.icon} size={20} color={c.color || colors.tint} />
-                      </View>
-                      <Text style={{ flex: 1, fontSize: 14, fontWeight: '600', color: colors.text }}>{c.name}</Text>
-                      <TextInput
-                        style={[styles.input, { flex: 1, backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border, paddingVertical: 8, paddingHorizontal: 12 }]}
-                        placeholder="0"
-                        placeholderTextColor={colors.textMuted}
-                        keyboardType="numeric"
-                        value={budgetAmounts[c.id] || ''}
-                        onChangeText={(val) => setBudgetAmounts(prev => ({ ...prev, [c.id]: formatInputAmount(val) }))}
-                      />
-                    </View>
-                  );
-                })}
+              <View key={c.id} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 12 }}>
+                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: (c.color || colors.tint) + '20', justifyContent: 'center', alignItems: 'center' }}>
+                  <CategoryIcon emoji={c.icon} size={20} color={c.color || colors.tint} />
+                </View>
+                <Text style={{ flex: 1, fontSize: 14, fontWeight: '600', color: colors.text }}>{c.name}</Text>
+                <TextInput
+                  style={[styles.input, { flex: 1, backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border, paddingVertical: 8, paddingHorizontal: 12 }]}
+                  placeholder="0"
+                  placeholderTextColor={colors.textMuted}
+                  keyboardType="numeric"
+                  value={budgetAmounts[c.id] || ''}
+                  onChangeText={(val) => setBudgetAmounts(prev => ({ ...prev, [c.id]: formatInputAmount(val) }))}
+                />
               </View>
             );
           })}
@@ -1058,38 +1294,28 @@ export default function PlanningScreen() {
                     </View>
                     <Text style={{ fontSize: 13, color: colors.tint, fontWeight: '600' }}>Pilih semua</Text>
                   </TouchableOpacity>
-                  {(['income', 'expense', 'savings'] as const).map(typeGroup => {
-                    const typeLabels = { income: '💰 Pemasukan', expense: '💳 Pengeluaran', savings: '🏦 Tabungan' };
-                    const groupBudgets = historyBudgets.filter(b => {
-                      const cat = categories.find(c => c.id === b.category_id);
-                      return cat?.type === typeGroup;
-                    });
-                    if (groupBudgets.length === 0) return null;
+                  {historyBudgets.filter(b => {
+                    const cat = categories.find(c => c.id === b.category_id);
+                    return cat?.type === 'expense';
+                  }).map((b) => {
+                    const cat = categories.find((c) => c.id === b.category_id) || b.category;
+                    const isChecked = selectedHistoryApplyIds.has(b.category_id);
                     return (
-                      <View key={typeGroup} style={{ marginBottom: 12 }}>
-                        <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 6 }}>{typeLabels[typeGroup]}</Text>
-                        {groupBudgets.map((b) => {
-                          const cat = categories.find((c) => c.id === b.category_id) || b.category;
-                          const isChecked = selectedHistoryApplyIds.has(b.category_id);
-                          return (
-                            <TouchableOpacity key={b.id} style={[styles.listItem, { borderBottomColor: colors.border }]} onPress={() => {
-                              const next = new Set(selectedHistoryApplyIds);
-                              if (isChecked) next.delete(b.category_id); else next.add(b.category_id);
-                              setSelectedHistoryApplyIds(next);
-                            }} activeOpacity={0.7}>
-                              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: 10 }}>
-                                <View style={{ width: 20, height: 20, borderRadius: 4, borderWidth: 2, borderColor: isChecked ? Colors.primary : colors.border, backgroundColor: isChecked ? Colors.primary : 'transparent', justifyContent: 'center', alignItems: 'center' }}>
-                                  {isChecked && <Text style={{ color: '#fff', fontSize: 12 }}>✓</Text>}
-                                </View>
-                                <Text style={[styles.listItemTitle, { color: colors.text }]}>{cat?.name || 'Kategori'}</Text>
-                              </View>
-                              <Text style={[styles.listItemSub, { color: colors.textSecondary, fontWeight: '600' }]}>
-                                Rp {b.amount.toLocaleString('id-ID')}
-                              </Text>
-                            </TouchableOpacity>
-                          );
-                        })}
-                      </View>
+                      <TouchableOpacity key={b.id} style={[styles.listItem, { borderBottomColor: colors.border }]} onPress={() => {
+                        const next = new Set(selectedHistoryApplyIds);
+                        if (isChecked) next.delete(b.category_id); else next.add(b.category_id);
+                        setSelectedHistoryApplyIds(next);
+                      }} activeOpacity={0.7}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: 10 }}>
+                          <View style={{ width: 20, height: 20, borderRadius: 4, borderWidth: 2, borderColor: isChecked ? Colors.primary : colors.border, backgroundColor: isChecked ? Colors.primary : 'transparent', justifyContent: 'center', alignItems: 'center' }}>
+                            {isChecked && <Text style={{ color: '#fff', fontSize: 12 }}>✓</Text>}
+                          </View>
+                          <Text style={[styles.listItemTitle, { color: colors.text }]}>{cat?.name || 'Kategori'}</Text>
+                        </View>
+                        <Text style={[styles.listItemSub, { color: colors.textSecondary, fontWeight: '600' }]}>
+                          Rp {b.amount.toLocaleString('id-ID')}
+                        </Text>
+                      </TouchableOpacity>
                     );
                   })}
                 </View>
@@ -1172,49 +1398,39 @@ export default function PlanningScreen() {
                     </View>
                     <Text style={{ fontSize: 13, color: '#10b981', fontWeight: '600' }}>Pilih semua</Text>
                   </TouchableOpacity>
-                  {(['income', 'expense', 'savings'] as const).map(typeGroup => {
-                    const typeLabels = { income: '💰 Pemasukan', expense: '💳 Pengeluaran', savings: '🏦 Tabungan' };
-                    const groupBudgets = realizationBudgets.filter((b: any) => {
-                      const cat = categories.find(c => c.id === b.category_id);
-                      return cat?.type === typeGroup;
-                    });
-                    if (groupBudgets.length === 0) return null;
+                  {realizationBudgets.filter((b: any) => {
+                    const cat = categories.find(c => c.id === b.category_id);
+                    return cat?.type === 'expense';
+                  }).map((b: any) => {
+                    const cat = categories.find((c) => c.id === b.category_id) || b.category;
+                    const isChecked = selectedRealizationApplyIds.has(b.category_id);
+                    const pct = b.percentage || 0;
                     return (
-                      <View key={typeGroup} style={{ marginBottom: 12 }}>
-                        <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 6 }}>{typeLabels[typeGroup]}</Text>
-                        {groupBudgets.map((b: any) => {
-                          const cat = categories.find((c) => c.id === b.category_id) || b.category;
-                          const isChecked = selectedRealizationApplyIds.has(b.category_id);
-                          const pct = b.percentage || 0;
-                          return (
-                            <TouchableOpacity key={b.id} style={[styles.listItem, { borderBottomColor: colors.border, flexDirection: 'column', alignItems: 'stretch' }]} onPress={() => {
-                              const next = new Set(selectedRealizationApplyIds);
-                              if (isChecked) next.delete(b.category_id); else next.add(b.category_id);
-                              setSelectedRealizationApplyIds(next);
-                            }} activeOpacity={0.7}>
-                              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: 10 }}>
-                                  <View style={{ width: 20, height: 20, borderRadius: 4, borderWidth: 2, borderColor: isChecked ? '#10b981' : colors.border, backgroundColor: isChecked ? '#10b981' : 'transparent', justifyContent: 'center', alignItems: 'center' }}>
-                                    {isChecked && <Text style={{ color: '#fff', fontSize: 12 }}>✓</Text>}
-                                  </View>
-                                  <CategoryIcon emoji={cat?.icon || '📦'} size={16} color={cat?.color || colors.tint} />
-                                  <Text style={[styles.listItemTitle, { color: colors.text }]}>{cat?.name || 'Kategori'}</Text>
-                                </View>
-                                <Text style={[styles.listItemSub, { color: pct >= 90 ? Colors.danger : pct >= 75 ? '#F59E0B' : colors.textSecondary, fontWeight: '700' }]}>
-                                  {pct}%
-                                </Text>
-                              </View>
-                              <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingLeft: 30 }}>
-                                <Text style={{ fontSize: 12, color: colors.textSecondary }}>Anggaran: Rp {b.amount.toLocaleString('id-ID')}</Text>
-                                <Text style={{ fontSize: 12, color: b.spent > b.amount ? Colors.danger : colors.textSecondary }}>Realisasi: Rp {b.spent.toLocaleString('id-ID')}</Text>
-                              </View>
-                              <View style={[styles.progressContainer, { backgroundColor: colors.border, marginTop: 6, marginBottom: 0, paddingLeft: 30 }]}>
-                                <View style={[styles.progressBar, { width: `${pct}%`, backgroundColor: pct >= 90 ? Colors.danger : pct >= 75 ? '#F59E0B' : '#10b981' }]} />
-                              </View>
-                            </TouchableOpacity>
-                          );
-                        })}
-                      </View>
+                      <TouchableOpacity key={b.id} style={[styles.listItem, { borderBottomColor: colors.border, flexDirection: 'column', alignItems: 'stretch' }]} onPress={() => {
+                        const next = new Set(selectedRealizationApplyIds);
+                        if (isChecked) next.delete(b.category_id); else next.add(b.category_id);
+                        setSelectedRealizationApplyIds(next);
+                      }} activeOpacity={0.7}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: 10 }}>
+                            <View style={{ width: 20, height: 20, borderRadius: 4, borderWidth: 2, borderColor: isChecked ? '#10b981' : colors.border, backgroundColor: isChecked ? '#10b981' : 'transparent', justifyContent: 'center', alignItems: 'center' }}>
+                              {isChecked && <Text style={{ color: '#fff', fontSize: 12 }}>✓</Text>}
+                            </View>
+                            <CategoryIcon emoji={cat?.icon || '📦'} size={16} color={cat?.color || colors.tint} />
+                            <Text style={[styles.listItemTitle, { color: colors.text }]}>{cat?.name || 'Kategori'}</Text>
+                          </View>
+                          <Text style={[styles.listItemSub, { color: pct >= 90 ? Colors.danger : pct >= 75 ? '#F59E0B' : colors.textSecondary, fontWeight: '700' }]}>
+                            {pct}%
+                          </Text>
+                        </View>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingLeft: 30 }}>
+                          <Text style={{ fontSize: 12, color: colors.textSecondary }}>Anggaran: Rp {b.amount.toLocaleString('id-ID')}</Text>
+                          <Text style={{ fontSize: 12, color: b.spent > b.amount ? Colors.danger : colors.textSecondary }}>Realisasi: Rp {b.spent.toLocaleString('id-ID')}</Text>
+                        </View>
+                        <View style={[styles.progressContainer, { backgroundColor: colors.border, marginTop: 6, marginBottom: 0, paddingLeft: 30 }]}>
+                          <View style={[styles.progressBar, { width: `${pct}%`, backgroundColor: pct >= 90 ? Colors.danger : pct >= 75 ? '#F59E0B' : '#10b981' }]} />
+                        </View>
+                      </TouchableOpacity>
                     );
                   })}
                 </View>
@@ -1312,11 +1528,6 @@ export default function PlanningScreen() {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
             {accounts.map(acc => {
               const active = selectedAccountId === acc.id;
-              let icon = '💵';
-              if (acc.type === 'bank') icon = '💳';
-              else if (acc.type === 'ewallet') icon = '📱';
-              else if (acc.type === 'investment') icon = '📈';
-
               return (
                 <TouchableOpacity
                   key={acc.id}
@@ -1349,6 +1560,8 @@ export default function PlanningScreen() {
           </ScrollView>
         )}
 
+
+
         <TouchableOpacity
           style={[styles.saveBtn, { backgroundColor: Colors.success, opacity: saving ? 0.7 : 1 }]}
           onPress={handleSaveBalance}
@@ -1356,6 +1569,111 @@ export default function PlanningScreen() {
           activeOpacity={0.8}
         >
           {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Simpan Saldo</Text>}
+        </TouchableOpacity>
+      </BottomSheet>
+
+      <BottomSheet visible={showTransferModal} onClose={() => setShowTransferModal(false)} title="Transfer Tabungan">
+        <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Nominal Transfer (Rp)</Text>
+        <TextInput
+          style={[styles.input, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
+          placeholder="0"
+          placeholderTextColor={colors.textMuted}
+          keyboardType="numeric"
+          value={transferAmount}
+          onChangeText={(val) => setTransferAmount(formatInputAmount(val))}
+        />
+
+        <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Akun Keuangan Asal</Text>
+        {accounts.length === 0 ? (
+          <Text style={{ color: colors.textMuted, fontSize: 13 }}>Belum ada akun keuangan. Atur di Pengaturan.</Text>
+        ) : (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
+            {accounts.map(acc => {
+              const active = transferSourceAccountId === acc.id;
+              return (
+                <TouchableOpacity
+                  key={acc.id}
+                  style={[
+                    {
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      backgroundColor: active ? (acc.color || colors.tint) + '25' : colors.inputBg,
+                      borderColor: active ? acc.color || colors.tint : colors.border,
+                      borderWidth: 1.5,
+                      paddingVertical: 8,
+                      paddingHorizontal: 14,
+                      borderRadius: 20,
+                      gap: 6,
+                    },
+                  ]}
+                  onPress={() => {
+                    setTransferSourceAccountId(acc.id);
+                    if (transferDestinationAccountId === acc.id) {
+                      const otherAcc = accounts.find(a => a.id !== acc.id);
+                      setTransferDestinationAccountId(otherAcc?.id || '');
+                    }
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <AccountIcon icon={acc.icon} type={acc.type} size={15} />
+                  <Text
+                    style={{ fontSize: 13, fontWeight: '600', color: active ? colors.text : colors.textSecondary }}
+                    numberOfLines={1}
+                  >
+                    {acc.name}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        )}
+
+        <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Akun Keuangan Tujuan</Text>
+        {accounts.filter(a => a.id !== transferSourceAccountId).length === 0 ? (
+          <Text style={{ color: colors.textMuted, fontSize: 13 }}>Belum ada akun keuangan tujuan lain.</Text>
+        ) : (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
+            {accounts.filter(a => a.id !== transferSourceAccountId).map(acc => {
+              const active = transferDestinationAccountId === acc.id;
+              return (
+                <TouchableOpacity
+                  key={acc.id}
+                  style={[
+                    {
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      backgroundColor: active ? (acc.color || colors.tint) + '25' : colors.inputBg,
+                      borderColor: active ? acc.color || colors.tint : colors.border,
+                      borderWidth: 1.5,
+                      paddingVertical: 8,
+                      paddingHorizontal: 14,
+                      borderRadius: 20,
+                      gap: 6,
+                    },
+                  ]}
+                  onPress={() => setTransferDestinationAccountId(acc.id)}
+                  activeOpacity={0.7}
+                >
+                  <AccountIcon icon={acc.icon} type={acc.type} size={15} />
+                  <Text
+                    style={{ fontSize: 13, fontWeight: '600', color: active ? colors.text : colors.textSecondary }}
+                    numberOfLines={1}
+                  >
+                    {acc.name}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        )}
+
+        <TouchableOpacity
+          style={[styles.saveBtn, { backgroundColor: '#8b5cf6', opacity: transferSaving ? 0.7 : 1 }]}
+          onPress={handleSaveTransfer}
+          disabled={transferSaving}
+          activeOpacity={0.8}
+        >
+          {transferSaving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Simpan Transfer</Text>}
         </TouchableOpacity>
       </BottomSheet>
     </View>

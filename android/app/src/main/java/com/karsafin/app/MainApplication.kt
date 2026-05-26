@@ -1,4 +1,4 @@
-package com.anonymous.karsafin
+package com.karsafin.app
 
 import android.app.Application
 import android.content.res.Configuration

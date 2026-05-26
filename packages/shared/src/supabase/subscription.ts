@@ -37,7 +37,8 @@ export function createSubscriptionAPI(supabase: SupabaseClient) {
     async createPayment(
       planId: string,
       user: { id: string; email: string; user_metadata?: { name?: string } },
-      accessToken?: string
+      accessToken?: string,
+      appRedirectUrl?: string
     ) {
       try {
         const token = accessToken || SUPABASE_ANON_KEY;
@@ -54,6 +55,7 @@ export function createSubscriptionAPI(supabase: SupabaseClient) {
               user_id: user.id,
               user_email: user.email,
               user_name: user.user_metadata?.name || user.email?.split('@')[0],
+              app_redirect_url: appRedirectUrl,
             }),
           }
         );

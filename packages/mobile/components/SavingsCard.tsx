@@ -11,12 +11,14 @@ export default function SavingsCard({
   onPress,
   onLongPress,
   onAddBalance,
+  onTransfer,
   onDelete,
 }: {
   goal: Savings
   onPress?: () => void
   onLongPress?: () => void
   onAddBalance?: () => void
+  onTransfer?: () => void
   onDelete?: () => void
 }) {
   const colorScheme = useColorScheme() ?? 'dark'
@@ -51,11 +53,16 @@ export default function SavingsCard({
       )}
       </TouchableOpacity>
       
-      {(onAddBalance || onDelete) && (
+      {(onAddBalance || onTransfer || onDelete) && (
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 16 }}>
           {onAddBalance && (
             <TouchableOpacity onPress={onAddBalance} activeOpacity={0.7} style={{ flex: 1, backgroundColor: 'rgba(16, 185, 129, 0.1)', paddingVertical: 10, borderRadius: 8, alignItems: 'center' }}>
-              <Text style={{ color: Colors.success, fontWeight: '700', fontSize: 13 }}>+ Tambah Saldo</Text>
+              <Text style={{ color: Colors.success, fontWeight: '700', fontSize: 13 }}>+ Saldo</Text>
+            </TouchableOpacity>
+          )}
+          {onTransfer && (
+            <TouchableOpacity onPress={onTransfer} activeOpacity={0.7} style={{ flex: 1, backgroundColor: 'rgba(139, 92, 246, 0.1)', paddingVertical: 10, borderRadius: 8, alignItems: 'center' }}>
+              <Text style={{ color: '#8b5cf6', fontWeight: '700', fontSize: 13 }}>⚡ Transfer</Text>
             </TouchableOpacity>
           )}
           {onDelete && (

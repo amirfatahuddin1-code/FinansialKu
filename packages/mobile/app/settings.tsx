@@ -17,10 +17,14 @@ import Colors from '@/constants/Colors';
 import { Spacing, BorderRadius } from '@/constants/DesignSystem';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { router } from 'expo-router';
+import Purchases from 'react-native-purchases';
 import { useAuth } from '@/providers/AuthProvider';
 import { useWorkspace } from '@/providers/WorkspaceProvider';
 import * as Clipboard from 'expo-clipboard';
 import * as WebBrowser from 'expo-web-browser';
+import { makeRedirectUri } from 'expo-auth-session';
+import * as Linking from 'expo-linking';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { BottomSheet } from '@/components';
 import type {
   FinancialAccount,
@@ -295,6 +299,16 @@ export default function SettingsScreen() {
 
   const handleCreateFamily = async () => {
     if (!user || !newFamilyName.trim()) return;
+
+    const isPro = subscription?.plan_id && subscription.plan_id !== 'basic';
+    if (!isPro && workspaces.length >= 2) {
+      Alert.alert(
+        'Batas Workspace Tercapai',
+        'Pengguna paket Basic hanya dapat memiliki maksimal 2 workspace. Silakan upgrade ke paket Pro untuk membuat workspace baru!'
+      );
+      return;
+    }
+
     setSaving(true);
     try {
       const { error } = await api.workspaces.create(user.id, newFamilyName.trim(), 'family');
@@ -312,6 +326,16 @@ export default function SettingsScreen() {
 
   const handleJoinFamily = async () => {
     if (!user || !joinInviteCode.trim()) return;
+
+    const isPro = subscription?.plan_id && subscription.plan_id !== 'basic';
+    if (!isPro && workspaces.length >= 2) {
+      Alert.alert(
+        'Batas Workspace Tercapai',
+        'Pengguna paket Basic hanya dapat memiliki maksimal 2 workspace. Silakan upgrade ke paket Pro untuk bergabung ke workspace baru!'
+      );
+      return;
+    }
+
     setSaving(true);
     try {
       const { error } = await api.workspaces.join(user.id, joinInviteCode.trim());
@@ -529,13 +553,20 @@ export default function SettingsScreen() {
       const expiresAt = new Date();
       expiresAt.setDate(now.getDate() + plan.duration_days);
 
+      // Deactivate any existing active subscriptions first
+      await api.supabase
+        .from('subscriptions')
+        .update({ status: 'expired', updated_at: now.toISOString() })
+        .eq('user_id', user.id)
+        .eq('status', 'active');
+
       const { error } = await api.supabase
         .from('subscriptions')
         .insert({
           user_id: user.id,
           plan_id: plan.id,
           status: 'active',
-          started_at: now.toISOString(),
+          starts_at: now.toISOString(),
           expires_at: expiresAt.toISOString(),
         });
 
@@ -550,40 +581,37 @@ export default function SettingsScreen() {
     }
   };
 
-  const processMidtransPayment = async (plan: SubscriptionPlan) => {
+  const processRevenueCatPurchase = async (plan: SubscriptionPlan) => {
     if (!user) return;
     setSaving(true);
     try {
-      const sessionRes = await api.auth.getSession();
-      const token = sessionRes.data?.session?.access_token || undefined;
+      const configured = await Purchases.isConfigured();
+      if (!configured) {
+        Alert.alert(
+          'Pembelian Tidak Tersedia',
+          'API Key RevenueCat belum dikonfigurasi secara lengkap di lingkungan ini. Harap hubungkan API Key Google Play / App Store asli di file .env Anda.'
+        );
+        return;
+      }
+
+      const productId = plan.id; // Harus sama dengan Product ID di Google Play Console dan RevenueCat
+
+      // Mulai proses pembelian menggunakan Purchases SDK
+      const { customerInfo } = await Purchases.purchaseProduct(productId);
       
-      const { data, error } = await api.subscription.createPayment(
-        plan.id,
-        {
-          id: user.id,
-          email: user.email || '',
-          user_metadata: user.user_metadata,
-        },
-        token
-      );
-
-      if (error) throw error;
-      if (!data) throw new Error('Gagal mendapatkan data pembayaran');
-
-      const redirectUrl = data.redirect_url || data.snap_url;
-      if (redirectUrl) {
-        const result = await WebBrowser.openBrowserAsync(redirectUrl);
-        if (result.type === 'cancel') {
-          Alert.alert('Informasi', 'Pembayaran dibatalkan.');
-        } else {
-          Alert.alert('Menunggu Pembayaran', 'Jika pembayaran berhasil, status langganan Anda akan diperbarui secara otomatis. Silakan refresh halaman pengaturan beberapa saat lagi.');
-        }
+      // Jika entitlement 'karsafin_pro' aktif setelah pembelian sukses
+      if (typeof customerInfo.entitlements.active['karsafin_pro'] !== 'undefined') {
+        Alert.alert('Sukses!', `Paket ${plan.name} berhasil diaktifkan. Anda sekarang adalah pengguna Karsafin Pro!`);
       } else {
-        throw new Error('Url pembayaran tidak ditemukan. Harap gunakan metode Simulasi.');
+        Alert.alert('Sukses!', 'Pembayaran berhasil dikirim. Langganan Anda sedang diproses oleh server.');
       }
       loadData();
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Gagal memproses pembayaran via Midtrans');
+      if (!err.userCancelled) {
+        Alert.alert('Error', err.message || 'Gagal memproses pembayaran via Google Play');
+      } else {
+        Alert.alert('Dibatalkan', 'Pembayaran dibatalkan.');
+      }
     } finally {
       setSaving(false);
     }
@@ -592,19 +620,58 @@ export default function SettingsScreen() {
   const handleSubscribe = async (plan: SubscriptionPlan) => {
     if (!user) return;
     
+    const options: any[] = [
+      { text: 'Batal', style: 'cancel' },
+      {
+        text: 'Google Play (Asli)',
+        onPress: () => processRevenueCatPurchase(plan),
+      },
+    ];
+
+    if (__DEV__) {
+      options.push({
+        text: 'Aktifkan Instan (Simulasi)',
+        style: 'default',
+        onPress: () => processSimulatedSubscription(plan),
+      });
+    }
+
     Alert.alert(
       'Aktifkan Langganan',
       `Pilih metode pembayaran untuk paket ${plan.name} (Rp ${plan.price.toLocaleString('id-ID')}):`,
+      options
+    );
+  };
+
+  const handleCancelSubscription = async () => {
+    if (!subscription || !user) return;
+    
+    Alert.alert(
+      'Batalkan Langganan',
+      'Apakah Anda yakin ingin membatalkan langganan Karsafin Premium? Jika Anda berlangganan melalui Play Store atau App Store, Anda mungkin perlu membatalkannya langsung di pengaturan perangkat Anda.',
       [
-        { text: 'Batal', style: 'cancel' },
+        { text: 'Kembali', style: 'cancel' },
         {
-          text: 'Midtrans Payment (Asli)',
-          onPress: () => processMidtransPayment(plan),
-        },
-        {
-          text: 'Aktifkan Instan (Simulasi)',
-          style: 'default',
-          onPress: () => processSimulatedSubscription(plan),
+          text: 'Batalkan',
+          style: 'destructive',
+          onPress: async () => {
+            setSaving(true);
+            try {
+              const { error } = await api.supabase
+                .from('subscriptions')
+                .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+                .eq('id', subscription.id);
+                
+              if (error) throw error;
+              
+              Alert.alert('Berhasil', 'Langganan berhasil dibatalkan.');
+              loadData();
+            } catch (err: any) {
+              Alert.alert('Error', err.message || 'Gagal membatalkan langganan');
+            } finally {
+              setSaving(false);
+            }
+          }
         }
       ]
     );
@@ -1361,6 +1428,14 @@ export default function SettingsScreen() {
               <Text style={[styles.integrationDesc, { color: colors.textSecondary, marginTop: 4, marginBottom: 16 }]}>
                 Paket {subscription.subscription_plans?.name || 'Pro'} {subscription.subscription_plans?.name?.includes('Lifetime') ? 'aktif selamanya' : `aktif hingga ${new Date(subscription.expires_at).toLocaleDateString('id-ID')}`}
               </Text>
+              <TouchableOpacity
+                style={[styles.saveBtn, { backgroundColor: Colors.danger, marginBottom: 16, opacity: saving ? 0.7 : 1 }]}
+                onPress={handleCancelSubscription}
+                disabled={saving}
+                activeOpacity={0.8}
+              >
+                {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Batalkan Langganan</Text>}
+              </TouchableOpacity>
             </>
           ) : (
             <>

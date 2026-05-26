@@ -7,7 +7,7 @@ export function createTransactionsAPI(supabase: SupabaseClient) {
     async getAll(filters: TransactionFilters = {}) {
       let query = supabase
         .from('transactions')
-        .select(`*, category:categories(id, name, icon, color), account:financial_accounts(id, name, type, icon, color), creator:profiles(id, name)`)
+        .select(`*, category:categories(id, name, icon, color), account:financial_accounts!transactions_account_id_fkey(id, name, type, icon, color), savings:savings(id, name), creator:profiles(id, name)`)
         .order('date', { ascending: false })
         .order('created_at', { ascending: false });
 

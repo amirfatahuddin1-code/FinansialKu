@@ -25,6 +25,8 @@ export {
   getLocalToday,
   isToday,
   isYesterday,
+  getMonthlyRange,
+  getFundingMonth,
   SUPABASE_URL,
   SUPABASE_ANON_KEY,
   DEFAULT_CATEGORIES,
