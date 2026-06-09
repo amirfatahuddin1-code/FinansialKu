@@ -30,6 +30,8 @@ import {
   ShoppingBag,
   MessageCircle,
   Info,
+  AlertCircle,
+  CheckCircle,
 } from "lucide-react";
 import { useAuth, useWorkspace } from "@/providers";
 
@@ -77,6 +79,21 @@ export default function SettingsPage() {
 
   // Logout state
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  // Email confirmation state
+  const [resendingEmail, setResendingEmail] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
+  const [isEmailVerifiedParam, setIsEmailVerifiedParam] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("verified") === "true") {
+        setIsEmailVerifiedParam(true);
+      }
+    }
+  }, []);
 
   const initials = user?.user_metadata?.name
     ? (user.user_metadata.name as string).split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
@@ -138,6 +155,26 @@ export default function SettingsPage() {
   const handleLogout = async () => {
     await signOut();
     router.push("/login");
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!user?.email) return;
+    setResendingEmail(true);
+    setVerificationSent(false);
+    setVerificationError(null);
+    try {
+      const emailRedirectTo = `${window.location.origin}/dashboard/settings?verified=true`;
+      const { error } = await api.auth.resendConfirmation(user.email, emailRedirectTo);
+      if (error) {
+        setVerificationError(error.message || "Gagal mengirim email verifikasi. Coba beberapa saat lagi.");
+      } else {
+        setVerificationSent(true);
+      }
+    } catch (err: any) {
+      setVerificationError(err.message || "Terjadi kesalahan.");
+    } finally {
+      setResendingEmail(false);
+    }
   };
 
   return (
@@ -202,6 +239,124 @@ export default function SettingsPage() {
           </button>
         </div>
       </section>
+
+      {/* Email Verification Banner */}
+      {isEmailVerifiedParam && (
+        <section className="mb-8 animate-fade-in">
+          <div className="bg-emerald-50/80 border border-emerald-200 rounded-3xl p-6 flex items-start gap-4 relative overflow-hidden backdrop-blur-sm">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 flex items-center justify-center shrink-0 text-emerald-600">
+              <CheckCircle className="h-5 w-5" />
+            </div>
+            <div className="flex-1">
+              <h4 className="text-sm font-black text-emerald-800">Email Berhasil Dikonfirmasi!</h4>
+              <p className="text-xs text-emerald-600 font-semibold mt-1">
+                Terima kasih! Email kamu telah dikonfirmasi secara aman. Sekarang kamu memiliki akses penuh ke seluruh fitur Karsafin.
+              </p>
+            </div>
+            <button
+              onClick={() => setIsEmailVerifiedParam(false)}
+              className="absolute top-4 right-4 p-1 hover:bg-emerald-100 rounded-xl transition-colors cursor-pointer text-emerald-500"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </section>
+      )}
+
+      {user && !user.email_confirmed_at && !isEmailVerifiedParam && (
+        <section className="mb-8 animate-fade-in">
+          <div className="bg-amber-50/80 border border-amber-200 rounded-3xl p-6 md:p-8 flex flex-col md:flex-row gap-6 items-start backdrop-blur-sm relative overflow-hidden">
+            <div className="absolute right-0 top-0 w-32 h-32 bg-amber-400/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center shrink-0 text-amber-600 animate-pulse">
+              <AlertCircle className="h-6 w-6" />
+            </div>
+            
+            <div className="flex-1 space-y-4">
+              <div>
+                <h4 className="text-base font-black text-amber-900">Konfirmasi Email Kamu</h4>
+                <p className="text-xs font-semibold text-amber-700/80 mt-1 leading-relaxed">
+                  Email kamu belum terkonfirmasi. Segera verifikasi email kamu agar akun tetap aman dan seluruh fitur Karsafin dapat diakses dengan lancar.
+                </p>
+              </div>
+
+              {/* Kenapa harus konfirmasi email */}
+              <div className="bg-white/60 rounded-2xl p-4 border border-amber-100/50 space-y-3">
+                <h5 className="text-xs font-bold text-amber-900 uppercase tracking-wider">
+                  Mengapa verifikasi email penting?
+                </h5>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                  <div className="flex gap-2.5 items-start">
+                    <div className="mt-0.5 p-1 bg-amber-500/10 text-amber-700 rounded-lg shrink-0">
+                      <Shield className="h-3.5 w-3.5" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-amber-800 block">Keamanan Akun</span>
+                      <span className="text-[10px] text-amber-700 font-medium leading-relaxed block mt-0.5">
+                        Memastikan email ini milik kamu untuk melindunginya dari akses yang tidak sah.
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2.5 items-start">
+                    <div className="mt-0.5 p-1 bg-amber-500/10 text-amber-700 rounded-lg shrink-0">
+                      <User className="h-3.5 w-3.5" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-amber-800 block">Pemulihan Akun</span>
+                      <span className="text-[10px] text-amber-700 font-medium leading-relaxed block mt-0.5">
+                        Memudahkan kamu memulihkan kata sandi secara aman jika suatu saat kamu lupa.
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2.5 items-start">
+                    <div className="mt-0.5 p-1 bg-amber-500/10 text-amber-700 rounded-lg shrink-0">
+                      <Mail className="h-3.5 w-3.5" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-amber-800 block">Laporan & Tagihan</span>
+                      <span className="text-[10px] text-amber-700 font-medium leading-relaxed block mt-0.5">
+                        Mengirimkan ringkasan laporan keuangan bulanan dan notifikasi tagihan Midtrans.
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Feedback and Button */}
+              <div className="pt-2 flex flex-col sm:flex-row sm:items-center gap-4">
+                {verificationSent ? (
+                  <div className="bg-emerald-500/10 border border-emerald-200/50 rounded-xl px-4 py-2.5 flex items-center gap-2 text-emerald-700 text-xs font-bold w-full">
+                    <CheckCircle className="h-4 w-4 shrink-0" />
+                    <span>Tautan konfirmasi telah dikirim ke {user?.email}. Silakan periksa kotak masuk atau spam kamu.</span>
+                  </div>
+                ) : (
+                  <>
+                    <button
+                      onClick={handleResendConfirmation}
+                      disabled={resendingEmail}
+                      className="bg-amber-600 hover:bg-amber-700 text-white rounded-xl px-5 py-3 font-bold text-xs shadow-md shadow-amber-600/10 hover:shadow-lg transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2 disabled:opacity-75"
+                    >
+                      {resendingEmail ? (
+                        <>
+                          <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                          <span>Mengirim...</span>
+                        </>
+                      ) : (
+                        <span>Kirim Ulang Email Konfirmasi</span>
+                      )}
+                    </button>
+                    {verificationError && (
+                      <span className="text-xs font-bold text-red-500 flex items-center gap-1.5 animate-fade-in">
+                        <AlertCircle className="h-4 w-4" />
+                        {verificationError}
+                      </span>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Settings Groups */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -39,6 +39,21 @@ export function createAuthAPI(supabase: SupabaseClient) {
       }
     },
 
+    async resendConfirmation(email: string, emailRedirectTo?: string) {
+      try {
+        const { data, error } = await supabase.auth.resend({
+          type: 'signup',
+          email,
+          options: {
+            emailRedirectTo,
+          },
+        });
+        return { data, error };
+      } catch (err: any) {
+        return { data: null, error: err };
+      }
+    },
+
     async signIn(email: string, password: string) {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,

@@ -130,9 +130,15 @@ function LoginContent() {
         if (err) {
           setError(err.message || "Gagal melakukan pendaftaran.");
         } else {
-          setSuccess("Pendaftaran berhasil! Silakan periksa email kamu untuk verifikasi atau coba masuk langsung.");
-          setMode("login");
-          setPassword("");
+          // Auto-login immediately on successful signup
+          const { error: signInErr } = await signIn(email, password);
+          if (signInErr) {
+            setSuccess("Pendaftaran berhasil! Silakan periksa email kamu untuk verifikasi atau coba masuk secara manual.");
+            setMode("login");
+            setPassword("");
+          } else {
+            setSuccess("Pendaftaran berhasil! Kamu telah masuk otomatis.");
+          }
         }
       }
     } catch (err: any) {

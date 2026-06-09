@@ -8,6 +8,7 @@ interface User {
   id: string;
   email?: string;
   user_metadata?: { name?: string; phone?: string };
+  email_confirmed_at?: string | null;
 }
 
 interface AuthContextValue {
