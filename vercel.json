@@ -1,0 +1,7 @@
+{
+  "rootDirectory": "packages/web",
+  "installCommand": "cd ../.. && npm install",
+  "buildCommand": "cd ../.. && npm run shared:build && cd packages/web && npm run build",
+  "outputDirectory": ".next",
+  "framework": "nextjs"
+}
