@@ -110,7 +110,7 @@ export default function LandingPage() {
           }
         });
       },
-      { threshold: 0.08, rootMargin: "0px 0px -40px 0px" }
+      { threshold: 0.01, rootMargin: "0px 0px 100px 0px" }
     );
 
     const revealElements = document.querySelectorAll(".reveal-on-scroll");
@@ -625,7 +625,7 @@ export default function LandingPage() {
             <div className="absolute left-8 lg:left-1/2 top-0 bottom-0 w-0.5 bg-slate-200 transform lg:-translate-x-1/2" />
 
             {/* Step 1 */}
-            <div className="relative flex flex-col lg:flex-row items-stretch gap-8 mb-12 lg:mb-16 reveal-on-scroll" style={{ transitionDelay: "100ms" }}>
+            <div className="relative flex flex-col lg:flex-row items-stretch gap-8 mb-6 lg:mb-8 reveal-on-scroll" style={{ transitionDelay: "100ms" }}>
               <div className="lg:w-1/2 flex flex-col justify-center items-start lg:items-end pl-16 lg:pl-0 lg:pr-12">
                 <div className="bg-white p-6 rounded-2xl border border-slate-100/80 shadow-sm hover:shadow-md hover:border-blue-100 transition-all group hover:-translate-y-0.5 w-full text-left lg:text-right">
                   <span className="text-[10px] font-black uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg inline-block mb-3">
@@ -646,7 +646,7 @@ export default function LandingPage() {
             </div>
 
             {/* Step 2 */}
-            <div className="relative flex flex-col lg:flex-row items-stretch gap-8 mb-12 lg:mb-16 reveal-on-scroll" style={{ transitionDelay: "200ms" }}>
+            <div className="relative flex flex-col lg:flex-row items-stretch gap-8 mb-6 lg:mb-8 reveal-on-scroll" style={{ transitionDelay: "200ms" }}>
               <div className="lg:w-1/2" />
               <div className="absolute left-4 lg:left-1/2 w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-white font-extrabold flex items-center justify-center text-sm shadow-md shadow-blue-500/20 transform lg:-translate-x-1/2 z-10">
                 2
@@ -667,7 +667,7 @@ export default function LandingPage() {
             </div>
 
             {/* Step 3 */}
-            <div className="relative flex flex-col lg:flex-row items-stretch gap-8 mb-12 lg:mb-16 reveal-on-scroll" style={{ transitionDelay: "300ms" }}>
+            <div className="relative flex flex-col lg:flex-row items-stretch gap-8 mb-6 lg:mb-8 reveal-on-scroll" style={{ transitionDelay: "300ms" }}>
               <div className="lg:w-1/2 flex flex-col justify-center items-start lg:items-end pl-16 lg:pl-0 lg:pr-12">
                 <div className="bg-white p-6 rounded-2xl border border-slate-100/80 shadow-sm hover:shadow-md hover:border-blue-100 transition-all group hover:-translate-y-0.5 w-full text-left lg:text-right">
                   <span className="text-[10px] font-black uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg inline-block mb-3">
@@ -688,7 +688,7 @@ export default function LandingPage() {
             </div>
 
             {/* Step 4 */}
-            <div className="relative flex flex-col lg:flex-row items-stretch gap-8 mb-12 lg:mb-16 reveal-on-scroll" style={{ transitionDelay: "400ms" }}>
+            <div className="relative flex flex-col lg:flex-row items-stretch gap-8 mb-6 lg:mb-8 reveal-on-scroll" style={{ transitionDelay: "400ms" }}>
               <div className="lg:w-1/2" />
               <div className="absolute left-4 lg:left-1/2 w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-white font-extrabold flex items-center justify-center text-sm shadow-md shadow-blue-500/20 transform lg:-translate-x-1/2 z-10">
                 4
