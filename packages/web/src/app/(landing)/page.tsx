@@ -239,7 +239,7 @@ export default function LandingPage() {
             <Link href="/login" className="text-sm font-bold text-slate-600 hover:text-slate-900 px-4 py-2 transition-colors">
               Masuk
             </Link>
-            <Link href="/login?register=true" className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-5 py-2.5 rounded-full shadow-lg shadow-blue-500/20 hover:shadow-xl hover:shadow-blue-500/30 transition-all hover:-translate-y-0.5 active:translate-y-0">
+            <Link href="/login?mode=register" className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-5 py-2.5 rounded-full shadow-lg shadow-blue-500/20 hover:shadow-xl hover:shadow-blue-500/30 transition-all hover:-translate-y-0.5 active:translate-y-0">
               Mulai Gratis
             </Link>
           </div>
@@ -292,7 +292,7 @@ export default function LandingPage() {
                 Masuk
               </Link>
               <Link
-                href="/login?register=true"
+                href="/login?mode=register"
                 onClick={() => setMobileMenuOpen(false)}
                 className="w-full text-center py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full font-bold shadow-lg shadow-blue-500/10 transition-colors"
               >
@@ -362,7 +362,7 @@ export default function LandingPage() {
               {/* CTA Buttons */}
               <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
                 <Link
-                  href="/login?register=true"
+                  href="/login?mode=register"
                   className="bg-blue-600 hover:bg-blue-700 text-white text-base font-bold px-8 py-4 rounded-full shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/35 transition-all flex items-center justify-center gap-2 group hover:-translate-y-0.5 active:translate-y-0"
                 >
                   Mulai Sekarang Gratis
@@ -877,10 +877,10 @@ export default function LandingPage() {
               </div>
 
               <Link
-                href="/login?plan_id=basic&price=0&cycle=gratis"
+                href="/login?mode=register"
                 className="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-2xl py-4 font-bold text-sm transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2 mt-auto"
               >
-                Mulai dengan BASIC
+                Daftar Gratis Sekarang
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
@@ -966,16 +966,10 @@ export default function LandingPage() {
               </div>
 
               <Link
-                href={
-                  proCycle === 'bulanan'
-                    ? "/login?plan_id=bulanan&price=20000&cycle=bulanan"
-                    : proCycle === 'tahunan'
-                    ? "/login?plan_id=tahunan&price=119000&cycle=tahunan"
-                    : "/login?plan_id=lifetime&price=159000&cycle=lifetime"
-                }
+                href="/login?mode=register"
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-2xl py-4 font-bold text-sm shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2 mt-auto"
               >
-                Upgrade ke PRO
+                Daftar & Mulai Gratis
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
@@ -1083,7 +1077,7 @@ export default function LandingPage() {
           <span className="text-sm font-black">100% Gratis Selamanya</span>
         </div>
         <Link
-          href="/login?register=true"
+          href="/login?mode=register"
           className="bg-white text-blue-600 hover:bg-slate-50 px-5 py-2.5 rounded-full text-xs font-black shadow-md transition-colors"
         >
           Daftar Sekarang →

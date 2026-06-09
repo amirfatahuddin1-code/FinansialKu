@@ -77,24 +77,25 @@ function LoginContent() {
   const price = searchParams.get("price");
   const cycle = searchParams.get("cycle");
   const isActivated = searchParams.get("activated") === "true";
+  const modeParam = searchParams.get("mode");
+  const registerParam = searchParams.get("register"); // backward compat
 
-  // Automatically redirect if user is logged in and selected Basic plan
+  // Automatically redirect if user is logged in (and no checkout flow)
   useEffect(() => {
-    if (user && planId === "basic") {
+    if (user && !planId) {
       router.push("/dashboard");
     }
   }, [user, planId, router]);
 
-  // Default to register mode when plan_id is present in the URL (lock to register first)
-  // But if activated=true is present, override and default to login mode with success notice
+  // Set default form mode based on URL params
   useEffect(() => {
     if (isActivated) {
       setMode("login");
       setSuccess("Selamat, akun kamu telah aktif! Silakan lanjutkan untuk masuk (login).");
-    } else if (planId) {
+    } else if (planId || modeParam === "register" || registerParam === "true") {
       setMode("register");
     }
-  }, [planId, isActivated]);
+  }, [planId, isActivated, modeParam, registerParam]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
