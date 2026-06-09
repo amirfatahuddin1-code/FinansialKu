@@ -125,7 +125,7 @@ export default function LandingPage() {
   const features = [
     {
       title: "Atur Anggaran Harian",
-      desc: "Bagi pendapatan Anda secara pintar ke dalam pos anggaran belanja, investasi, dan tabungan harian.",
+      desc: "Bagi pendapatan kamu secara pintar ke dalam pos anggaran belanja, investasi, dan tabungan harian.",
       icon: PieChart,
       color: "bg-blue-500",
       image: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=600&q=80",
@@ -139,7 +139,7 @@ export default function LandingPage() {
     },
     {
       title: "Kalkulator Finansial",
-      desc: "Simulasikan rencana masa depan Anda dengan kalkulator investasi, inflasi, dan dana pensiun.",
+      desc: "Simulasikan rencana masa depan kamu dengan kalkulator investasi, inflasi, dan dana pensiun.",
       icon: Calculator,
       color: "bg-sky-500",
       image: "https://images.unsplash.com/photo-1544377193-33dcf4d68fb5?auto=format&fit=crop&w=600&q=80",
@@ -153,14 +153,14 @@ export default function LandingPage() {
     },
     {
       title: "Catatan Hutang & Piutang",
-      desc: "Pantau daftar pinjaman dan piutang Anda lengkap dengan pencatatan jatuh tempo agar tidak terlupa.",
+      desc: "Pantau daftar pinjaman dan piutang kamu lengkap dengan pencatatan jatuh tempo agar tidak terlupa.",
       icon: Handshake,
       color: "bg-red-500",
       image: "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=600&q=80",
     },
     {
       title: "Analisis & Grafik Laporan",
-      desc: "Visualisasikan data pengeluaran Anda dalam bentuk grafik persentase interaktif yang informatif.",
+      desc: "Visualisasikan data pengeluaran kamu dalam bentuk grafik persentase interaktif yang informatif.",
       icon: BarChart3,
       color: "bg-emerald-500",
       image: "https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=600&q=80",
@@ -195,7 +195,7 @@ export default function LandingPage() {
     },
     {
       title: "Profil Kesehatan Finansial",
-      desc: "Lakukan diagnosis menyeluruh dan dapatkan skor kesehatan keuangan Anda berdasarkan profil risiko.",
+      desc: "Lakukan diagnosis menyeluruh dan dapatkan skor kesehatan keuangan kamu berdasarkan profil risiko.",
       icon: UserCheck,
       color: "bg-rose-500",
       image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=600&q=80",
@@ -317,7 +317,7 @@ export default function LandingPage() {
               </span>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-none mb-6">
-                Kelola Finansial Anda<br />
+                Kelola Finansial Kamu<br />
                 Secara{" "}
                 <span className="inline-block relative min-w-[240px] text-center lg:text-left h-[1.2em] overflow-hidden">
                   <span
@@ -479,13 +479,13 @@ export default function LandingPage() {
       <section className="py-20 bg-slate-50/50 overflow-hidden animate-fade-in-up" id="fitur">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12 text-center reveal-on-scroll">
           <span className="text-xs font-bold uppercase text-blue-600 bg-blue-50 px-3 py-1.5 rounded-full tracking-wider">
-            Eksplorasi Modul
+            Eksplorasi Fitur
           </span>
           <h2 className="text-3xl font-black text-slate-900 tracking-tight mt-4 mb-2">
-            Segala Yang Anda Butuhkan Untuk Mengelola Finansial
+            Segala Yang Kamu Butuhkan Untuk Mengelola Finansial
           </h2>
           <p className="text-slate-500 text-base max-w-xl mx-auto">
-            Gunakan fitur-fitur modern kami untuk menyusun, memantau, dan menganalisis kesehatan keuangan pribadi Anda secara instan.
+            Gunakan fitur-fitur modern kami untuk menyusun, memantau, dan menganalisis kesehatan keuangan pribadi kamu secara instan.
           </p>
         </div>
 
@@ -532,7 +532,7 @@ export default function LandingPage() {
               Tinggalkan cara lama dan mulai beralih ke aplikasi yang lebih modern dan cerdas
             </h2>
             <p className="text-slate-500 text-base">
-              Lihat bagaimana Karsafin memodernisasi cara Anda melacak dan merencanakan keuangan pribadi Anda.
+              Lihat bagaimana Karsafin memodernisasi cara kamu melacak dan merencanakan keuangan pribadi kamu.
             </p>
           </div>
 
@@ -616,7 +616,7 @@ export default function LandingPage() {
               5 Langkah Mudah Menuju Kebebasan Finansial
             </h2>
             <p className="text-slate-500 text-base">
-              Proses setup yang sangat cepat dan intuitif agar Anda bisa fokus merapikan keuangan Anda.
+              Proses setup yang sangat cepat dan intuitif agar kamu bisa fokus merapikan keuangan kamu.
             </p>
           </div>
 
@@ -635,7 +635,7 @@ export default function LandingPage() {
                     Buat Akun Karsafin
                   </h3>
                   <p className="text-slate-500 text-xs leading-relaxed max-w-sm lg:ml-auto">
-                    Daftarkan diri Anda dalam waktu kurang dari 1 menit, gratis.
+                    Daftarkan diri kamu dalam waktu kurang dari 1 menit, gratis.
                   </p>
                 </div>
               </div>
@@ -719,7 +719,7 @@ export default function LandingPage() {
                     Analisis &amp; Dapatkan Insight
                   </h3>
                   <p className="text-slate-500 text-xs leading-relaxed max-w-sm lg:ml-auto">
-                    Lihat dasbor Anda terisi otomatis, pelajari pola pengeluaran harian, dan optimalkan strategi menabung dengan aman.
+                    Lihat dasbor kamu terisi otomatis, pelajari pola pengeluaran harian, dan optimalkan strategi menabung dengan aman.
                   </p>
                 </div>
               </div>
@@ -744,7 +744,7 @@ export default function LandingPage() {
               Solusi Keuangan Pintar untuk Semua Orang
             </h2>
             <p className="text-slate-500 text-base">
-              Apapun profil keuangan Anda, Karsafin didesain fleksibel untuk mengakomodasi kebutuhan unik Anda.
+              Apapun profil keuangan kamu, Karsafin didesain fleksibel untuk mengakomodasi kebutuhan unik kamu.
             </p>
           </div>
 
@@ -901,15 +901,15 @@ export default function LandingPage() {
               },
               {
                 q: "Bagaimana cara kerja pencatatan via Telegram Bot?",
-                a: "Setelah membuat akun, Anda dapat masuk ke bagian pengaturan di dasbor dan mengikuti instruksi untuk menautkan bot Telegram. Setelah aktif, Anda cukup mengirim pesan biasa seperti `Gaji 8500000` atau `Kopi 35000` ke bot tersebut, dan transaksi Anda langsung tercatat otomatis.",
+                a: "Setelah membuat akun, kamu dapat masuk ke bagian pengaturan di dasbor dan mengikuti instruksi untuk menautkan bot Telegram. Setelah aktif, kamu cukup mengirim pesan biasa seperti `Gaji 8500000` atau `Kopi 35000` ke bot tersebut, dan transaksi kamu langsung tercatat otomatis.",
               },
               {
                 q: "Apakah data finansial saya aman di Karsafin?",
-                a: "Keamanan dan privasi Anda adalah prioritas utama kami. Seluruh data transaksi dienkripsi saat dikirimkan dan disimpan di database aman yang dilindungi oleh Supabase security protocols. Kami tidak pernah menjual atau membagikan data Anda kepada pihak ketiga.",
+                a: "Keamanan dan privasi kamu adalah prioritas utama kami. Seluruh data transaksi dienkripsi saat dikirimkan dan disimpan di database aman yang dilindungi oleh Supabase security protocols. Kami tidak pernah menjual atau membagikan data kamu kepada pihak ketiga.",
               },
               {
                 q: "Dapatkah saya membagi dasbor dengan pasangan saya?",
-                a: "Tentu saja! Fitur Multi-Workspace kami memungkinkan Anda membuat workspace khusus (misal: 'Catatan Keluarga') dan mengundang pasangan atau anggota keluarga Anda untuk mencatat dan memantau anggaran bersama.",
+                a: "Tentu saja! Fitur Multi-Workspace kami memungkinkan kamu membuat workspace khusus (misal: 'Catatan Keluarga') dan mengundang pasangan atau anggota keluarga kamu untuk mencatat dan memantau anggaran bersama.",
               },
             ].map((faq, idx) => (
               <div
