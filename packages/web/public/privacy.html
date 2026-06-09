@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html class="scroll-smooth" lang="id">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Kebijakan Privasi - Karsafin</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
+
+    <!-- Tailwind CSS CDN with custom config -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#4F46E5", // Indigo/Blue
+                        accent: "#D4AF37",  // Gold
+                        "background-light": "#F8FAFC",
+                        "background-dark": "#0F172A",
+                    },
+                    fontFamily: {
+                        display: ["Plus Jakarta Sans", "sans-serif"],
+                        body: ["Inter", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "1rem",
+                        'xl': "1.5rem",
+                        '2xl': "2rem",
+                    },
+                },
+            },
+        };
+    </script>
+
+    <!-- Theme Initialization Script -->
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('theme');
+            const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        })();
+    </script>
+
+    <!-- Custom Glassmorphism and Utility Styles -->
+    <style>
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .dark .glass {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-link.active {
+            color: #4F46E5;
+            background-color: rgba(79, 70, 229, 0.08);
+            border-left: 3px solid #4F46E5;
+        }
+
+        .dark .sidebar-link.active {
+            color: #818CF8;
+            background-color: rgba(129, 140, 248, 0.1);
+            border-left: 3px solid #818CF8;
+        }
+    </style>
+</head>
+
+<body class="font-body bg-background-light dark:bg-background-dark text-slate-800 dark:text-slate-200 transition-colors duration-300 antialiased">
+    <!-- Navbar -->
+    <nav class="fixed top-0 w-full z-50 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex items-center justify-between glass px-8 py-3 rounded-full shadow-lg">
+            <a href="/" class="flex items-center gap-2 group">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden transition-transform group-hover:scale-105">
+                    <img src="/karsafin-logo.png" alt="Logo" class="w-full h-full object-contain" width="32" height="32">
+                </div>
+                <span class="font-display font-bold text-xl tracking-tight text-primary dark:text-white">Karsafin</span>
+            </a>
+            
+            <div class="flex items-center gap-4">
+                <a href="/" class="flex items-center gap-1 font-medium text-sm text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-indigo-400 transition-colors">
+                    <span class="material-symbols-outlined text-lg">arrow_back</span>
+                    <span>Beranda</span>
+                </a>
+                
+                <!-- Theme Toggle Button -->
+                <button class="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors" onclick="toggleTheme()">
+                    <span class="material-symbols-outlined block dark:hidden text-slate-600">dark_mode</span>
+                    <span class="material-symbols-outlined hidden dark:block text-slate-400">light_mode</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Wrapper -->
+    <main class="pt-28 pb-20 px-6 max-w-7xl mx-auto">
+        <!-- Header Banner -->
+        <div class="text-center mb-12 space-y-4">
+            <span class="px-4 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-primary dark:text-indigo-400 rounded-full text-xs font-bold uppercase tracking-widest">
+                Dokumen Legal
+            </span>
+            <h1 class="text-4xl md:text-5xl font-display font-extrabold text-slate-900 dark:text-white">
+                Kebijakan Privasi Karsafin
+            </h1>
+            <p class="text-sm text-slate-500 dark:text-slate-400 flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined text-base">calendar_month</span>
+                Pembaruan Terakhir: 21 Mei 2026
+            </p>
+        </div>
+
+        <div class="grid lg:grid-cols-4 gap-8">
+            <!-- Sidebar Navigation (Hidden on mobile) -->
+            <aside class="hidden lg:block lg:col-span-1">
+                <div class="glass p-6 rounded-2xl sticky top-28 shadow-md">
+                    <h3 class="font-display font-bold text-lg mb-4 text-slate-900 dark:text-white border-b pb-2 border-slate-200 dark:border-slate-800">
+                        Daftar Isi
+                    </h3>
+                    <nav class="space-y-1">
+                        <a href="#pendahuluan" class="sidebar-link block py-2 px-3 text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">1. Pendahuluan</a>
+                        <a href="#tentang-kami" class="sidebar-link block py-2 px-3 text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">2. Tentang Kami</a>
+                        <a href="#informasi-kumpul" class="sidebar-link block py-2 px-3 text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">3. Data Dikumpulkan</a>
+                        <a href="#tempat-simpan" class="sidebar-link block py-2 px-3 text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">4. Penyimpanan</a>
+                        <a href="#penggunaan-info" class="sidebar-link block py-2 px-3 text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">5. Penggunaan Data</a>
+                        <a href="#pembagian-info" class="sidebar-link block py-2 px-3 text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">6. Pembagian Data</a>
+                        <a href="#hak-pengguna" class="sidebar-link block py-2 px-3 text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">7. Hak Anda</a>
+                        <a href="#keamanan-penghapusan" class="sidebar-link block py-2 px-3 text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">8. Keamanan & Hapus</a>
+                        <a href="#anak-disabilitas" class="sidebar-link block py-2 px-3 text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">9. Anak & Disabilitas</a>
+                        <a href="#kontak-kami" class="sidebar-link block py-2 px-3 text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">10. Kontak Kami</a>
+                    </nav>
+                </div>
+            </aside>
+
+            <!-- Policy Text Column -->
+            <div class="lg:col-span-3 space-y-12">
+                <!-- Section 1 -->
+                <section id="pendahuluan" class="scroll-mt-28 glass p-8 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center text-primary dark:text-indigo-400">
+                            <span class="material-symbols-outlined">description</span>
+                        </div>
+                        <h2 class="text-xl md:text-2xl font-display font-bold text-slate-900 dark:text-white">1. Pendahuluan</h2>
+                    </div>
+                    <div class="text-slate-600 dark:text-slate-300 leading-relaxed space-y-4 text-sm md:text-base">
+                        <p>
+                            Karsafin ("Kami") menghormati privasi pengguna kami ("Pengguna" atau "Anda"). Kebijakan Privasi ini menjelaskan bagaimana kami mengumpulkan, mengelola, menggunakan, mengungkapkan, dan melindungi informasi yang kami dapatkan dari Anda ketika Anda mengakses dan menggunakan layanan dalam aplikasi Karsafin (“Aplikasi Karsafin”), Kami mengharapkan Anda untuk membaca Kebijakan ini dengan cermat. Jika Anda tidak setuju dengan ketentuan Kebijakan Privasi ini, mohon untuk tidak mengakses dan menggunakan Aplikasi Karsafin.
+                        </p>
+                        <p>
+                            Kami memiliki diskresi untuk melakukan perubahan pada Kebijakan Privasi ini yang dapat dilakukan sewaktu-waktu dan dengan alasan apa pun. Penggunaan Anda atas Aplikasi Karsafin merupakan bentuk persetujuan yang tegas dari Anda terhadap Kebijakan Privasi ini.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Section 2 -->
+                <section id="tentang-kami" class="scroll-mt-28 glass p-8 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center text-primary dark:text-indigo-400">
+                            <span class="material-symbols-outlined">info</span>
+                        </div>
+                        <h2 class="text-xl md:text-2xl font-display font-bold text-slate-900 dark:text-white">2. Tentang Kami dan Layanan</h2>
+                    </div>
+                    <div class="text-slate-600 dark:text-slate-300 leading-relaxed text-sm md:text-base">
+                        <p>
+                            Aplikasi Karsafin adalah sebuah aplikasi yang dirancang agar Anda dapat melacak dan menganalisa catatan finansial Anda secara otomatis maupun manual dengan memasukkan transaksi Anda ke dalam Aplikasi Karsafin. Anda juga dapat melakukan sinkronisasi otomatis dengan rekening bank dan/atau dengan dompet digital milik Anda. Berdasarkan catatan dan sinkronisasi tersebut, Aplikasi Karsafin menyediakan grafik, ikhtisar informasi, saran atas kondisi finansial Anda, serta tanggapan dan analisis otomatis yang dihasilkan melalui teknologi kecerdasan buatan yang dikenal sebagai Karsafin AI (selanjutnya secara bersama-sama disebut sebagai “Layanan”).
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Section 3 -->
+                <section id="informasi-kumpul" class="scroll-mt-28 glass p-8 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center text-primary dark:text-indigo-400">
+                            <span class="material-symbols-outlined">database</span>
+                        </div>
+                        <h2 class="text-xl md:text-2xl font-display font-bold text-slate-900 dark:text-white">3. Informasi yang Kami Kumpulkan</h2>
+                    </div>
+                    <div class="text-slate-600 dark:text-slate-300 leading-relaxed space-y-6 text-sm md:text-base">
+                        <p>Kami dapat mengumpulkan informasi tentang Anda dengan berbagai cara:</p>
+                        
+                        <div class="grid md:grid-cols-3 gap-4">
+                            <div class="p-5 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800/80 space-y-2">
+                                <div class="flex items-center gap-2 text-indigo-500 font-bold">
+                                    <span class="material-symbols-outlined text-lg">person</span>
+                                    <span>Data Pribadi</span>
+                                </div>
+                                <p class="text-xs md:text-sm text-slate-500 dark:text-slate-400">
+                                    Informasi yang dapat diidentifikasi secara pribadi, seperti nama, alamat email, nomor telepon, dan data keuangan pribadi yang Anda berikan secara sukarela.
+                                </p>
+                            </div>
+                            <div class="p-5 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800/80 space-y-2">
+                                <div class="flex items-center gap-2 text-indigo-500 font-bold">
+                                    <span class="material-symbols-outlined text-lg">devices</span>
+                                    <span>Data Turunan</span>
+                                </div>
+                                <p class="text-xs md:text-sm text-slate-500 dark:text-slate-400">
+                                    Informasi yang dikumpulkan otomatis ketika Anda mengakses Aplikasi, seperti alamat IP, jenis perangkat, dan waktu akses.
+                                </p>
+                            </div>
+                            <div class="p-5 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800/80 space-y-2">
+                                <div class="flex items-center gap-2 text-indigo-500 font-bold">
+                                    <span class="material-symbols-outlined text-lg">phone_android</span>
+                                    <span>Data Perangkat Seluler</span>
+                                </div>
+                                <p class="text-xs md:text-sm text-slate-500 dark:text-slate-400">
+                                    Informasi perangkat, koneksi, baterai, ID, model, dan lokasi. Kami dapat mengakses Kamera dan Audio untuk keperluan verifikasi.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="p-4 rounded-xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100/50 dark:border-indigo-900/30 flex gap-3">
+                            <span class="material-symbols-outlined text-primary dark:text-indigo-400 shrink-0">info</span>
+                            <p class="text-sm text-slate-600 dark:text-slate-300">
+                                Ketika Anda menggunakan Aplikasi Karsafin untuk menganalisa dan melacak keuangan Anda, data transaksi Anda akan disimpan dalam server Kami.
+                            </p>
+                        </div>
+
+                        <p>
+                            Alsannya sebagai bagian dari penyediaan Layanan, informasi finansial yang telah tercatat tersebut dapat digunakan untuk menghasilkan tanggapan, ringkasan, maupun analisis otomatis melalui fitur kecerdasan buatan dalam Aplikasi (Karsafin AI). Pemrosesan tersebut dilakukan semata-mata untuk memberikan tanggapan sesuai dengan permintaan Pengguna.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Section 4 -->
+                <section id="tempat-simpan" class="scroll-mt-28 glass p-8 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center text-primary dark:text-indigo-400">
+                            <span class="material-symbols-outlined">dns</span>
+                        </div>
+                        <h2 class="text-xl md:text-2xl font-display font-bold text-slate-900 dark:text-white">4. Tempat Penyimpanan Informasi</h2>
+                    </div>
+                    <div class="text-slate-600 dark:text-slate-300 leading-relaxed space-y-4 text-sm md:text-base">
+                        <div class="flex gap-3 p-4 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100/50 dark:border-emerald-900/30">
+                            <span class="material-symbols-outlined text-emerald-600 dark:text-emerald-400 shrink-0">location_on</span>
+                            <p class="text-sm">
+                                Informasi yang kami kumpulkan dari Anda atau terkait Anda akan ditransfer, dan disimpan <strong>di dalam wilayah Republik Indonesia</strong> oleh kami dan/atau Pihak Ketiga yang bekerja berdasarkan instruksi dari kami.
+                            </p>
+                        </div>
+                        <p>
+                            Apabila kami memberikan Anda kata kunci atau password yang memungkinkan Anda untuk mengakses bagian-bagian tertentu dari Aplikasi Karsafin, Anda bertanggungjawab untuk menjaga kerahasiaan kata kunci tersebut.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Section 5 -->
+                <section id="penggunaan-info" class="scroll-mt-28 glass p-8 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center text-primary dark:text-indigo-400">
+                            <span class="material-symbols-outlined">settings_suggest</span>
+                        </div>
+                        <h2 class="text-xl md:text-2xl font-display font-bold text-slate-900 dark:text-white">5. Penggunaan Informasi Anda</h2>
+                    </div>
+                    <div class="text-slate-600 dark:text-slate-300 leading-relaxed space-y-4 text-sm md:text-base">
+                        <p>Kami akan menggunakan Data Pribadi yang kami peroleh untuk:</p>
+                        <ul class="grid md:grid-cols-2 gap-3 pl-2">
+                            <li class="flex items-start gap-2">
+                                <span class="material-symbols-outlined text-emerald-500 shrink-0 text-base mt-1">check_circle</span>
+                                <span>Membuat dan mengelola akun Anda.</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="material-symbols-outlined text-emerald-500 shrink-0 text-base mt-1">check_circle</span>
+                                <span>Menyediakan Layanan kepada Anda.</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="material-symbols-outlined text-emerald-500 shrink-0 text-base mt-1">check_circle</span>
+                                <span>Meningkatkan efisiensi dan pengoperasian Aplikasi Karsafin.</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="material-symbols-outlined text-emerald-500 shrink-0 text-base mt-1">check_circle</span>
+                                <span>Memberitahu Anda tentang pembaruan.</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="material-symbols-outlined text-emerald-500 shrink-0 text-base mt-1">check_circle</span>
+                                <span>Menjalankan fungsi bisnis dan/atau usaha Kami.</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="material-symbols-outlined text-emerald-500 shrink-0 text-base mt-1">check_circle</span>
+                                <span>Mencegah transaksi penipuan dan memantau segala macam bentuk pencurian.</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="material-symbols-outlined text-emerald-500 shrink-0 text-base mt-1">check_circle</span>
+                                <span>Membantu Anda saat berkomunikasi dengan layanan pelanggan Kami (Email, WA, Instagram).</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="material-symbols-outlined text-emerald-500 shrink-0 text-base mt-1">check_circle</span>
+                                <span>Membahas dan memvalidasi permintaan serta menyelidiki jika ada indikasi penipuan.</span>
+                            </li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Section 6 -->
+                <section id="pembagian-info" class="scroll-mt-28 glass p-8 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center text-primary dark:text-indigo-400">
+                            <span class="material-symbols-outlined">share</span>
+                        </div>
+                        <h2 class="text-xl md:text-2xl font-display font-bold text-slate-900 dark:text-white">6. Pembagian Informasi</h2>
+                    </div>
+                    <div class="text-slate-600 dark:text-slate-300 leading-relaxed space-y-4 text-sm md:text-base">
+                        <p>
+                            Kami dapat membagikan informasi Anda dengan pihak ketiga yang melakukan layanan untuk kami (seperti layanan hosting, layanan pelanggan, analitik).
+                        </p>
+                        <div class="p-5 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-100/50 dark:border-amber-900/30 space-y-3">
+                            <div class="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-bold">
+                                <span class="material-symbols-outlined">smart_toy</span>
+                                <span>Penyedia Teknologi Kecerdasan Buatan Pihak Ketiga</span>
+                            </div>
+                            <p class="text-sm">
+                                Dalam rangka penyediaan fitur analisis berbasis kecerdasan buatan dalam Aplikasi, Kami juga dapat membagikan data tertentu kepada penyedia teknologi kecerdasan buatan pihak ketiga (seperti <strong>OpenAI, Anthropic, Google</strong>).
+                            </p>
+                            <p class="text-xs text-amber-800/80 dark:text-amber-400/80 font-medium">
+                                * Data yang dibagikan terbatas pada riwayat transaksi, pendapatan, dan/atau anggaran yang telah dianonimkan serta pesan yang dikirimkan kepada Fitur AI.
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section 7 -->
+                <section id="hak-pengguna" class="scroll-mt-28 glass p-8 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center text-primary dark:text-indigo-400">
+                            <span class="material-symbols-outlined">verified_user</span>
+                        </div>
+                        <h2 class="text-xl md:text-2xl font-display font-bold text-slate-900 dark:text-white">7. Hak Mengenai Data Pribadi Anda</h2>
+                    </div>
+                    <div class="text-slate-600 dark:text-slate-300 leading-relaxed space-y-4 text-sm md:text-base">
+                        <p>Anda berhak untuk:</p>
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 flex gap-3">
+                                <span class="text-2xl">🔍</span>
+                                <div>
+                                    <h4 class="font-bold text-slate-900 dark:text-white text-sm">Mengakses Data</h4>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Mengakses Data Pribadi Anda dan memperoleh salinannya.</p>
+                                </div>
+                            </div>
+                            <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 flex gap-3">
+                                <span class="text-2xl">✏️</span>
+                                <div>
+                                    <h4 class="font-bold text-slate-900 dark:text-white text-sm">Memperbaiki Data</h4>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Memperbaiki Data Pribadi yang tidak akurat.</p>
+                                </div>
+                            </div>
+                            <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 flex gap-3">
+                                <span class="text-2xl">🗑️</span>
+                                <div>
+                                    <h4 class="font-bold text-slate-900 dark:text-white text-sm">Menghapus Data</h4>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Meminta penghapusan Data Pribadi Anda tanpa penundaan yang tidak semestinya.</p>
+                                </div>
+                            </div>
+                            <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 flex gap-3">
+                                <span class="text-2xl">🔄</span>
+                                <div>
+                                    <h4 class="font-bold text-slate-900 dark:text-white text-sm">Menarik Persetujuan</h4>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Menarik persetujuan yang telah Anda berikan terkait dengan pemrosesan Data.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section 8 -->
+                <section id="keamanan-penghapusan" class="scroll-mt-28 glass p-8 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center text-primary dark:text-indigo-400">
+                            <span class="material-symbols-outlined">security</span>
+                        </div>
+                        <h2 class="text-xl md:text-2xl font-display font-bold text-slate-900 dark:text-white">8. Keamanan, Penyimpanan, & Penghapusan</h2>
+                    </div>
+                    <div class="text-slate-600 dark:text-slate-300 leading-relaxed space-y-4 text-sm md:text-base">
+                        <p>
+                            Kami melakukan perlindungan terhadap setiap Data Pribadi Pengguna yang disimpan dalam sistem kami melalui enkripsi, password, dan OTP (One Time Password). Meskipun kami telah mengambil langkah terbaik, pengiriman data melalui internet tidak dijamin sepenuhnya aman.
+                        </p>
+                        <p>
+                            Kami akan menghapus atau mengubah Data Pribadi Anda jika tidak lagi diperlukan untuk tujuan pemrosesan data, atau jika Anda meminta penghapusan dan tidak memiliki kewajiban tertunda kepada kami.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Section 9 -->
+                <section id="anak-disabilitas" class="scroll-mt-28 glass p-8 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center text-primary dark:text-indigo-400">
+                            <span class="material-symbols-outlined">child_care</span>
+                        </div>
+                        <h2 class="text-xl md:text-2xl font-display font-bold text-slate-900 dark:text-white">9. Informasi Anak & Penyandang Disabilitas</h2>
+                    </div>
+                    <div class="text-slate-600 dark:text-slate-300 leading-relaxed space-y-4 text-sm md:text-base">
+                        <p>
+                            Layanan Kami tidak ditujukan untuk anak-anak di bawah usia 18 tahun. Kami secara khusus juga akan memproses Data Pribadi Pengguna penyandang disabilitas sesuai ketentuan Undang-Undang yang berlaku dengan cara yang disesuaikan.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Section 10 -->
+                <section id="kontak-kami" class="scroll-mt-28 glass p-8 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center text-primary dark:text-indigo-400">
+                            <span class="material-symbols-outlined">contact_support</span>
+                        </div>
+                        <h2 class="text-xl md:text-2xl font-display font-bold text-slate-900 dark:text-white">10. Kontak Kami</h2>
+                    </div>
+                    <div class="text-slate-600 dark:text-slate-300 leading-relaxed space-y-6 text-sm md:text-base">
+                        <p>
+                            Jika Anda memiliki pertanyaan atau komentar mengenai kebijakan privasi ini, silakan hubungi kami melalui:
+                        </p>
+
+                        <!-- Contact Grid -->
+                        <div class="grid sm:grid-cols-3 gap-4">
+                            <!-- Email -->
+                            <a href="mailto:admin@karsafin.biz.id" class="flex flex-col items-center justify-center p-5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-center hover:-translate-y-1 transition-transform group duration-300">
+                                <span class="material-symbols-outlined text-3xl text-indigo-500 mb-2">mail</span>
+                                <span class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider font-semibold">Email</span>
+                                <span class="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-primary dark:group-hover:text-indigo-400 break-all mt-1">
+                                    admin@karsafin.biz.id
+                                </span>
+                            </a>
+
+                            <!-- WhatsApp -->
+                            <a href="https://wa.me/6281393591050" target="_blank" rel="noopener" class="flex flex-col items-center justify-center p-5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-center hover:-translate-y-1 transition-transform group duration-300">
+                                <span class="material-symbols-outlined text-3xl text-green-500 mb-2">chat</span>
+                                <span class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider font-semibold">WhatsApp</span>
+                                <span class="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-green-500 break-all mt-1">
+                                    +62 813-9359-1050
+                                </span>
+                            </a>
+
+                            <!-- Instagram -->
+                            <a href="https://instagram.com/karsafin.id" target="_blank" rel="noopener" class="flex flex-col items-center justify-center p-5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-center hover:-translate-y-1 transition-transform group duration-300">
+                                <span class="material-symbols-outlined text-3xl text-pink-500 mb-2">photo_camera</span>
+                                <span class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider font-semibold">Instagram</span>
+                                <span class="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-pink-500 break-all mt-1">
+                                    @karsafin.id
+                                </span>
+                            </a>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="pt-8 pb-12 border-t border-slate-200 dark:border-slate-900 max-w-7xl mx-auto px-6 text-center md:text-left">
+        <div class="flex flex-col md:flex-row justify-between items-center gap-4 text-slate-400 text-xs">
+            <p>© 2026 Karsafin. All rights reserved.</p>
+            <div class="flex gap-8">
+                <a class="hover:text-slate-600 dark:hover:text-slate-300 transition-colors" href="/syarat-ketentuan">Syarat & Ketentuan</a>
+                <a class="hover:text-slate-600 dark:hover:text-slate-300 transition-colors" href="/#daftar">Harga</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts for Interactive UX -->
+    <script>
+        // Toggle Dark Mode
+        function toggleTheme() {
+            const htmlClass = document.documentElement.classList;
+            if (htmlClass.contains('dark')) {
+                htmlClass.remove('dark');
+                localStorage.setItem('theme', 'light');
+            } else {
+                htmlClass.add('dark');
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        // Active Sidebar Link Highlighting on Scroll
+        window.addEventListener('DOMContentLoaded', () => {
+            const sections = document.querySelectorAll('section[id]');
+            const sidebarLinks = document.querySelectorAll('.sidebar-link');
+
+            function highlightSection() {
+                let scrollY = window.pageYOffset;
+
+                sections.forEach(current => {
+                    const sectionHeight = current.offsetHeight;
+                    const sectionTop = current.offsetTop - 140; // offset navbar
+                    const sectionId = current.getAttribute('id');
+
+                    if (scrollY > sectionTop && scrollY <= sectionTop + sectionHeight) {
+                        sidebarLinks.forEach(link => {
+                            link.classList.remove('active');
+                            if (link.getAttribute('href') === `#${sectionId}`) {
+                                link.classList.add('active');
+                            }
+                        });
+                    }
+                });
+            }
+
+            window.addEventListener('scroll', highlightSection);
+            highlightSection(); // initial call
+        });
+    </script>
+</body>
+
+</html>

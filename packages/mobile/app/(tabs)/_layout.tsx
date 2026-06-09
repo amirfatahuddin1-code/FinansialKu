@@ -3,12 +3,12 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Tabs, router } from 'expo-router';
 import { Platform, StyleSheet, View, TouchableOpacity, Text, Modal, Pressable, TextInput, ScrollView, Animated, Keyboard, ActivityIndicator, Image, Alert } from 'react-native';
-import Colors from '@/constants/Colors';
+import Colors, { useColors } from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/providers/AuthProvider';
 import { getLocalToday, formatCurrency } from '@karsafin/shared';
-import type { Category, FinancialAccount } from '@karsafin/shared';
+import type { Category, FinancialAccount, Transaction } from '@karsafin/shared';
 import * as ImagePicker from 'expo-image-picker';
 
 function TypingDots() {
@@ -58,6 +58,7 @@ function TypingDots() {
 
 function CustomTabBar({ state, descriptors, navigation }: any) {
   const colorScheme = useColorScheme() ?? 'dark';
+  useColors();
   const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
   const { user, api } = useAuth();
@@ -343,7 +344,6 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
     const text = aiInput.trim();
     if (!text) return;
 
-    // Check quota
     if (!user || !api) return;
     const { data: quotaData } = await api.profiles.getAiQuota(user.id);
     if (!quotaData || quotaData.quota <= 0) {
@@ -359,12 +359,53 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
     try {
       const parsed = parseTransactions(text);
       if (parsed.length === 0) {
+        // If not a transaction, try general AI chat via edge function
+        const { data: txRes } = await api.transactions.getAll();
+        const allTx = txRes || [];
+        const now = new Date();
+        const curTx = allTx.filter((t: Transaction) => {
+          const d = new Date(t.date);
+          return d.getFullYear() === now.getFullYear() && d.getMonth() + 1 === now.getMonth() + 1;
+        });
+        const monthlyIncome = curTx.filter((t: Transaction) => t.type === 'income').reduce((s: number, t: Transaction) => s + t.amount, 0);
+        const monthlyExpense = curTx.filter((t: Transaction) => t.type === 'expense').reduce((s: number, t: Transaction) => s + t.amount, 0);
+        const catsList = aiCategories.map((c) => `${c.icon || ''} ${c.name} (${c.type})`).join(', ');
+
+        const historyMessages = aiMessages
+          .filter((m) => m.role === 'user' || m.role === 'assistant')
+          .slice(-10)
+          .map((m) => ({ role: m.role, content: m.content }));
+
+        const { data: chatData } = await api.supabase.functions.invoke('ai-chat', {
+          body: {
+            message: text,
+            history: historyMessages,
+            context: {
+              userName: user?.user_metadata?.name || 'Pengguna',
+              monthlyIncome,
+              monthlyExpense,
+              categories: catsList || 'Tidak ada data',
+              budgets: 'Tidak ada data',
+              transactionCount: curTx.length,
+            },
+          },
+        });
+
         setAiTyping(false);
-        setAiMessages((prev) => [...prev, {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: 'Maaf, saya tidak bisa mengenali format transaksi Anda. Silakan coba lagi dengan format seperti:\n• "Hari ini beli sepatu Rp250rb cash"\n• "Kemarin terima gaji 3jt lewat BRI"',
-        }]);
+        if (chatData?.response) {
+          await api.profiles.decrementAiQuota(user.id);
+          setAiMessages((prev) => [...prev, {
+            id: (Date.now() + 1).toString(),
+            role: 'assistant',
+            content: chatData.response,
+          }]);
+        } else {
+          setAiMessages((prev) => [...prev, {
+            id: (Date.now() + 1).toString(),
+            role: 'assistant',
+            content: 'Maaf, saya sedang mengalami gangguan. Silakan coba lagi nanti.',
+          }]);
+        }
         return;
       }
 
@@ -399,12 +440,13 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
           details += `\n   🏷️ ${tx.categoryName}`;
           if (tx.accountName) details += `\n   🏦 ${tx.accountName}`;
           details += `\n   📝 ${tx.description}\n`;
+        } else {
+          console.error('Failed to save transaction:', error);
         }
       }
 
       setAiTyping(false);
       if (savedCount > 0) {
-        // Decrement quota for successful save
         await api.profiles.decrementAiQuota(user.id);
         setAiMessages((prev) => [...prev, {
           id: (Date.now() + 1).toString(),
@@ -963,6 +1005,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
 
 export default function TabLayout() {
   const colorScheme = useColorScheme() ?? 'dark';
+  useColors();
   const colors = Colors[colorScheme];
 
   return (

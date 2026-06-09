@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '@/providers/AuthProvider';
 import { useWorkspace } from '@/providers/WorkspaceProvider';
 import { useColorScheme } from '@/components/useColorScheme';
-import Colors from '@/constants/Colors';
+import Colors, { useColors } from '@/constants/Colors';
 import { Spacing, BorderRadius } from '@/constants/DesignSystem';
 import { formatCurrency, parseAmount, getLocalToday } from '@karsafin/shared';
 import type { Event, EventItem, Category, FinancialAccount } from '@karsafin/shared';
@@ -24,6 +24,7 @@ export default function EventDetailScreen() {
   const { user, api } = useAuth();
   const { activeWorkspace } = useWorkspace();
   const colorScheme = useColorScheme() ?? 'dark';
+  useColors();
   const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
 

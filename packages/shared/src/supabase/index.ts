@@ -14,6 +14,7 @@ import { createTelegramAPI, createTelegramGroupAPI } from './telegram';
 import { createWhatsAppAPI } from './whatsapp';
 import { createSubscriptionAPI } from './subscription';
 import { createWorkspacesAPI } from './workspaces';
+import { createFeaturesAPI } from './features';
 
 /**
  * Create the full Karsafin API object.
@@ -71,6 +72,8 @@ export function createKarsafinAPI(supabase?: SupabaseClient) {
     subscription: createSubscriptionAPI(client),
     /** Workspaces */
     workspaces: createWorkspacesAPI(client),
+    /** User-created features (Kreasi User) */
+    features: createFeaturesAPI(client),
   };
 }
 

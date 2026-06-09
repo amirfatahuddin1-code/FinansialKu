@@ -229,6 +229,7 @@ export interface FinancialAccount {
   icon?: string;
   color?: string;
   is_default: boolean;
+  balance: number;
   created_at: string;
 }
 
@@ -347,3 +348,27 @@ export interface MessagingUsage {
   telegram_count: number;
   total_count: number;
 }
+
+// ========== User Features (Kreasi User) ==========
+export type {
+  FeatureType,
+  BaseFeatureDefinition,
+  WidgetDefinition,
+  FilterDefinition,
+  NotificationDefinition,
+  AutoRuleDefinition,
+  ReportTemplateDefinition,
+  BudgetStrategyDefinition,
+  CustomCalcDefinition,
+  DSLQuery,
+  DSLCondition,
+  DSLExpression,
+  AutoAction,
+  WidgetDisplayConfig,
+  ReportSection,
+  AllocationRule,
+  UserFeature,
+  FeatureError,
+  CreateFeatureInput,
+  UpdateFeatureInput,
+} from './features';

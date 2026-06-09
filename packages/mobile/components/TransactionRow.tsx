@@ -1,7 +1,7 @@
 import React from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { useColorScheme } from '@/components/useColorScheme'
-import Colors from '@/constants/Colors'
+import Colors, { useColors } from '@/constants/Colors'
 import { BorderRadius, Spacing } from '@/constants/DesignSystem'
 import CategoryIcon from '@/components/CategoryIcon'
 import AccountIcon from './AccountIcon'
@@ -123,6 +123,7 @@ export default function TransactionRow({
   workspaceType?: 'personal' | 'family'
 }) {
   const colorScheme = useColorScheme() ?? 'dark'
+  useColors();
   const colors = Colors[colorScheme]
   const isIncome = transaction.type === 'income'
   const isSavings = transaction.type === 'savings'

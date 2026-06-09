@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react'
 import { View, Animated, StyleSheet } from 'react-native'
 import { useColorScheme } from '@/components/useColorScheme'
-import Colors from '@/constants/Colors'
+import Colors, { useColors } from '@/constants/Colors'
 import { BorderRadius, Spacing } from '@/constants/DesignSystem'
 
 function SkeletonBlock({ width, height, style, borderRadius = BorderRadius.md }: {
@@ -10,6 +10,7 @@ function SkeletonBlock({ width, height, style, borderRadius = BorderRadius.md }:
   style?: any
   borderRadius?: number
 }) {
+  useColors()
   const colorScheme = useColorScheme() ?? 'dark'
   const colors = Colors[colorScheme]
   const opacity = useRef(new Animated.Value(0.3)).current
@@ -50,6 +51,7 @@ function SkeletonBlock({ width, height, style, borderRadius = BorderRadius.md }:
 }
 
 export function SkeletonCard({ style }: { style?: any }) {
+  useColors()
   const colorScheme = useColorScheme() ?? 'dark'
   const colors = Colors[colorScheme]
   return (
@@ -69,6 +71,7 @@ export function SkeletonCard({ style }: { style?: any }) {
 }
 
 export function SkeletonRow({ style }: { style?: any }) {
+  useColors()
   const colorScheme = useColorScheme() ?? 'dark'
   const colors = Colors[colorScheme]
   return (

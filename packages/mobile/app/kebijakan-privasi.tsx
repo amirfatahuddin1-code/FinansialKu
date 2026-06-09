@@ -5,15 +5,18 @@ import {
   TouchableOpacity,
   ScrollView,
   StyleSheet,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/components/useColorScheme';
-import Colors from '@/constants/Colors';
+import Colors, { useColors } from '@/constants/Colors';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { router } from 'expo-router';
+import * as Clipboard from 'expo-clipboard';
 
 export default function KebijakanPrivasiScreen() {
   const colorScheme = useColorScheme() ?? 'light';
+  useColors();
   const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
 
@@ -60,6 +63,28 @@ export default function KebijakanPrivasiScreen() {
     },
   ];
 
+  const handleCopy = async () => {
+    try {
+      const textToCopy = [
+        'Kebijakan Privasi Karsafin',
+        'Pembaruan Terakhir: 21 Mei 2026',
+        '',
+        ...policies.map((item) => `${item.title}\n\n${item.content}`),
+        '',
+        'Hubungi Kami:',
+        'Email: admin@karsafin.biz.id',
+        'WhatsApp: +62 813-9359-1050',
+        'Instagram: @karsafin.id'
+      ].join('\n');
+
+      await Clipboard.setStringAsync(textToCopy);
+      Alert.alert('Berhasil', 'Kebijakan privasi berhasil disalin ke clipboard');
+    } catch (err) {
+      console.error('Gagal menyalin kebijakan privasi:', err);
+      Alert.alert('Error', 'Gagal menyalin kebijakan privasi');
+    }
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Custom Header */}
@@ -68,7 +93,9 @@ export default function KebijakanPrivasiScreen() {
           <FontAwesome name="chevron-left" size={16} color={colors.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.text }]}>Kebijakan Privasi</Text>
-        <View style={{ width: 36 }} />
+        <TouchableOpacity onPress={handleCopy} style={styles.copyBtn} activeOpacity={0.7}>
+          <FontAwesome name="copy" size={16} color={colors.text} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: 40 + insets.bottom }]}>
@@ -109,6 +136,13 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   backBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  copyBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,

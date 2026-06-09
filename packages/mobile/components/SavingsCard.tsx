@@ -1,7 +1,7 @@
 import React from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { useColorScheme } from '@/components/useColorScheme'
-import Colors from '@/constants/Colors'
+import Colors, { useColors } from '@/constants/Colors'
 import { BorderRadius, Spacing } from '@/constants/DesignSystem'
 import { formatCurrencyCompact } from '@karsafin/shared'
 import type { Savings } from '@karsafin/shared'
@@ -22,6 +22,7 @@ export default function SavingsCard({
   onDelete?: () => void
 }) {
   const colorScheme = useColorScheme() ?? 'dark'
+  useColors();
   const colors = Colors[colorScheme]
   const percent = goal.target > 0 ? Math.round((goal.current / goal.target) * 100) : 0
   const barColor = goal.color || Colors.primary

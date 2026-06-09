@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/components/useColorScheme';
-import Colors from '@/constants/Colors';
+import Colors, { useColors } from '@/constants/Colors';
 import { formatCurrency } from '@karsafin/shared';
 import type { Transaction, FinancialAccount } from '@karsafin/shared';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
@@ -21,6 +21,7 @@ import { useFocusEffect } from '@react-navigation/native';
 export default function BukuTransaksiScreen() {
   const { api } = useAuth();
   const colorScheme = useColorScheme() ?? 'dark';
+  useColors();
   const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
   const router = useRouter();

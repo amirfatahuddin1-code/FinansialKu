@@ -221,7 +221,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (user) {
           await Purchases.logIn(user.id);
         } else {
-          await Purchases.logOut();
+          const isAnonymous = await Purchases.isAnonymous();
+          if (!isAnonymous) {
+            await Purchases.logOut();
+          }
         }
       } catch (err) {
         console.warn('Gagal sinkronisasi status login ke RevenueCat:', err);

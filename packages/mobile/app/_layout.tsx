@@ -12,7 +12,7 @@ import { useColorScheme } from '@/components/useColorScheme';
 import { AuthProvider, useAuth } from '@/providers/AuthProvider';
 import { WorkspaceProvider } from '@/providers/WorkspaceProvider';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { setAppPrimaryColor } from '@/constants/Colors';
+import Colors, { setAppPrimaryColor, useColors } from '@/constants/Colors';
 import { MobileAds } from '@/utils/mobile-ads-wrapper';
 
 export { ErrorBoundary } from 'expo-router';
@@ -88,20 +88,13 @@ export default function RootLayout() {
     // Initialize RevenueCat Purchases SDK
     Purchases.setLogLevel(LOG_LEVEL.DEBUG);
     
-    const androidApiKey = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY;
-    const iosApiKey = process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY;
-
     if (Platform.OS === 'android') {
-      if (androidApiKey && !androidApiKey.startsWith('test_')) {
-        Purchases.configure({ apiKey: androidApiKey });
-      } else {
-        console.warn('RevenueCat: API Key Android tidak diset atau menggunakan placeholder. Pembelian via Google Play tidak aktif.');
-      }
+      const androidApiKey = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY || 'goog_opqjtvmTZrMQPrzDegVOutwmKxW';
+      Purchases.configure({ apiKey: androidApiKey });
     } else if (Platform.OS === 'ios') {
-      if (iosApiKey && !iosApiKey.startsWith('test_')) {
+      const iosApiKey = process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY || 'placeholder_ios_key';
+      if (iosApiKey && iosApiKey !== 'placeholder_ios_key') {
         Purchases.configure({ apiKey: iosApiKey });
-      } else {
-        console.warn('RevenueCat: API Key iOS tidak diset atau menggunakan placeholder. Pembelian via App Store tidak aktif.');
       }
     }
   }, []);
@@ -123,10 +116,11 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
+  useColors();
 
   const theme = colorScheme === 'dark'
-    ? { ...DarkTheme, colors: { ...DarkTheme.colors, background: '#0f172a', card: '#1e293b' } }
-    : { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: '#f8fafc' } };
+    ? { ...DarkTheme, colors: { ...DarkTheme.colors, background: '#0f172a', card: '#1e293b', primary: Colors.primary } }
+    : { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: '#f8fafc', primary: Colors.primary } };
 
   return (
     <ThemeProvider value={theme}>

@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/components/useColorScheme';
-import Colors from '@/constants/Colors';
+import Colors, { useColors } from '@/constants/Colors';
 import { Spacing, BorderRadius, Shadows } from '@/constants/DesignSystem';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useRouter } from 'expo-router';
@@ -28,6 +28,7 @@ export default function WorkspaceMembersScreen() {
   const { user, api } = useAuth();
   const { workspaces, activeWorkspace, switchWorkspace, refreshWorkspaces } = useWorkspace();
   const colorScheme = useColorScheme() ?? 'dark';
+  useColors();
   const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
 

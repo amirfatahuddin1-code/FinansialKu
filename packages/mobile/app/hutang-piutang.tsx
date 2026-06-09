@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '@/providers/AuthProvider';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Colors from '@/constants/Colors';
+import Colors, { useColors } from '@/constants/Colors';
 import { Spacing, BorderRadius } from '@/constants/DesignSystem';
 import { formatCurrency, formatCurrencyCompact, getLocalToday } from '@karsafin/shared';
 import type { Debt, DebtPayment, FinancialAccount } from '@karsafin/shared';
@@ -24,6 +24,7 @@ export default function HutangPiutangScreen() {
   const router = useRouter();
   const { user, api } = useAuth();
   const colorScheme = useColorScheme() ?? 'dark';
+  useColors();
   const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
 

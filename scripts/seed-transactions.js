@@ -33,15 +33,15 @@ async function main() {
   let gopayAccount = accounts?.find(a => a.name.toLowerCase() === 'gopay');
 
   if (!cashAccount) {
-    const { data } = await supabase.from('financial_accounts').insert({ user_id: userId, name: 'Cash', type: 'other', is_default: true }).select().single();
+    const { data } = await supabase.from('financial_accounts').insert({ user_id: userId, name: 'Cash', type: 'other', is_default: true, balance: 500000 }).select().single();
     cashAccount = data;
   }
   if (!briAccount) {
-    const { data } = await supabase.from('financial_accounts').insert({ user_id: userId, name: 'BRI', type: 'bank', is_default: false }).select().single();
+    const { data } = await supabase.from('financial_accounts').insert({ user_id: userId, name: 'BRI', type: 'bank', is_default: false, balance: 5000000 }).select().single();
     briAccount = data;
   }
   if (!gopayAccount) {
-    const { data } = await supabase.from('financial_accounts').insert({ user_id: userId, name: 'GoPay', type: 'ewallet', is_default: false }).select().single();
+    const { data } = await supabase.from('financial_accounts').insert({ user_id: userId, name: 'GoPay', type: 'ewallet', is_default: false, balance: 200000 }).select().single();
     gopayAccount = data;
   }
 

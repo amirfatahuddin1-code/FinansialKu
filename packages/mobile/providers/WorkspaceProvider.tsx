@@ -80,6 +80,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                 type: 'other',
                 is_default: true,
                 color: '#10b981',
+                balance: 0,
               });
             } catch (accErr) {
               console.error('Failed to create default account in new workspace:', accErr);

@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/components/useColorScheme';
-import Colors from '@/constants/Colors';
+import Colors, { useColors } from '@/constants/Colors';
 import { Spacing, BorderRadius } from '@/constants/DesignSystem';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { router } from 'expo-router';
@@ -36,6 +36,7 @@ import type {
 } from '@karsafin/shared';
 
 export default function SettingsScreen() {
+  useColors();
   const { user, api, signOut } = useAuth();
   const colorScheme = useColorScheme() ?? 'dark';
   const colors = Colors[colorScheme];
@@ -144,6 +145,7 @@ export default function SettingsScreen() {
         name: newAccountName.trim(),
         type: newAccountType,
         is_default: false,
+        balance: 0,
       });
       if (error) throw error;
       setNewAccountName('');
@@ -194,6 +196,7 @@ export default function SettingsScreen() {
           name: acc.name,
           type: acc.type as any,
           is_default: false,
+          balance: 0,
         });
       }
       Alert.alert('Berhasil', `${accountsToCopy.length} akun berhasil disalin`);
@@ -1378,7 +1381,7 @@ export default function SettingsScreen() {
                 Terhubung ke nomor {whatsappLink.phone_number}
               </Text>
               <TouchableOpacity
-                style={[styles.saveBtn, { backgroundColor: Colors.danger, marginTop: 16 }]}
+                style={[styles.saveBtn, { backgroundColor: Colors.danger, width: '100%', paddingHorizontal: 24, marginTop: 16 }]}
                 onPress={handleUnlinkWhatsApp}
                 activeOpacity={0.8}
               >
@@ -1401,7 +1404,7 @@ export default function SettingsScreen() {
                 keyboardType="phone-pad"
               />
               <TouchableOpacity
-                style={[styles.saveBtn, { backgroundColor: Colors.primary, opacity: saving || !whatsappPhone.trim() ? 0.7 : 1, marginTop: 8 }]}
+                style={[styles.saveBtn, { backgroundColor: Colors.primary, width: '100%', paddingHorizontal: 24, opacity: saving || !whatsappPhone.trim() ? 0.7 : 1, marginTop: 8 }]}
                 onPress={handleLinkWhatsApp}
                 disabled={saving || !whatsappPhone.trim()}
                 activeOpacity={0.8}
@@ -1428,14 +1431,18 @@ export default function SettingsScreen() {
               <Text style={[styles.integrationDesc, { color: colors.textSecondary, marginTop: 4, marginBottom: 16 }]}>
                 Paket {subscription.subscription_plans?.name || 'Pro'} {subscription.subscription_plans?.name?.includes('Lifetime') ? 'aktif selamanya' : `aktif hingga ${new Date(subscription.expires_at).toLocaleDateString('id-ID')}`}
               </Text>
-              <TouchableOpacity
-                style={[styles.saveBtn, { backgroundColor: Colors.danger, marginBottom: 16, opacity: saving ? 0.7 : 1 }]}
-                onPress={handleCancelSubscription}
-                disabled={saving}
-                activeOpacity={0.8}
-              >
-                {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Batalkan Langganan</Text>}
-              </TouchableOpacity>
+              {subscription && 
+               !subscription.subscription_plans?.name?.includes('Basic') && 
+               !subscription.subscription_plans?.name?.includes('Lifetime') && (
+                <TouchableOpacity
+                  style={[styles.saveBtn, { backgroundColor: Colors.danger, width: '100%', paddingHorizontal: 24, marginBottom: 16, opacity: saving ? 0.7 : 1 }]}
+                  onPress={handleCancelSubscription}
+                  disabled={saving}
+                  activeOpacity={0.8}
+                >
+                  {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Batalkan Langganan</Text>}
+                </TouchableOpacity>
+              )}
             </>
           ) : (
             <>

@@ -17,7 +17,7 @@ import Svg, { Rect, LinearGradient as SvgLinearGradient, Stop, Circle, Defs } fr
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useColorScheme } from '@/components/useColorScheme';
-import Colors from '@/constants/Colors';
+import Colors, { useColors } from '@/constants/Colors';
 import {
   hsvToHex, hexToHsv, isValidHex, getHueColor,
   SPECTRUM_COLORS, GRADIENT_DIRECTIONS, GradientDirection,
@@ -49,6 +49,7 @@ interface ColorPickerProps {
 
 export default function ColorPicker({ visible, onClose, onSave }: ColorPickerProps) {
   const colorScheme = useColorScheme() ?? 'dark';
+  useColors();
   const theme = Colors[colorScheme];
   const insets = useSafeAreaInsets();
   const { height: winHeight } = useWindowDimensions();

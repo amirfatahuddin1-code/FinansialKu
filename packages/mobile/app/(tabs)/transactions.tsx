@@ -15,7 +15,7 @@ import {
 import { useAuth } from '@/providers/AuthProvider';
 import { useWorkspace } from '@/providers/WorkspaceProvider';
 import { useColorScheme } from '@/components/useColorScheme';
-import Colors from '@/constants/Colors';
+import Colors, { useColors } from '@/constants/Colors';
 import { Spacing, BorderRadius } from '@/constants/DesignSystem';
 import { formatCurrency, parseAmount, getLocalToday } from '@karsafin/shared';
 import type { Transaction, Category, FinancialAccount } from '@karsafin/shared';
@@ -38,6 +38,7 @@ export default function TransactionsScreen() {
   const { user, api } = useAuth();
   const { activeWorkspace } = useWorkspace();
   const colorScheme = useColorScheme() ?? 'dark';
+  useColors();
   const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
 

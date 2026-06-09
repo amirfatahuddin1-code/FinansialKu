@@ -9,7 +9,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColorScheme } from '@/components/useColorScheme';
-import Colors, { setAppPrimaryColor } from '@/constants/Colors';
+import Colors, { setAppPrimaryColor, useColors } from '@/constants/Colors';
 import { Spacing, BorderRadius } from '@/constants/DesignSystem';
 import {
   hsvToHex, hexToHsv, isValidHex, getHueColor,
@@ -27,6 +27,7 @@ const CUSTOM_THEMES_KEY = '@karsafin_custom_themes';
 
 export default function PilihWarnaScreen() {
   const colorScheme = useColorScheme() ?? 'dark';
+  useColors();
   const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
   const { width: winWidth } = useWindowDimensions();

@@ -27,6 +27,34 @@ export function getSupabaseClient(
         headers: {
           'X-Client-Info': 'karsafin-app',
         },
+        fetch: async (input, init) => {
+          try {
+            return await fetch(input, init);
+          } catch (err: any) {
+            console.warn('Supabase fetch failed (network offline):', err.message || err);
+            const errorBody = JSON.stringify({
+              error: 'Failed to fetch',
+              message: err.message || 'Network request failed',
+            });
+            if (typeof Response !== 'undefined') {
+              return new Response(errorBody, {
+                status: 503,
+                statusText: 'Service Unavailable',
+                headers: { 'Content-Type': 'application/json' },
+              });
+            }
+            return {
+              ok: false,
+              status: 503,
+              statusText: 'Service Unavailable',
+              headers: {
+                get: (name: string) => name.toLowerCase() === 'content-type' ? 'application/json' : null,
+              } as any,
+              text: async () => errorBody,
+              json: async () => JSON.parse(errorBody),
+            } as unknown as Response;
+          }
+        },
       },
     });
   }

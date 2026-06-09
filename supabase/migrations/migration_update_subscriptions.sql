@@ -22,7 +22,7 @@ VALUES
 (
   'tahunan',
   'Pro - Tahunan',
-  118000,
+  119000,
   365,
   '{ "manual_tx": "unlimited", "ai_assistant": "unlimited", "messaging_transactions": "unlimited", "budgeting": true, "events": true, "savings": true, "debts": true, "reports": true, "financial_calculator": true, "theme_changes": "unlimited", "workspace_max": "unlimited" }'::jsonb,
   now()
@@ -30,7 +30,7 @@ VALUES
 (
   'lifetime',
   'Pro - Lifetime',
-  159000,
+  249000,
   36500,
   '{ "manual_tx": "unlimited", "ai_assistant": "unlimited", "messaging_transactions": "unlimited", "budgeting": true, "events": true, "savings": true, "debts": true, "reports": true, "financial_calculator": true, "theme_changes": "unlimited", "workspace_max": "unlimited" }'::jsonb,
   now()

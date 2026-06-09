@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, Dimensions } from 'react-native';
 import { useColorScheme } from '@/components/useColorScheme';
-import Colors from '@/constants/Colors';
+import Colors, { useColors } from '@/constants/Colors';
 import { formatCurrency } from '@karsafin/shared';
 
 interface CalculatorProps {
@@ -15,6 +15,7 @@ const { width } = Dimensions.get('window');
 
 export default function Calculator({ visible, onClose, onConfirm, initialValue = 0 }: CalculatorProps) {
   const colorScheme = useColorScheme() ?? 'dark';
+  useColors();
   const colors = Colors[colorScheme];
 
   const [expression, setExpression] = useState<string>(initialValue > 0 ? initialValue.toString() : '');

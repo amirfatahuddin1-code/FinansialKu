@@ -1,7 +1,4 @@
-/**
- * Karsafin Design System — Color Tokens
- * Matches the web app's CSS custom properties for visual consistency.
- */
+import { useSyncExternalStore } from 'react';
 
 const primary = '#1E40AF';    // Navy
 const accent = '#D4AF37';     // Gold
@@ -44,13 +41,31 @@ const ColorsConfig = {
   },
 };
 
+let _version = 0;
+const _listeners = new Set<() => void>();
+
+function _subscribe(listener: () => void) {
+  _listeners.add(listener);
+  return () => _listeners.delete(listener);
+}
+
+function _getSnapshot() {
+  return _version;
+}
+
 export const setAppPrimaryColor = (hex: string, isDark: boolean = false) => {
-  const newTint = hex; // We can use the same hex, or calculate a lighter one for dark mode later
   ColorsConfig.light.tint = hex;
   ColorsConfig.light.tabIconSelected = hex;
-  ColorsConfig.dark.tint = isDark ? hex : hex; // For simplicity, apply the selected color
-  ColorsConfig.dark.tabIconSelected = isDark ? hex : hex;
+  ColorsConfig.dark.tint = hex;
+  ColorsConfig.dark.tabIconSelected = hex;
   ColorsConfig.primary = hex;
+  _version++;
+  _listeners.forEach(fn => fn());
 };
+
+export function useColors() {
+  useSyncExternalStore(_subscribe, _getSnapshot, _getSnapshot);
+  return ColorsConfig;
+}
 
 export default ColorsConfig;

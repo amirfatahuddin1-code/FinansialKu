@@ -15,7 +15,7 @@ import { useWorkspace } from '@/providers/WorkspaceProvider';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import Colors from '@/constants/Colors';
+import Colors, { useColors } from '@/constants/Colors';
 import type { FinancialAccount } from '@karsafin/shared';
 import { BottomSheet } from '@/components';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
@@ -24,6 +24,7 @@ export default function FinancialAccountsScreen() {
   const { user, api } = useAuth();
   const { activeWorkspace, workspaces } = useWorkspace();
   const colorScheme = useColorScheme() ?? 'dark';
+  useColors();
   const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -34,7 +35,13 @@ export default function FinancialAccountsScreen() {
   const [showAddAccount, setShowAddAccount] = useState(false);
   const [newAccountName, setNewAccountName] = useState('');
   const [newAccountType, setNewAccountType] = useState<'bank' | 'ewallet' | 'investment' | 'other'>('bank');
+  const [newAccountBalance, setNewAccountBalance] = useState('');
   const [saving, setSaving] = useState(false);
+  const [showEditAccount, setShowEditAccount] = useState(false);
+  const [editAccount, setEditAccount] = useState<FinancialAccount | null>(null);
+  const [editAccountName, setEditAccountName] = useState('');
+  const [editAccountBalance, setEditAccountBalance] = useState('');
+  const [updating, setUpdating] = useState(false);
 
   const [showCopyAccounts, setShowCopyAccounts] = useState(false);
   const [sourceWorkspaceId, setSourceWorkspaceId] = useState<string | null>(null);
@@ -83,21 +90,52 @@ export default function FinancialAccountsScreen() {
       else if (newAccountType === 'ewallet') defaultIcon = '📱';
       else if (newAccountType === 'investment') defaultIcon = '📈';
 
+      const balanceNum = Number(newAccountBalance.replace(/\D/g, ''));
+
       const { error } = await api.accounts.create(user.id, {
         name: newAccountName.trim(),
         type: newAccountType,
         is_default: false,
         color: getAccountColorByName(newAccountName),
         icon: defaultIcon,
+        balance: balanceNum,
       });
       if (error) throw error;
       setNewAccountName('');
+      setNewAccountBalance('');
       setShowAddAccount(false);
       await loadAccounts();
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Gagal menambah akun');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleOpenEdit = (acc: FinancialAccount) => {
+    setEditAccount(acc);
+    setEditAccountName(acc.name);
+    setEditAccountBalance(acc.balance ? Number(acc.balance).toLocaleString('id-ID') : '');
+    setShowEditAccount(true);
+  };
+
+  const handleUpdateAccount = async () => {
+    if (!editAccount || !editAccountName.trim()) return;
+    setUpdating(true);
+    try {
+      const { error } = await api.accounts.update(editAccount.id, {
+        name: editAccountName.trim(),
+        icon: editAccount.icon,
+        balance: Number(editAccountBalance.replace(/\D/g, '')),
+      });
+      if (error) throw error;
+      setShowEditAccount(false);
+      setEditAccount(null);
+      await loadAccounts();
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Gagal mengupdate akun');
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -140,6 +178,7 @@ export default function FinancialAccountsScreen() {
           is_default: false,
           color: acc.color,
           icon: acc.icon,
+          balance: 0,
         });
       }
       Alert.alert('Berhasil', selectedAccountIds.length + ' akun berhasil disalin');
@@ -209,6 +248,9 @@ export default function FinancialAccountsScreen() {
                             {acc.type === 'bank' ? 'Bank' : acc.type === 'ewallet' ? 'E-Wallet' : acc.type === 'investment' ? 'Investasi' : 'Lainnya'}
                           </Text>
                         </View>
+                        <TouchableOpacity onPress={() => handleOpenEdit(acc)} style={{ width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center', backgroundColor: '#eef2ff', marginRight: 8 }}>
+                          <Text style={{ color: '#6366f1', fontSize: 14 }}>✎</Text>
+                        </TouchableOpacity>
                         <TouchableOpacity onPress={() => handleDeleteAccount(acc.id)} style={{ width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fef2f2' }}>
                           <Text style={{ color: Colors.danger, fontSize: 14 }}>X</Text>
                         </TouchableOpacity>
@@ -257,7 +299,7 @@ export default function FinancialAccountsScreen() {
         </TouchableOpacity>
       </View>
 
-      <BottomSheet visible={showAddAccount} onClose={() => setShowAddAccount(false)} title="Tambah Akun Keuangan">
+      <BottomSheet visible={showAddAccount} onClose={() => { setShowAddAccount(false); setNewAccountBalance(''); }} title="Tambah Akun Keuangan">
         <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6, marginTop: 4, color: colors.textSecondary }}>Nama Akun</Text>
         <TextInput
           style={{ borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, fontSize: 16, borderWidth: 1, backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }}
@@ -281,6 +323,15 @@ export default function FinancialAccountsScreen() {
             </TouchableOpacity>
           ))}
         </View>
+        <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6, marginTop: 14, color: colors.textSecondary }}>Saldo Awal</Text>
+        <TextInput
+          style={{ borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, fontSize: 16, borderWidth: 1, backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border, textAlign: 'right' }}
+          value={newAccountBalance}
+          onChangeText={(val) => setNewAccountBalance(val.replace(/\D/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.'))}
+          placeholder="0"
+          placeholderTextColor={colors.textMuted}
+          keyboardType="numeric"
+        />
         <TouchableOpacity
           style={{ borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginTop: 24, marginBottom: 16, backgroundColor: Colors.primary, opacity: saving || !newAccountName.trim() ? 0.7 : 1 }}
           onPress={handleAddAccount}
@@ -364,6 +415,34 @@ export default function FinancialAccountsScreen() {
             </TouchableOpacity>
           </View>
         )}
+      </BottomSheet>
+
+      <BottomSheet visible={showEditAccount} onClose={() => setShowEditAccount(false)} title="Edit Akun Keuangan">
+        <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6, marginTop: 4, color: colors.textSecondary }}>Nama Akun</Text>
+        <TextInput
+          style={{ borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, fontSize: 16, borderWidth: 1, backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }}
+          value={editAccountName}
+          onChangeText={setEditAccountName}
+          placeholder="Nama akun"
+          placeholderTextColor={colors.textMuted}
+        />
+        <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6, marginTop: 14, color: colors.textSecondary }}>Saldo Saat Ini</Text>
+        <TextInput
+          style={{ borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, fontSize: 16, borderWidth: 1, backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border, textAlign: 'right' }}
+          value={editAccountBalance}
+          onChangeText={(val) => setEditAccountBalance(val.replace(/\D/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.'))}
+          placeholder="0"
+          placeholderTextColor={colors.textMuted}
+          keyboardType="numeric"
+        />
+        <TouchableOpacity
+          style={{ borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginTop: 24, marginBottom: 16, backgroundColor: Colors.primary, opacity: updating || !editAccountName.trim() ? 0.7 : 1 }}
+          onPress={handleUpdateAccount}
+          disabled={updating || !editAccountName.trim()}
+          activeOpacity={0.8}
+        >
+          {updating ? <ActivityIndicator color="#fff" /> : <Text style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>Simpan Perubahan</Text>}
+        </TouchableOpacity>
       </BottomSheet>
     </View>
   );

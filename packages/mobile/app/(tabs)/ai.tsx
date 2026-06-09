@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/components/useColorScheme';
-import Colors from '@/constants/Colors';
+import Colors, { useColors } from '@/constants/Colors';
 import { Spacing, BorderRadius } from '@/constants/DesignSystem';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { router, useFocusEffect } from 'expo-router';
@@ -132,6 +132,7 @@ function TypingDots() {
 
 export default function AIScreen() {
   const colorScheme = useColorScheme() ?? 'dark';
+  useColors();
   const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
 
@@ -1103,32 +1104,65 @@ const handleQuickReply = async (text: string) => {
       return;
     }
 
-    // Normal mode: smart response based on keywords
+    // Normal mode: call edge function for AI response
     setIsTyping(true);
     await loadAllData();
 
     const lower = text.toLowerCase();
-    // Check if user is asking about budget status
     if (lower.includes('budget') || lower.includes('anggaran')) {
       setIsTyping(false);
       await handleSuggested('Bagaimana status budget saya bulan ini?');
       return;
     }
-    // Check if asking about spending/expenses
     if (lower.includes('pengeluaran') || lower.includes('belanja') || lower.includes('habis')) {
       setIsTyping(false);
       handleQuickReply('Cek keuangan per kategori');
       return;
     }
-    // Check if asking about history
     if (lower.includes('riwayat') || lower.includes('histori') || lower.includes('terakhir')) {
       setIsTyping(false);
       handleQuickReply('Cek riwayat transaksi');
       return;
     }
 
-    setIsTyping(false);
-    addAiMessage('Terima kasih atas pertanyaannya! Untuk membantu Anda dengan lebih baik, silakan gunakan quick action di bawah atau coba tanyakan tentang:\n\n• Budget dan anggaran\n• Pengeluaran per kategori\n• Riwayat transaksi\n• Simulasi keuangan\n• Rekomendasi budget');
+    try {
+      const now = new Date();
+      const curTx = getTxByMonth(allTransactions, now.getFullYear(), now.getMonth() + 1);
+      const monthlyIncome = curTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+      const monthlyExpense = curTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+      const catsList = categories.map(c => `${c.icon} ${c.name} (${c.type})`).join(', ');
+      const budgetsList = budgets.map(b => `${b.category?.name || 'Tanpa Kategori'}: Rp ${formatCurrency(b.amount)}`).join(', ');
+
+      const historyMessages = messages
+        .filter(m => m.role === 'user' || m.role === 'assistant')
+        .slice(-10)
+        .map(m => ({ role: m.role, content: m.content }));
+
+      const { data, error } = await api.supabase.functions.invoke('ai-chat', {
+        body: {
+          message: text,
+          history: historyMessages,
+          context: {
+            userName: user?.user_metadata?.name || 'Pengguna',
+            monthlyIncome,
+            monthlyExpense,
+            categories: catsList || 'Tidak ada data',
+            budgets: budgetsList || 'Tidak ada data',
+            transactionCount: curTx.length,
+          },
+        },
+      });
+
+      setIsTyping(false);
+      if (data?.response) {
+        addAiMessage(data.response);
+      } else {
+        addAiMessage('Maaf, saya sedang mengalami gangguan. Silakan coba lagi nanti.');
+      }
+    } catch {
+      setIsTyping(false);
+      addAiMessage('Maaf, terjadi kesalahan. Silakan coba lagi atau gunakan quick action di bawah.');
+    }
   };
 
   const handleSuggested = async (q: string) => {

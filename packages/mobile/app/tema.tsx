@@ -10,7 +10,7 @@ import {
 import Svg, { Rect, LinearGradient as SvgLinearGradient, Stop, Defs } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/components/useColorScheme';
-import Colors, { setAppPrimaryColor } from '@/constants/Colors';
+import Colors, { setAppPrimaryColor, useColors } from '@/constants/Colors';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { router, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -41,6 +41,7 @@ const CUSTOM_THEMES_KEY = '@karsafin_custom_themes';
 
 export default function TemaScreen() {
   const colorScheme = useColorScheme() ?? 'light';
+  useColors();
   const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
   const { user, api } = useAuth();

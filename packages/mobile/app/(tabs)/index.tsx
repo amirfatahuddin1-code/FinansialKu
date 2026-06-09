@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useAuth } from '@/providers/AuthProvider';
 import { useColorScheme } from '@/components/useColorScheme';
-import Colors from '@/constants/Colors';
+import Colors, { useColors } from '@/constants/Colors';
 import { Spacing, BorderRadius, Shadows } from '@/constants/DesignSystem';
 import { formatCurrency, formatCurrencyCompact, parseAmount, getMonthlyRange } from '@karsafin/shared';
 import type { Transaction, Savings, Debt, Event as KafEvent } from '@karsafin/shared';
@@ -30,6 +30,7 @@ export default function DashboardScreen() {
   const { user, api, signOut } = useAuth();
   const { activeWorkspace, workspaces, switchWorkspace } = useWorkspace();
   const colorScheme = useColorScheme() ?? 'dark';
+  useColors();
   const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
 

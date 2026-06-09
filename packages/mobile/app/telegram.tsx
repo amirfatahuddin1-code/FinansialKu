@@ -17,7 +17,7 @@ import { useColorScheme } from '@/components/useColorScheme';
 import { useAuth } from '@/providers/AuthProvider';
 import { useWorkspace } from '@/providers/WorkspaceProvider';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Colors from '@/constants/Colors';
+import Colors, { useColors } from '@/constants/Colors';
 import { Spacing, BorderRadius } from '@/constants/DesignSystem';
 import type { TelegramLink, TelegramGroupLink } from '@karsafin/shared';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
@@ -31,6 +31,7 @@ export default function TelegramSettingsScreen() {
   const { activeWorkspace } = useWorkspace();
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme() ?? 'dark';
+  useColors();
   const colors = Colors[colorScheme];
 
   const [loading, setLoading] = useState(true);

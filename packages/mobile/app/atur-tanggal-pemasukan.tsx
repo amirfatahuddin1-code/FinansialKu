@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/components/useColorScheme';
-import Colors from '@/constants/Colors';
+import Colors, { useColors } from '@/constants/Colors';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -18,6 +18,7 @@ import { BottomSheet } from '@/components';
 
 export default function AturTanggalPemasukanScreen() {
   const colorScheme = useColorScheme() ?? 'light';
+  useColors();
   const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
 

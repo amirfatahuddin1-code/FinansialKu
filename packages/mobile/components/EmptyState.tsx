@@ -1,7 +1,7 @@
 import React from 'react'
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
 import { useColorScheme } from '@/components/useColorScheme'
-import Colors from '@/constants/Colors'
+import Colors, { useColors } from '@/constants/Colors'
 import { Spacing, BorderRadius } from '@/constants/DesignSystem'
 
 export default function EmptyState({
@@ -18,6 +18,7 @@ export default function EmptyState({
   onAction?: () => void
 }) {
   const colorScheme = useColorScheme() ?? 'dark'
+  useColors();
   const colors = Colors[colorScheme]
 
   return (

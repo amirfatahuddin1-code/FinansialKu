@@ -17,13 +17,14 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useAuth } from '@/providers/AuthProvider';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Colors from '@/constants/Colors';
+import Colors, { useColors } from '@/constants/Colors';
 import { Spacing, BorderRadius } from '@/constants/DesignSystem';
 
 export default function LoginScreen() {
   const { signIn, signUp, signInWithGoogle } = useAuth();
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme() ?? 'dark';
+  useColors();
   const colors = Colors[colorScheme];
 
   const [isRegister, setIsRegister] = useState(false);

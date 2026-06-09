@@ -4,9 +4,9 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '@/providers/AuthProvider';
 import { useWorkspace } from '@/providers/WorkspaceProvider';
 import { useColorScheme } from '@/components/useColorScheme';
-import Colors from '@/constants/Colors';
+import Colors, { useColors } from '@/constants/Colors';
 import { formatCurrency, formatCurrencyCompact, getMonthlyRange, getFundingMonth } from '@karsafin/shared';
-import type { Transaction, Savings, Debt } from '@karsafin/shared';
+import type { Transaction, Savings, Debt, FinancialAccount } from '@karsafin/shared';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PieChart, BarChart } from 'react-native-gifted-charts';
 import { SkeletonCard, CategoryIcon, AccountIcon } from '@/components';
@@ -19,6 +19,7 @@ export default function AnalysisScreen() {
   const { user, api } = useAuth();
   const { activeWorkspace } = useWorkspace();
   const colorScheme = useColorScheme() ?? 'dark';
+  useColors();
   const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
 
@@ -27,6 +28,7 @@ export default function AnalysisScreen() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [savings, setSavings] = useState<Savings[]>([]);
   const [debts, setDebts] = useState<Debt[]>([]);
+  const [accounts, setAccounts] = useState<FinancialAccount[]>([]);
   const [selectedMonth, setSelectedMonth] = useState('');
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [selectedTab, setSelectedTab] = useState<'pengeluaran' | 'pemasukan'>('pengeluaran');
@@ -42,14 +44,20 @@ export default function AnalysisScreen() {
         setPayday(1);
       }
 
-      const [txRes, savRes, debtRes] = await Promise.all([
-        api.transactions.getAll(),
+      const startDate = new Date();
+      startDate.setFullYear(startDate.getFullYear() - 1);
+      const startDateStr = startDate.toISOString().split('T')[0];
+
+      const [txRes, savRes, debtRes, accRes] = await Promise.all([
+        api.transactions.getAll({ startDate: startDateStr }),
         api.savings.getAll(),
         api.debts.getAll(user.id),
+        api.accounts.getAll(),
       ]);
       setTransactions(txRes.data || []);
       setSavings(savRes.data || []);
       setDebts(debtRes.data || []);
+      setAccounts(accRes.data || []);
     } catch (err) {
       console.error('Load analysis error:', err);
     } finally {
@@ -262,12 +270,21 @@ export default function AnalysisScreen() {
   }, [transactions, sixMonths, selectedMonth, payday]);
 
   // Detailed Financial Health Score
+  const uniqueMonths = new Set(transactions.map((t) => t.date?.slice(0, 7)).filter(Boolean));
+  const numMonths = Math.max(1, uniqueMonths.size);
+  const totalSavingsBalance = savings.reduce((s, sa) => s + sa.current, 0);
+  const totalAccountBalance = accounts.reduce((s, a) => s + (a.balance || 0), 0);
+  const totalAsset = totalSavingsBalance + totalAccountBalance;
+
   const healthScore = useMemo(() => {
     if (allIncome === 0 && allExpense === 0) {
       return { score: 50, label: 'Belum Ada Data', color: '#94a3b8', details: [] as { label: string; score: number; weight: number; desc: string }[] };
     }
 
-    // 1. Pendapatan vs Pengeluaran (20%) — from ALL transactions
+    const avgMonthlyIncome = allIncome / numMonths;
+    const avgMonthlyExpense = allExpense / numMonths;
+
+    // 1. Pendapatan vs Pengeluaran (20%)
     const expenseRatio = allIncome > 0 ? allExpense / allIncome : 99;
     let pendapatanScore: number;
     let pendapatanDesc: string;
@@ -278,22 +295,19 @@ export default function AnalysisScreen() {
     else if (expenseRatio <= 1) { pendapatanScore = 40; pendapatanDesc = 'Hati-hati'; }
     else { pendapatanScore = 20; pendapatanDesc = 'Melebihi pendapatan'; }
 
-    // 2. Tabungan & Investasi (20%)
-    const totalSavings = savings.reduce((s, sa) => s + sa.current, 0);
-    const avgMonthlyIncome = allIncome / 5;
-    const savingsRate = avgMonthlyIncome > 0 ? totalSavings / avgMonthlyIncome : 0;
+    // 2. Tabungan & Investasi (20%) — persentase pendapatan yang ditabung per bulan
+    const avgMonthlySurplus = (allIncome - allExpense) / numMonths;
+    const savingsRate = avgMonthlyIncome > 0 ? avgMonthlySurplus / avgMonthlyIncome : 0;
     let tabunganScore: number;
     let tabunganDesc: string;
-    if (totalSavings === 0) { tabunganScore = 0; tabunganDesc = 'Belum ada tabungan'; }
-    else if (savingsRate >= 6) { tabunganScore = 100; tabunganDesc = 'Sangat baik'; }
-    else if (savingsRate >= 3) { tabunganScore = 85; tabunganDesc = 'Baik'; }
-    else if (savingsRate >= 1) { tabunganScore = 65; tabunganDesc = 'Cukup'; }
-    else if (savingsRate >= 0.2) { tabunganScore = 50; tabunganDesc = 'Kurang'; }
-    else { tabunganScore = 30; tabunganDesc = 'Perlu ditingkatkan'; }
+    if (savingsRate >= 0.3) { tabunganScore = 100; tabunganDesc = 'Sangat baik (>30%)'; }
+    else if (savingsRate >= 0.2) { tabunganScore = 85; tabunganDesc = 'Baik (20-30%)'; }
+    else if (savingsRate >= 0.1) { tabunganScore = 65; tabunganDesc = 'Cukup (10-20%)'; }
+    else if (savingsRate >= 0) { tabunganScore = 50; tabunganDesc = 'Kurang (0-10%)'; }
+    else { tabunganScore = 20; tabunganDesc = 'Defisit'; }
 
     // 3. Dana Darurat (20%)
-    const avgMonthlyExpense = allExpense / 5;
-    const emergencyMonths = avgMonthlyExpense > 0 ? totalSavings / avgMonthlyExpense : 0;
+    const emergencyMonths = avgMonthlyExpense > 0 ? totalSavingsBalance / avgMonthlyExpense : 0;
     let daruratScore: number;
     let daruratDesc: string;
     if (emergencyMonths >= 6) { daruratScore = 100; daruratDesc = 'Sangat aman'; }
@@ -314,7 +328,6 @@ export default function AnalysisScreen() {
     else { utangScore = 20; utangDesc = 'Sangat tinggi'; }
 
     // 5. Aset vs Liabilitas (20%)
-    const totalAsset = totalSavings;
     const totalLiability = debts.filter(d => d.type === 'payable').reduce((s, d) => s + (d.amount - d.paid), 0);
     const netWorth = totalAsset - totalLiability;
     let asetScore: number;
@@ -342,7 +355,7 @@ export default function AnalysisScreen() {
     else { label = 'Tidak Sehat'; color = '#ef4444'; }
 
     return { score: totalScore, label, color, details };
-  }, [allIncome, allExpense, savings, debts]);
+  }, [allIncome, allExpense, savings, debts, accounts, numMonths, totalSavingsBalance, totalAccountBalance, totalAsset]);
 
   if (loading) {
     return (

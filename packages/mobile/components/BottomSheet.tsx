@@ -11,7 +11,7 @@ import {
   Dimensions,
 } from 'react-native'
 import { useColorScheme } from '@/components/useColorScheme'
-import Colors from '@/constants/Colors'
+import Colors, { useColors } from '@/constants/Colors'
 import { BorderRadius, Spacing } from '@/constants/DesignSystem'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -31,6 +31,7 @@ export default function BottomSheet({
   maxHeight?: string | number
 }) {
   const colorScheme = useColorScheme() ?? 'dark'
+  useColors();
   const colors = Colors[colorScheme]
   const insets = useSafeAreaInsets()
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current

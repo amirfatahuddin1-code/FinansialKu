@@ -9,6 +9,10 @@
 export { createKarsafinAPI, getSupabaseClient, resetSupabaseClient, workspaceContext } from './supabase';
 export type { KarsafinAPI } from './supabase';
 
+// Feature utilities (Kreasi User)
+export { validateFeatureDefinition } from './feature/validator';
+export { executeQuery, evaluateCondition, computeExpression } from './feature/interpreter';
+
 // Types
 export * from './types';
 

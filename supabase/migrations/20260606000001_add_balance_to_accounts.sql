@@ -1,0 +1,2 @@
+ALTER TABLE public.financial_accounts 
+ADD COLUMN IF NOT EXISTS balance DECIMAL(15,2) NOT NULL DEFAULT 0;

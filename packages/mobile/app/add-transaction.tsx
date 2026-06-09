@@ -4,7 +4,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@/providers/AuthProvider';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Colors from '@/constants/Colors';
+import Colors, { useColors } from '@/constants/Colors';
 import { Spacing, BorderRadius } from '@/constants/DesignSystem';
 import { formatCurrency, getLocalToday } from '@karsafin/shared';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -28,6 +28,7 @@ export default function AddTransactionScreen() {
   const { user, api } = useAuth();
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme() ?? 'dark';
+  useColors();
   const colors = Colors[colorScheme];
 
   const [type, setType] = useState<'income' | 'expense' | 'savings'>(

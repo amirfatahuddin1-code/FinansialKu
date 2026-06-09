@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/components/useColorScheme';
-import Colors from '@/constants/Colors';
+import Colors, { useColors } from '@/constants/Colors';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { router } from 'expo-router';
 
@@ -78,6 +78,7 @@ const FAQItem = ({ item, colors }: { item: any, colors: any }) => {
 
 export default function FAQScreen() {
   const colorScheme = useColorScheme() ?? 'light';
+  useColors();
   const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
 

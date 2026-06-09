@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { useAuth } from '../providers/AuthProvider';
 import { useColorScheme } from './useColorScheme';
-import Colors from '../constants/Colors';
+import Colors, { useColors } from '../constants/Colors';
 import { Spacing, BorderRadius } from '../constants/DesignSystem';
 import BottomSheet from './BottomSheet';
 import type { Category } from '@karsafin/shared';
@@ -28,6 +28,7 @@ const PRESET_COLORS = [
 export default function AddCategoryModal({ visible, onClose, onSave, initialType }: AddCategoryModalProps) {
   const { user, api } = useAuth();
   const colorScheme = useColorScheme() ?? 'dark';
+  useColors();
   const colors = Colors[colorScheme];
 
   const [name, setName] = useState('');
