@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
         const orderId = `KARSAFIN-${plan_id.toUpperCase()}-${user_id.substring(0, 8)}-${timestamp}`
 
         // APP URL for redirects
-        const appUrl = Deno.env.get('APP_URL') || 'https://finansial-ku.vercel.app'
+        const appUrl = Deno.env.get('APP_URL') || 'https://karsafin.biz.id'
 
         // ==========================================
         // GATEWAY: MAYAR

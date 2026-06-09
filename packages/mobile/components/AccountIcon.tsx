@@ -42,7 +42,7 @@ export default function AccountIcon({ icon, type, size = 18, color }: AccountIco
   if (isImage) {
     const uri = icon.startsWith('http') 
       ? icon 
-      : `https://finansialku-ecru.vercel.app/${icon}`;
+      : `https://karsafin.biz.id/${icon}`;
       
     return (
       <Image
