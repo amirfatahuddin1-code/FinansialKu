@@ -493,14 +493,14 @@ export default function AccountsPage() {
       }
 
       // Mode Database Riil
-      // 1. Fetch categories to find/create "Transfer" category of type "expense"
+      // 1. Fetch categories to find/create "Transfer" category of type "savings"
       const catRes = await api.categories.getAll();
       if (catRes.error) throw catRes.error;
 
       let transferCategoryId = "";
       const categories = catRes.data || [];
       const foundCat = categories.find(
-        (c) => c.name.toLowerCase() === "transfer" && c.type === "expense"
+        (c) => c.name.toLowerCase() === "transfer" && c.type === "savings"
       );
 
       if (foundCat) {
@@ -509,7 +509,7 @@ export default function AccountsPage() {
         // Create the "Transfer" category
         const { data: newCat, error: createCatErr } = await api.categories.create(user.id, {
           name: "Transfer",
-          type: "expense",
+          type: "savings",
           icon: "🔄",
           color: "#3B82F6",
         });
@@ -523,7 +523,7 @@ export default function AccountsPage() {
 
       // 2. Create transfer transaction
       const { error: txErr } = await api.transactions.create(user.id, {
-        type: "expense",
+        type: "savings",
         amount: amountNum,
         description: transferNote.trim() || "Transfer antar akun",
         date: new Date().toISOString(),

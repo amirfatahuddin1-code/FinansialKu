@@ -79,7 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (!user && !isPublicRoute) {
       router.push("/login");
-    } else if (user && pathname === "/login") {
+    } else if (user && (pathname === "/login" || pathname === "/")) {
       router.push("/dashboard");
     }
   }, [user, loading, pathname, router]);
