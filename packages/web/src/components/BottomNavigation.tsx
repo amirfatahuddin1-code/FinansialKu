@@ -8,9 +8,22 @@ import {
   HelpCircle,
   LogOut,
   Video,
-  Sparkles
+  Sparkles,
+  LayoutGrid,
+  Activity,
+  CreditCard,
+  Settings,
+  Bot,
 } from "lucide-react";
 import { useAuth } from "@/providers";
+
+const bottomTabs = [
+  { label: "Dashboard", href: "/dashboard", icon: LayoutGrid },
+  { label: "Transaksi", href: "/dashboard/transactions", icon: Activity },
+  { label: "Perencanaan", href: "/dashboard/planning", icon: CreditCard },
+  { label: "AI", href: "/dashboard/ai", icon: Bot },
+  { label: "Lainnya", href: "/dashboard/settings", icon: Settings },
+];
 
 export function BottomNavigation() {
   const { signOut } = useAuth();
@@ -19,14 +32,18 @@ export function BottomNavigation() {
 
   const startTour = (type: string) => {
     setShowHelpMenu(false);
-    // Dispatch custom event to start guided tour
     window.dispatchEvent(new CustomEvent("start-karsafin-tour", { detail: { type } }));
+  };
+
+  const isTabActive = (href: string) => {
+    if (href === "/dashboard") return pathname === "/dashboard";
+    return pathname.startsWith(href);
   };
 
   return (
     <>
-      {/* Help & Logout in bottom left (floating, aligned perfectly with LeftSidebar) */}
-      <div className="fixed bottom-6 left-4 z-50 flex flex-col gap-2 p-1.5 floating-nav rounded-3xl pointer-events-auto">
+      {/* Desktop: Help & Logout floating (hidden on mobile) */}
+      <div className="fixed bottom-6 left-4 z-50 hidden md:flex flex-col gap-2 p-1.5 floating-nav rounded-3xl pointer-events-auto">
         <button
           onClick={() => setShowHelpMenu(!showHelpMenu)}
           className={`sidebar-icon-btn cursor-pointer transition-all ${
@@ -48,7 +65,31 @@ export function BottomNavigation() {
         </button>
       </div>
 
-      {/* TUTORIAL & GUIDE POPUP (Dropdown Menu) */}
+      {/* Mobile Bottom Tab Bar */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-slate-200 md:hidden safe-area-bottom">
+        <nav className="flex items-center justify-around py-1.5 px-1">
+          {bottomTabs.map((tab) => {
+            const Icon = tab.icon;
+            const active = isTabActive(tab.href);
+            return (
+              <Link
+                key={tab.href}
+                href={tab.href}
+                className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors ${
+                  active ? "text-dashboard-blue" : "text-slate-400 hover:text-slate-600"
+                }`}
+              >
+                <Icon className={`w-5 h-5 ${active ? "stroke-[2.5]" : ""}`} />
+                <span className={`text-[10px] font-bold ${active ? "" : "font-semibold"}`}>
+                  {tab.label}
+                </span>
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
+
+      {/* TUTORIAL & GUIDE POPUP */}
       {showHelpMenu && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setShowHelpMenu(false)} />
@@ -57,9 +98,7 @@ export function BottomNavigation() {
               Tutorial & Panduan
             </div>
 
-            {/* List items matching target mockup */}
             <div className="mt-2 space-y-0.5 px-2">
-              {/* Video Tutorials */}
               <Link
                 href="/dashboard/tutorials"
                 onClick={() => setShowHelpMenu(false)}
@@ -74,7 +113,6 @@ export function BottomNavigation() {
                 </span>
               </Link>
 
-              {/* Tur Utama */}
               <button
                 onClick={() => startTour("main")}
                 className="w-full flex items-center gap-3.5 px-3 py-2.5 rounded-2xl hover:bg-slate-50 transition-colors text-left cursor-pointer group"
@@ -87,7 +125,6 @@ export function BottomNavigation() {
                 </span>
               </button>
 
-              {/* Catat dengan AI */}
               <button
                 onClick={() => startTour("ai")}
                 className="w-full flex items-center gap-3.5 px-3 py-2.5 rounded-2xl hover:bg-slate-50 transition-colors text-left cursor-pointer group"
@@ -100,7 +137,6 @@ export function BottomNavigation() {
                 </span>
               </button>
 
-              {/* Filter Tanggal */}
               <button
                 onClick={() => startTour("date")}
                 className="w-full flex items-center gap-3.5 px-3 py-2.5 rounded-2xl hover:bg-slate-50 transition-colors text-left cursor-pointer group"
@@ -113,7 +149,6 @@ export function BottomNavigation() {
                 </span>
               </button>
 
-              {/* Pengaturan */}
               <button
                 onClick={() => startTour("settings")}
                 className="w-full flex items-center gap-3.5 px-3 py-2.5 rounded-2xl hover:bg-slate-50 transition-colors text-left cursor-pointer group"
@@ -126,7 +161,6 @@ export function BottomNavigation() {
                 </span>
               </button>
 
-              {/* Profil Keuangan */}
               <button
                 onClick={() => startTour("profile")}
                 className="w-full flex items-center gap-3.5 px-3 py-2.5 rounded-2xl hover:bg-slate-50 transition-colors text-left cursor-pointer group"
@@ -145,7 +179,7 @@ export function BottomNavigation() {
 
       {/* FAB + Button in bottom right */}
       {pathname !== "/dashboard/ai" && (
-        <div className="fixed bottom-6 right-6 md:right-8 z-50 pointer-events-auto">
+        <div className="fixed bottom-20 md:bottom-6 right-6 md:right-8 z-50 pointer-events-auto">
           <Link
             href="/dashboard/transactions/add"
             className="w-14 h-14 bg-dashboard-blue text-white rounded-full flex items-center justify-center shadow-xl shadow-blue-500/25 hover:bg-blue-700 transition-all hover:scale-105 active:scale-95 cursor-pointer"

@@ -227,7 +227,7 @@ export default function EventsPage() {
             return (
               <div
                 key={event.id}
-                className="custom-card p-8 hover:shadow-xl transition-all duration-300 relative group"
+                className="custom-card p-6 md:p-8 hover:shadow-xl transition-all duration-300 relative group"
               >
                 <button
                   onClick={() => handleDelete(event.id, event.name)}

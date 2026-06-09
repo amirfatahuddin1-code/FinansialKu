@@ -59,13 +59,13 @@ export default function SyaratKetentuanPage() {
         </Link>
 
         {/* Header */}
-        <div className="custom-card p-10 mb-8">
+        <div className="custom-card p-6 sm:p-10 mb-8">
           <div className="flex items-center gap-4 mb-4">
-            <div className="w-12 h-12 bg-dashboard-blue/10 rounded-2xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-dashboard-blue/10 rounded-2xl flex items-center justify-center shrink-0">
               <Shield className="h-6 w-6 text-dashboard-blue" />
             </div>
             <div>
-              <h1 className="text-3xl font-extrabold text-slate-800">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-800">
                 Syarat & Ketentuan
               </h1>
               <p className="text-xs font-semibold text-dashboard-gray uppercase tracking-widest mt-1">
@@ -84,7 +84,7 @@ export default function SyaratKetentuanPage() {
           {sections.map((section) => {
             const Icon = section.icon;
             return (
-              <div key={section.title} className="custom-card p-8 hover:shadow-md transition-shadow">
+              <div key={section.title} className="custom-card p-5 sm:p-8 hover:shadow-md transition-shadow">
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center shrink-0 border border-slate-100">
                     <Icon className="h-5 w-5 text-dashboard-blue" />

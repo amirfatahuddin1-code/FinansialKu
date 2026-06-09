@@ -21,13 +21,13 @@ export default function KontakKamiPage() {
           Kembali
         </Link>
 
-        <div className="custom-card p-10 mb-8">
+        <div className="custom-card p-6 sm:p-10 mb-8">
           <div className="flex items-center gap-4 mb-4">
-            <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center shrink-0">
               <MessageSquare className="h-6 w-6 text-indigo-600" />
             </div>
             <div>
-              <h1 className="text-3xl font-extrabold text-slate-800">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-800">
                 Kontak Kami
               </h1>
               <p className="text-xs font-semibold text-dashboard-gray uppercase tracking-widest mt-1">
@@ -61,7 +61,7 @@ export default function KontakKamiPage() {
           </div>
         </div>
 
-        <div className="custom-card p-8">
+        <div className="custom-card p-5 sm:p-8">
           <h2 className="font-black text-xl text-slate-800 mb-6">
             Kirim Pesan
           </h2>

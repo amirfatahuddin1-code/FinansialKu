@@ -14,7 +14,7 @@ export default function DashboardLayout({
       <LeftSidebar />
       <BottomNavigation />
       <GuidedTour />
-      <main className="min-h-screen pt-20 pb-32 px-4 sm:px-6 lg:px-8 lg:ml-20">
+      <main className="min-h-screen pt-20 pb-36 md:pb-32 px-4 sm:px-6 lg:px-8 lg:ml-20">
         {children}
       </main>
     </div>

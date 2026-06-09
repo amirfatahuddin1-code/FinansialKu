@@ -982,7 +982,7 @@ export default function InvestmentsPage() {
       {/* Active Tab Content */}
       <section className="space-y-4">
         {loading ? (
-          <div className="custom-card p-10 flex items-center justify-center text-dashboard-gray font-bold gap-3">
+          <div className="custom-card p-6 md:p-10 flex items-center justify-center text-dashboard-gray font-bold gap-3">
             <span className="w-6 h-6 border-3 border-dashboard-blue border-t-transparent rounded-full animate-spin" />
             Memuat portofolio...
           </div>
@@ -1168,7 +1168,7 @@ export default function InvestmentsPage() {
                     <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
                       Instrumen Investasi
                     </label>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                       {ASSET_TYPES.map((type) => {
                         const Icon = type.icon;
                         return (

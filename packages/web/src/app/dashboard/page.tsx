@@ -489,14 +489,14 @@ export default function DashboardPage() {
               <Activity className="h-4 w-4 text-blue-600" />
               Menu Pintasan
             </h3>
-            <div className="flex items-stretch gap-2 w-full">
+            <div className="grid grid-cols-4 sm:flex sm:items-stretch gap-2 w-full">
               {quickActions.map((action, idx) => {
                 const Icon = action.icon;
                 return (
                   <Link
                     key={idx}
                     href={action.route}
-                    className="flex-1 flex flex-col items-center gap-2 px-3 py-3 rounded-xl border border-slate-100 bg-white shadow-sm hover:shadow-md transition-all duration-300 group hover:-translate-y-0.5 text-center cursor-pointer min-w-0"
+                    className="flex flex-col items-center gap-2 px-2 sm:px-3 py-3 rounded-xl border border-slate-100 bg-white shadow-sm hover:shadow-md transition-all duration-300 group hover:-translate-y-0.5 text-center cursor-pointer min-w-0 flex-1"
                   >
                     <div className={`w-9 h-9 rounded-xl ${action.bg} flex items-center justify-center transition-transform group-hover:scale-105`}>
                       <Icon className={`w-4 h-4 ${action.color}`} />

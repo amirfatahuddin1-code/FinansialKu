@@ -1199,7 +1199,7 @@ export default function TransactionsPage() {
               {/* Bottom Summary & Legend */}
               <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-6">
                 {/* Monthly Summary Cards (Income, Expense, Saved) */}
-                <div className="grid grid-cols-3 gap-2 flex-1 max-w-xl bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 flex-1 max-w-xl bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
                   <div className="text-center py-2 px-3">
                     <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Pemasukan</span>
                     <span className="text-xs font-black text-emerald-600">{formatRupiah(totalIncome)}</span>

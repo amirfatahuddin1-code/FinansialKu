@@ -499,7 +499,7 @@ export default function AddTransactionPage() {
 
       <div>
         {/* Transaction Type Selector */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           {TX_TYPES.map((type) => (
             <button
               key={type.key}
@@ -518,7 +518,7 @@ export default function AddTransactionPage() {
         </div>
 
         {/* Form */}
-        <div className="custom-card p-8 md:p-10 space-y-8">
+        <div className="custom-card p-6 md:p-10 space-y-8">
           {/* Amount */}
           <div>
             <label className="text-xs font-black text-dashboard-gray uppercase tracking-widest mb-3 block">
@@ -951,7 +951,7 @@ export default function AddTransactionPage() {
           className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4"
           onClick={() => setShowAddCategoryModal(false)}
         >
-          <div className="bg-white rounded-3xl p-8 w-full max-w-md mx-4 shadow-2xl animate-in fade-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-3xl p-6 sm:p-8 w-full max-w-md mx-4 shadow-2xl animate-in fade-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-black text-slate-800">
                 Tambah Kategori Baru

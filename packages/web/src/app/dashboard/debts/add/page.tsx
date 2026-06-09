@@ -209,7 +209,7 @@ export default function AddDebtPage() {
         </div>
 
         {/* Form */}
-        <div className="custom-card p-8 md:p-10 space-y-8">
+        <div className="custom-card p-6 md:p-10 space-y-8">
           {/* Person Name */}
           <div>
             <label className="text-xs font-black text-dashboard-gray uppercase tracking-widest mb-3 block">

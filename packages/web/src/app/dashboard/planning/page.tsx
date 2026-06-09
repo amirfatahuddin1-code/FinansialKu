@@ -98,7 +98,7 @@ export default function PlanningPage() {
         {navCards.map((card) => (
           <Link key={card.href} href={card.href} className="group h-full flex flex-col">
             <div
-              className={`custom-card p-8 md:p-10 relative overflow-hidden transition-all duration-300 hover:shadow-xl ${card.shadowColor} hover:-translate-y-1 h-full flex flex-col justify-between`}
+              className={`custom-card p-6 md:p-10 relative overflow-hidden transition-all duration-300 hover:shadow-xl ${card.shadowColor} hover:-translate-y-1 h-full flex flex-col justify-between`}
             >
               <div>
                 {/* Background gradient accent */}
@@ -136,7 +136,7 @@ export default function PlanningPage() {
       </section>
 
       {/* Quick Stats Row */}
-      <section className="custom-card p-8 md:p-10">
+      <section className="custom-card p-6 md:p-10">
         <h3 className="font-black text-xl text-slate-800 mb-2">
           Ringkasan Anggaran Bulan Ini
         </h3>

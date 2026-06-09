@@ -80,7 +80,7 @@ export default function BudgetRealizationPage() {
           >
             <ChevronLeft className="h-4 w-4 text-slate-500" />
           </button>
-          <span className="bg-blue-600 text-white rounded-full px-6 py-2.5 text-sm font-semibold flex items-center gap-2 shadow-md min-w-[140px] justify-center">
+          <span className="bg-blue-600 text-white rounded-full px-6 py-2.5 text-sm font-semibold flex items-center gap-2 shadow-md min-w-[100px] sm:min-w-[140px] justify-center">
             {months[monthIndex]} {year}
             <ChevronDown className="h-4 w-4" />
           </span>
@@ -106,7 +106,7 @@ export default function BudgetRealizationPage() {
         </div>
       ) : (
         <>
-          <section className="custom-card p-8 md:p-10 mb-8">
+          <section className="custom-card p-6 md:p-10 mb-8">
             <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6">
               <div>
                 <h3 className="font-black text-xl text-slate-800 mb-1">Ringkasan Realisasi</h3>

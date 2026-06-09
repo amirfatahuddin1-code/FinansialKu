@@ -169,7 +169,7 @@ export default function BudgetPage() {
           <button onClick={() => { if (monthIndex > 0) { setMonthIndex(monthIndex - 1); } else { setYear(year - 1); setMonthIndex(11); } }} className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-slate-100 transition-colors cursor-pointer">
             <ChevronLeft className="h-4 w-4 text-slate-500" />
           </button>
-          <span className="bg-blue-600 text-white rounded-full px-6 py-2.5 text-sm font-semibold flex items-center gap-2 shadow-md min-w-[140px] justify-center">
+          <span className="bg-blue-600 text-white rounded-full px-6 py-2.5 text-sm font-semibold flex items-center gap-2 shadow-md min-w-[100px] sm:min-w-[140px] justify-center">
             {months[monthIndex]} {year}
           </span>
           <button onClick={() => { if (monthIndex < 11) { setMonthIndex(monthIndex + 1); } else { setYear(year + 1); setMonthIndex(0); } }} className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-slate-100 transition-colors cursor-pointer">
@@ -200,7 +200,7 @@ export default function BudgetPage() {
         </div>
       ) : (
         <>
-          <section className="custom-card p-8 md:p-10 mb-8">
+          <section className="custom-card p-6 md:p-10 mb-8">
             <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6">
               <div>
                 <h3 className="font-black text-xl text-slate-800 mb-1">Total Anggaran</h3>

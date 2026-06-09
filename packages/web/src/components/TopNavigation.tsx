@@ -10,6 +10,12 @@ import {
   Activity,
   Settings,
   CreditCard,
+  Menu,
+  X,
+  Calendar,
+  Repeat,
+  User,
+  HelpCircle,
 } from "lucide-react";
 
 const navItems = [
@@ -19,6 +25,12 @@ const navItems = [
   { label: "Hutang Piutang", href: "/dashboard/debts", icon: CreditCard },
   { label: "Analisis", href: "/dashboard/analysis", icon: Activity },
   { label: "AI", href: "/dashboard/ai", icon: Settings },
+];
+
+const sidebarItems = [
+  { icon: Calendar, href: "/dashboard/planning/events", title: "Event" },
+  { icon: Repeat, href: "/dashboard/routine-expenses", title: "Pengeluaran Rutin" },
+  { icon: User, href: "/dashboard/financial-profile", title: "Profil Keuangan" },
 ];
 
 import { useState, useEffect } from "react";
@@ -31,6 +43,7 @@ export function TopNavigation() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isActive = (href: string) => {
     if (href === "/dashboard") return pathname === "/dashboard";
@@ -85,6 +98,15 @@ export function TopNavigation() {
               ))}
             </nav>
           </div>
+
+          {/* Mobile Hamburger */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-2 text-slate-600 hover:text-dashboard-blue transition-colors cursor-pointer"
+            aria-label="Menu navigasi"
+          >
+            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
 
           {/* Right side: search, bell, avatar */}
           <div className="flex items-center gap-3">
@@ -181,6 +203,112 @@ export function TopNavigation() {
           </div>
         </header>
       </div>
+
+      {/* Mobile Navigation Drawer */}
+      {mobileMenuOpen && (
+        <>
+          <div className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm md:hidden" onClick={() => setMobileMenuOpen(false)} />
+          <div className="fixed top-0 left-0 bottom-0 z-50 w-72 bg-white shadow-2xl border-r border-slate-100 md:hidden overflow-y-auto animate-in slide-in-from-left duration-200">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <span className="font-extrabold text-sm text-slate-500 uppercase tracking-widest">Menu</span>
+              <button onClick={() => setMobileMenuOpen(false)} className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer rounded-xl hover:bg-slate-100">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Nav Items from TopNavigation */}
+            <div className="px-3 pt-4 pb-2">
+              <p className="px-3 pb-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Utama</p>
+              <div className="space-y-0.5">
+                {navItems.map((item) => {
+                  const Icon = item.icon;
+                  const active = isActive(item.href);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`flex items-center gap-3.5 px-4 py-3 rounded-2xl text-sm font-semibold transition-colors ${
+                        active
+                          ? "bg-dashboard-blue text-white shadow-sm"
+                          : "text-slate-600 hover:bg-slate-50"
+                      }`}
+                    >
+                      <Icon className="w-5 h-5" />
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Sidebar Items (Dashboard, Event, Pengeluaran Rutin, Profil Keuangan, Settings) */}
+            <div className="px-3 pt-4 pb-2 border-t border-slate-50">
+              <p className="px-3 pb-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Lainnya</p>
+              <div className="space-y-0.5">
+                <Link
+                  href="/dashboard"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center gap-3.5 px-4 py-3 rounded-2xl text-sm font-semibold transition-colors ${
+                    pathname === "/dashboard"
+                      ? "bg-dashboard-blue text-white shadow-sm"
+                      : "text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  <LayoutGrid className="w-5 h-5" />
+                  Dashboard
+                </Link>
+                {sidebarItems.map((item) => {
+                  const Icon = item.icon;
+                  const active = isActive(item.href);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`flex items-center gap-3.5 px-4 py-3 rounded-2xl text-sm font-semibold transition-colors ${
+                        active
+                          ? "bg-dashboard-blue text-white shadow-sm"
+                          : "text-slate-600 hover:bg-slate-50"
+                      }`}
+                    >
+                      <Icon className="w-5 h-5" />
+                      {item.title}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Settings & Help */}
+            <div className="px-3 pt-4 pb-2 border-t border-slate-50">
+              <p className="px-3 pb-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Akun</p>
+              <div className="space-y-0.5">
+                <Link
+                  href="/dashboard/settings"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center gap-3.5 px-4 py-3 rounded-2xl text-sm font-semibold transition-colors ${
+                    pathname.startsWith("/dashboard/settings")
+                      ? "bg-dashboard-blue text-white shadow-sm"
+                      : "text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  <Settings className="w-5 h-5" />
+                  Pengaturan
+                </Link>
+                <Link
+                  href="/dashboard/tutorials"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-3.5 px-4 py-3 rounded-2xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+                >
+                  <HelpCircle className="w-5 h-5" />
+                  Tutorial
+                </Link>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Global Search Overlay */}
       <GlobalSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
