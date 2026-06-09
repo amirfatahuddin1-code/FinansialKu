@@ -47,6 +47,8 @@ export default function DashboardPage() {
   const [debts, setDebts] = useState<Debt[]>([]);
   const [events, setEvents] = useState<KafEvent[]>([]);
   const [profileName, setProfileName] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   const loadDashboardData = useCallback(async () => {
     if (!user || !activeWorkspace) return;
@@ -104,6 +106,50 @@ export default function DashboardPage() {
     .filter((t) => t.type === "expense")
     .reduce((sum, t) => sum + t.amount, 0);
   const akumulasiSaldo = totalIncome - totalExpense;
+
+  const getMockCashflow = (month: number, year: number) => {
+    const seed = (month + 1) * 3 + (year - 2020) * 7;
+    const income = 7500000 + (seed % 5) * 500000;
+    const expense = 3500000 + (seed % 7) * 450000;
+    const savings = 1200000 + (seed % 3) * 200000;
+    const transfer = 800000 + (seed % 4) * 150000;
+    return { income, expense, savings, transfer };
+  };
+
+  const cashflowTx = transactions.filter((t) => {
+    const d = new Date(t.date);
+    return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
+  });
+
+  const cashflowIncome = cashflowTx
+    .filter((t) => t.type === "income")
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const cashflowExpense = cashflowTx
+    .filter((t) => t.type === "expense")
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const cashflowSavingsOnly = cashflowTx
+    .filter((t) => t.type === "savings" && (t.category?.name || "").toLowerCase() !== "transfer")
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const cashflowTransfersOnly = cashflowTx
+    .filter((t) => t.type === "savings" && (t.category?.name || "").toLowerCase() === "transfer")
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const currentCashflowIncome = isDatabaseEmpty
+    ? getMockCashflow(selectedMonth, selectedYear).income
+    : cashflowIncome;
+  const currentCashflowExpense = isDatabaseEmpty
+    ? getMockCashflow(selectedMonth, selectedYear).expense
+    : cashflowExpense;
+  const currentCashflowSavings = isDatabaseEmpty
+    ? getMockCashflow(selectedMonth, selectedYear).savings
+    : cashflowSavingsOnly;
+  const currentCashflowTransfers = isDatabaseEmpty
+    ? getMockCashflow(selectedMonth, selectedYear).transfer
+    : cashflowTransfersOnly;
+  const currentCashflowNet = currentCashflowIncome - currentCashflowExpense;
 
   const currentBalance = isDatabaseEmpty
     ? (saldoView === "bulan" ? 4750000 : 13800000)
@@ -480,6 +526,313 @@ export default function DashboardPage() {
             <ChevronRight className="h-5 w-5 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all" />
           </Link>
 
+          {/* Monthly Cashflow Widget */}
+          <div className="custom-card p-6 md:p-8">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-blue-50/50 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0">
+                  <BarChart3 className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-lg text-slate-800">
+                    Cashflow Bulanan
+                  </h3>
+                  <p className="text-[11px] text-slate-400 font-semibold leading-none mt-1">Arus kas masuk, keluar, tabungan & transfer</p>
+                </div>
+              </div>
+              
+              {/* Select Month and Year */}
+              <div className="flex items-center gap-2 select-none shrink-0">
+                <div className="relative">
+                  <select
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                    className="bg-slate-50 border border-slate-200/80 rounded-xl py-1.5 pl-3 pr-8 text-xs font-bold text-slate-700 focus:outline-none appearance-none cursor-pointer hover:bg-slate-100/50 transition-colors"
+                  >
+                    {[
+                      "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+                      "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+                    ].map((name, idx) => (
+                      <option key={idx} value={idx}>{name}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-500 pointer-events-none" />
+                </div>
+
+                <div className="relative">
+                  <select
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(Number(e.target.value))}
+                    className="bg-slate-50 border border-slate-200/80 rounded-xl py-1.5 pl-3 pr-8 text-xs font-bold text-slate-700 focus:outline-none appearance-none cursor-pointer hover:bg-slate-100/50 transition-colors"
+                  >
+                    {[2024, 2025, 2026, 2027, 2028].map((yr) => (
+                      <option key={yr} value={yr}>{yr}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-500 pointer-events-none" />
+                </div>
+              </div>
+            </div>
+
+            {/* Vertical Bar Chart */}
+            {(() => {
+              const maxVal = Math.max(
+                currentCashflowIncome,
+                currentCashflowExpense,
+                currentCashflowSavings,
+                currentCashflowTransfers,
+                1
+              );
+
+              const items = [
+                {
+                  label: "Uang Masuk",
+                  val: currentCashflowIncome,
+                  pct: (currentCashflowIncome / maxVal) * 100,
+                  gradient: "from-blue-600 to-cyan-400",
+                  bgLight: "bg-blue-50/40",
+                  borderLight: "border-blue-100/50",
+                  textTheme: "text-blue-600",
+                  iconBg: "bg-blue-50 border border-blue-100 text-blue-600",
+                  icon: ArrowDownLeft,
+                },
+                {
+                  label: "Uang Keluar",
+                  val: currentCashflowExpense,
+                  pct: (currentCashflowExpense / maxVal) * 100,
+                  gradient: "from-indigo-600 to-blue-500",
+                  bgLight: "bg-indigo-50/40",
+                  borderLight: "border-indigo-100/50",
+                  textTheme: "text-indigo-600",
+                  iconBg: "bg-indigo-50 border border-indigo-100 text-indigo-600",
+                  icon: ArrowUpRight,
+                },
+                {
+                  label: "Tabungan",
+                  val: currentCashflowSavings,
+                  pct: (currentCashflowSavings / maxVal) * 100,
+                  gradient: "from-sky-500 to-teal-400",
+                  bgLight: "bg-sky-50/40",
+                  borderLight: "border-sky-100/50",
+                  textTheme: "text-sky-600",
+                  iconBg: "bg-sky-50 border border-sky-100 text-sky-600",
+                  icon: TrendingUp,
+                },
+                {
+                  label: "Transfer",
+                  val: currentCashflowTransfers,
+                  pct: (currentCashflowTransfers / maxVal) * 100,
+                  gradient: "from-blue-800 to-indigo-700",
+                  bgLight: "bg-blue-950/5",
+                  borderLight: "border-blue-900/10",
+                  textTheme: "text-blue-900",
+                  iconBg: "bg-blue-900/10 border border-blue-900/20 text-blue-900",
+                  icon: Send,
+                },
+              ];
+
+              return (
+                <div className="space-y-6">
+                  {/* Chart Graphic Area */}
+                  <div className="relative h-56 w-full pt-8 pb-4 flex items-end justify-around border border-slate-100/80 bg-slate-50/20 rounded-2xl px-2 sm:px-6 md:px-8">
+                    {/* Grid Y-Axis Lines */}
+                    <div className="absolute inset-x-0 top-8 bottom-4 flex flex-col justify-between pointer-events-none select-none px-4">
+                      <div className="border-t border-dashed border-slate-100/80 w-full relative">
+                        <span className="absolute -top-2 left-0 text-[8px] font-black text-slate-400 bg-white px-1 rounded border border-slate-100 shadow-sm">
+                          Rp{formatCurrencyCompact(maxVal)}
+                        </span>
+                      </div>
+                      <div className="border-t border-dashed border-slate-100/80 w-full relative">
+                        <span className="absolute -top-2 left-0 text-[8px] font-black text-slate-400 bg-white px-1 rounded border border-slate-100 shadow-sm">
+                          Rp{formatCurrencyCompact(maxVal / 2)}
+                        </span>
+                      </div>
+                      <div className="border-t border-dashed border-slate-100/80 w-full relative">
+                        <span className="absolute -top-2 left-0 text-[8px] font-black text-slate-400 bg-white px-1 rounded border border-slate-100 shadow-sm">
+                          Rp0
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Bars Container */}
+                    {items.map((item, idx) => {
+                      return (
+                        <div key={idx} className="flex flex-col items-center justify-end h-full z-10 w-16 sm:w-20 group relative">
+                          {/* Value Tooltip on Hover */}
+                          <div className="absolute -top-6 bg-slate-800 text-white text-[9px] font-black py-0.5 px-2 rounded shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-20 whitespace-nowrap">
+                            Rp{formatCurrency(item.val)}
+                          </div>
+                          
+                          {/* Floating Compact Value */}
+                          <div className="text-[10px] font-black text-slate-500 mb-1.5 group-hover:text-slate-800 transition-colors select-none">
+                            Rp{formatCurrencyCompact(item.val)}
+                          </div>
+
+                          {/* Interactive Bar */}
+                          <div className="w-8 sm:w-10 bg-slate-100/50 rounded-t-xl overflow-hidden h-full flex items-end shadow-inner border border-slate-100/50">
+                            <div
+                              className={`w-full rounded-t-xl bg-gradient-to-t ${item.gradient} transition-all duration-1000 ease-out origin-bottom hover:brightness-105 hover:shadow-lg`}
+                              style={{ height: item.val > 0 ? `${Math.max(item.pct, 4)}%` : "0%" }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Modern Cards Grid */}
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    {items.map((item, idx) => {
+                      const Icon = item.icon;
+                      return (
+                        <div key={idx} className={`p-4 border ${item.borderLight} ${item.bgLight} rounded-2xl flex items-start gap-3 shadow-sm hover:shadow-md hover:scale-[1.01] transition-all`}>
+                          <div className={`w-8 h-8 rounded-xl shrink-0 flex items-center justify-center ${item.iconBg}`}>
+                            <Icon className="h-4.5 w-4.5" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none mb-1.5">
+                              {item.label}
+                            </p>
+                            <p className="text-sm font-black text-slate-800 truncate">
+                              Rp{formatCurrency(item.val)}
+                            </p>
+                            <p className="text-[9px] text-slate-400 font-bold mt-1">
+                              {Math.round(item.pct)}% dari tertinggi
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Sisa Saldo / Net Cashflow Badge */}
+                  <div className={`p-4 border rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 transition-all ${
+                    currentCashflowNet >= 0
+                      ? "bg-emerald-50/40 border-emerald-100/50"
+                      : "bg-rose-50/40 border-rose-100/50"
+                  }`}>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border ${
+                        currentCashflowNet >= 0
+                          ? "bg-emerald-50 border-emerald-100 text-emerald-600"
+                          : "bg-rose-50 border-rose-100 text-rose-600"
+                      }`}>
+                        <TrendingUp className={`h-5 w-5 ${currentCashflowNet < 0 ? "rotate-180" : ""}`} />
+                      </div>
+                      <div>
+                        <p className="text-xs font-black text-slate-800">
+                          Sisa Bersih (Pemasukan - Pengeluaran)
+                        </p>
+                        <p className="text-[10px] text-slate-400 font-bold leading-none mt-1">
+                          Selisih total dana masuk dan keluar pada bulan ini
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-left sm:text-right shrink-0">
+                      <p className={`text-base font-black ${
+                        currentCashflowNet >= 0 ? "text-emerald-600" : "text-rose-600"
+                      }`}>
+                        {currentCashflowNet >= 0 ? "+" : "-"}Rp{formatCurrency(Math.abs(currentCashflowNet))}
+                      </p>
+                      <p className="text-[9px] text-slate-400 font-black uppercase tracking-wider mt-1">
+                        {currentCashflowNet >= 0 ? "Surplus Keuangan" : "Defisit Keuangan"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Budget Realization Widget */}
+          <div className="custom-card p-6 md:p-8">
+            <h3 className="font-extrabold text-lg text-slate-800 mb-6">
+              Realisasi Anggaran
+            </h3>
+
+            <div className="flex flex-col md:flex-row items-center justify-between gap-8 py-2">
+              {/* CSS Donut Chart */}
+              <div
+                className="w-36 h-36 rounded-full relative flex items-center justify-center shadow-inner shrink-0"
+                style={{
+                  background: isDatabaseEmpty
+                    ? `conic-gradient(#0062ff 0% 40%, #fdc003 40% 72%, #ef4444 72% 89%, #10b981 89% 100%)`
+                    : `conic-gradient(${
+                        catExpenses.length > 0
+                          ? catExpenses
+                              .map((cat, idx, arr) => {
+                                const prevPct = arr.slice(0, idx).reduce((s, c) => s + c.percentage, 0);
+                                const currPct = prevPct + cat.percentage;
+                                return `${cat.color} ${prevPct}% ${currPct}%`;
+                              })
+                              .join(", ")
+                          : "#cbd5e1 0% 100%"
+                      })`,
+                }}
+              >
+                <div className="w-28 h-28 rounded-full bg-white flex flex-col items-center justify-center shadow-md">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">Terpakai</span>
+                  <span className="text-base font-extrabold text-slate-800">
+                    Rp{isDatabaseEmpty ? "3.75Jt" : formatCurrencyCompact(monthlyExpense)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Legend Grid */}
+              <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+                {isDatabaseEmpty ? (
+                  [
+                    { name: "Tagihan & Utilitas", amount: 1500000, percentage: 40, color: "#0062ff" },
+                    { name: "Makanan & Minuman", amount: 1200000, percentage: 32, color: "#fdc003" },
+                    { name: "Belanja", amount: 650000, percentage: 17, color: "#ef4444" },
+                    { name: "Transportasi", amount: 400000, percentage: 11, color: "#10b981" },
+                  ].map((cat, idx) => (
+                    <div key={idx} className="p-3 border border-slate-100 bg-white rounded-xl shadow-sm flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
+                        <div>
+                          <p className="text-xs font-bold text-slate-700">{cat.name}</p>
+                          <p className="text-[10px] text-slate-400 font-medium">Rp{formatCurrencyCompact(cat.amount)}</p>
+                        </div>
+                      </div>
+                      <span className="text-xs font-extrabold text-slate-800">{cat.percentage}%</span>
+                    </div>
+                  ))
+                ) : catExpenses.length === 0 ? (
+                  <div className="col-span-2 p-6 text-center text-xs font-semibold text-slate-400 border border-dashed border-slate-200 rounded-2xl">
+                    Belum ada data alokasi anggaran bulan ini
+                  </div>
+                ) : (
+                  catExpenses.map((cat, idx) => (
+                    <div
+                      key={idx}
+                      className="p-3 border border-slate-100 bg-white rounded-xl shadow-sm flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span
+                          className="w-3 h-3 rounded-full shrink-0"
+                          style={{ backgroundColor: cat.color }}
+                        />
+                        <div>
+                          <p className="text-xs font-bold text-slate-700">
+                            {cat.name}
+                          </p>
+                          <p className="text-[10px] text-slate-400 font-medium">
+                            Rp{formatCurrencyCompact(cat.amount)}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-xs font-extrabold text-slate-800">
+                        {cat.percentage}%
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+
+
           {/* Recent Transactions Widget */}
           <div id="tour-recent-transactions" className="custom-card p-6 md:p-8">
             <div className="flex justify-between items-center mb-6">
@@ -574,94 +927,6 @@ export default function DashboardPage() {
                   );
                 })
               )}
-            </div>
-          </div>
-
-          {/* Budget Realization Widget */}
-          <div className="custom-card p-6 md:p-8">
-            <h3 className="font-extrabold text-lg text-slate-800 mb-6">
-              Realisasi Anggaran
-            </h3>
-
-            <div className="flex flex-col md:flex-row items-center justify-between gap-8 py-2">
-              {/* CSS Donut Chart */}
-              <div
-                className="w-36 h-36 rounded-full relative flex items-center justify-center shadow-inner shrink-0"
-                style={{
-                  background: isDatabaseEmpty
-                    ? `conic-gradient(#0062ff 0% 40%, #fdc003 40% 72%, #ef4444 72% 89%, #10b981 89% 100%)`
-                    : `conic-gradient(${
-                        catExpenses.length > 0
-                          ? catExpenses
-                              .map((cat, idx, arr) => {
-                                const prevPct = arr.slice(0, idx).reduce((s, c) => s + c.percentage, 0);
-                                const currPct = prevPct + cat.percentage;
-                                return `${cat.color} ${prevPct}% ${currPct}%`;
-                              })
-                              .join(", ")
-                          : "#cbd5e1 0% 100%"
-                      })`,
-                }}
-              >
-                <div className="w-28 h-28 rounded-full bg-white flex flex-col items-center justify-center shadow-md">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase">Terpakai</span>
-                  <span className="text-base font-extrabold text-slate-800">
-                    Rp{isDatabaseEmpty ? "3.75Jt" : formatCurrencyCompact(monthlyExpense)}
-                  </span>
-                </div>
-              </div>
-
-              {/* Legend Grid */}
-              <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
-                {isDatabaseEmpty ? (
-                  [
-                    { name: "Tagihan & Utilitas", amount: 1500000, percentage: 40, color: "#0062ff" },
-                    { name: "Makanan & Minuman", amount: 1200000, percentage: 32, color: "#fdc003" },
-                    { name: "Belanja", amount: 650000, percentage: 17, color: "#ef4444" },
-                    { name: "Transportasi", amount: 400000, percentage: 11, color: "#10b981" },
-                  ].map((cat, idx) => (
-                    <div key={idx} className="p-3 border border-slate-100 bg-white rounded-xl shadow-sm flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
-                        <div>
-                          <p className="text-xs font-bold text-slate-700">{cat.name}</p>
-                          <p className="text-[10px] text-slate-400 font-medium">Rp{formatCurrencyCompact(cat.amount)}</p>
-                        </div>
-                      </div>
-                      <span className="text-xs font-extrabold text-slate-800">{cat.percentage}%</span>
-                    </div>
-                  ))
-                ) : catExpenses.length === 0 ? (
-                  <div className="col-span-2 p-6 text-center text-xs font-semibold text-slate-400 border border-dashed border-slate-200 rounded-2xl">
-                    Belum ada data alokasi anggaran bulan ini
-                  </div>
-                ) : (
-                  catExpenses.map((cat, idx) => (
-                    <div
-                      key={idx}
-                      className="p-3 border border-slate-100 bg-white rounded-xl shadow-sm flex items-center justify-between"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span
-                          className="w-3 h-3 rounded-full shrink-0"
-                          style={{ backgroundColor: cat.color }}
-                        />
-                        <div>
-                          <p className="text-xs font-bold text-slate-700">
-                            {cat.name}
-                          </p>
-                          <p className="text-[10px] text-slate-400 font-medium">
-                            Rp{formatCurrencyCompact(cat.amount)}
-                          </p>
-                        </div>
-                      </div>
-                      <span className="text-xs font-extrabold text-slate-800">
-                        {cat.percentage}%
-                      </span>
-                    </div>
-                  ))
-                )}
-              </div>
             </div>
           </div>
         </div>
