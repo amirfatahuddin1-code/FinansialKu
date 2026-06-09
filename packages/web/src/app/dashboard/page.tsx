@@ -831,104 +831,6 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
-
-
-          {/* Recent Transactions Widget */}
-          <div id="tour-recent-transactions" className="custom-card p-6 md:p-8">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="font-extrabold text-lg text-slate-800">
-                Transaksi Terakhir
-              </h3>
-              <Link
-                href="/dashboard/transactions"
-                className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline transition-all cursor-pointer"
-              >
-                Lihat Semua
-              </Link>
-            </div>
-
-            <div className="divide-y divide-slate-50">
-              {isDatabaseEmpty ? (
-                // Mock visual fallback
-                [
-                  { id: "m1", emoji: "💰", desc: "Gaji Bulanan", acc: "BCA", date: "2026-05-30", amount: "+Rp8.500.000", color: "text-emerald-500" },
-                  { id: "m2", emoji: "🍔", desc: "Makan Siang", acc: "GoPay", date: "2026-05-30", amount: "-Rp35.000", color: "text-red-500" },
-                  { id: "m3", emoji: "⚡", desc: "Listrik PLN", acc: "Mandiri", date: "2026-05-29", amount: "-Rp450.000", color: "text-red-500" },
-                  { id: "m4", emoji: "🛒", desc: "Belanja Bulanan", acc: "BCA", date: "2026-05-28", amount: "-Rp1.200.000", color: "text-red-500" },
-                  { id: "m5", emoji: "💻", desc: "Freelance Project", acc: "Mandiri", date: "2026-05-27", amount: "+Rp2.500.000", color: "text-emerald-500" },
-                ].map((item) => (
-                  <div key={item.id} className="flex items-center justify-between py-4 first:pt-0 last:pb-0 hover:bg-slate-50/20 transition-colors rounded-xl px-2">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-lg border border-slate-100">
-                        {item.emoji}
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-slate-800">{item.desc}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase bg-slate-100 px-2 py-0.5 rounded-md">
-                            {item.acc}
-                          </span>
-                          <span className="text-[10px] text-slate-400 font-medium">{item.date}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <span className={`text-sm font-extrabold ${item.color}`}>{item.amount}</span>
-                  </div>
-                ))
-              ) : (
-                recentTransactions.map((tx) => {
-                  const { description: cleanDesc, tags } = parseDescriptionAndTags(tx.description || "");
-                  return (
-                    <div
-                      key={tx.id}
-                      className="flex items-center justify-between py-4 first:pt-0 last:pb-0 hover:bg-slate-50/20 transition-colors rounded-xl px-2"
-                    >
-                      <div className="flex items-center gap-4">
-                        <CategoryIcon name={tx.category?.name || "Lainnya"} size="md" />
-                        <div>
-                          <p className="text-sm font-bold text-slate-800">
-                            {cleanDesc}
-                          </p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase bg-slate-100 px-2 py-0.5 rounded-md">
-                              {tx.account?.name || "Cash"}
-                            </span>
-                            <span className="text-[10px] text-slate-400 font-medium">
-                              {new Date(tx.date).toLocaleDateString("id-ID")}
-                            </span>
-                          </div>
-                          {tags && tags.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-1.5">
-                              {tags.map((tag: string) => (
-                                <span
-                                  key={tag}
-                                  className="inline-block px-2.5 py-0.5 rounded-lg text-[10px] font-black bg-blue-50 text-blue-600 border border-blue-100/50"
-                                >
-                                  {tag}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <span
-                        className={`text-sm font-extrabold ${
-                          tx.type === "income"
-                            ? "text-emerald-500"
-                            : tx.type === "savings"
-                            ? "text-amber-500"
-                            : "text-red-500"
-                        }`}
-                      >
-                        {tx.type === "income" ? "+" : tx.type === "savings" ? "" : "-"}Rp{formatCurrency(tx.amount)}
-                      </span>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
         </div>
 
         {/* Right Column (Sidebar widgets) */}
@@ -1156,10 +1058,105 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
+
+          {/* Recent Transactions Widget */}
+          <div id="tour-recent-transactions" className="custom-card p-6 md:p-8">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="font-extrabold text-lg text-slate-800">
+                Transaksi Terakhir
+              </h3>
+              <Link
+                href="/dashboard/transactions"
+                className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline transition-all cursor-pointer"
+              >
+                Lihat Semua
+              </Link>
+            </div>
+
+            <div className="divide-y divide-slate-50">
+              {isDatabaseEmpty ? (
+                // Mock visual fallback
+                [
+                  { id: "m1", emoji: "💰", desc: "Gaji Bulanan", acc: "BCA", date: "2026-05-30", amount: "+Rp8.500.000", color: "text-emerald-500" },
+                  { id: "m2", emoji: "🍔", desc: "Makan Siang", acc: "GoPay", date: "2026-05-30", amount: "-Rp35.000", color: "text-red-500" },
+                  { id: "m3", emoji: "⚡", desc: "Listrik PLN", acc: "Mandiri", date: "2026-05-29", amount: "-Rp450.000", color: "text-red-500" },
+                  { id: "m4", emoji: "🛒", desc: "Belanja Bulanan", acc: "BCA", date: "2026-05-28", amount: "-Rp1.200.000", color: "text-red-500" },
+                  { id: "m5", emoji: "💻", desc: "Freelance Project", acc: "Mandiri", date: "2026-05-27", amount: "+Rp2.500.000", color: "text-emerald-500" },
+                ].map((item) => (
+                  <div key={item.id} className="flex items-center justify-between py-4 first:pt-0 last:pb-0 hover:bg-slate-50/20 transition-colors rounded-xl px-2">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-lg border border-slate-100">
+                        {item.emoji}
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-slate-800">{item.desc}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase bg-slate-100 px-2 py-0.5 rounded-md">
+                            {item.acc}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-medium">{item.date}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <span className={`text-sm font-extrabold ${item.color}`}>{item.amount}</span>
+                  </div>
+                ))
+              ) : (
+                recentTransactions.map((tx) => {
+                  const { description: cleanDesc, tags } = parseDescriptionAndTags(tx.description || "");
+                  return (
+                    <div
+                      key={tx.id}
+                      className="flex items-center justify-between py-4 first:pt-0 last:pb-0 hover:bg-slate-50/20 transition-colors rounded-xl px-2"
+                    >
+                      <div className="flex items-center gap-4">
+                        <CategoryIcon name={tx.category?.name || "Lainnya"} size="md" />
+                        <div>
+                          <p className="text-sm font-bold text-slate-800">
+                            {cleanDesc}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase bg-slate-100 px-2 py-0.5 rounded-md">
+                              {tx.account?.name || "Cash"}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-medium">
+                              {new Date(tx.date).toLocaleDateString("id-ID")}
+                            </span>
+                          </div>
+                          {tags && tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1.5">
+                              {tags.map((tag: string) => (
+                                <span
+                                  key={tag}
+                                  className="inline-block px-2.5 py-0.5 rounded-lg text-[10px] font-black bg-blue-50 text-blue-600 border border-blue-100/50"
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <span
+                        className={`text-sm font-extrabold ${
+                          tx.type === "income"
+                            ? "text-emerald-500"
+                            : tx.type === "savings"
+                            ? "text-amber-500"
+                            : "text-red-500"
+                        }`}
+                      >
+                        {tx.type === "income" ? "+" : tx.type === "savings" ? "" : "-"}Rp{formatCurrency(tx.amount)}
+                      </span>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
 }
-
-
