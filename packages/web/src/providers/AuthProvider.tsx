@@ -51,8 +51,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        const { data } = await api.auth.getUser();
-        setUser(data?.user ?? null);
+        const { data } = await api.auth.getSession();
+        setUser(data?.session?.user ?? null);
       } catch {
         setUser(null);
       } finally {
@@ -104,7 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/login`,
+          redirectTo: `${window.location.origin}/dashboard`,
         },
       });
 
