@@ -234,6 +234,15 @@ function LoginContent() {
       <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-blue-400/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
 
       <div className="relative w-full max-w-md">
+        {/* Back button */}
+        <button
+          onClick={() => router.push("/")}
+          className="absolute -top-2 -left-2 flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-blue-600 bg-white/90 hover:bg-white border border-slate-200 hover:border-blue-200 px-3.5 py-2 rounded-xl shadow-sm hover:shadow transition-all cursor-pointer z-10"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Kembali
+        </button>
+
         {/* Logo */}
         <div className="text-center mb-6">
           <img
