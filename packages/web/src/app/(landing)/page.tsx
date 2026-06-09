@@ -131,7 +131,7 @@ export default function LandingPage() {
       image: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=600&q=80",
     },
     {
-      title: "Target Tabungan (Impian)",
+      title: "Target Tabungan",
       desc: "Visualisasikan dan pantau progres dana darurat, DP rumah, atau liburan keluarga secara berkala.",
       icon: Target,
       color: "bg-indigo-600",
@@ -145,7 +145,7 @@ export default function LandingPage() {
       image: "https://images.unsplash.com/photo-1544377193-33dcf4d68fb5?auto=format&fit=crop&w=600&q=80",
     },
     {
-      title: "Perencana Kegiatan (Event)",
+      title: "Perencana Kegiatan",
       desc: "Rencanakan alokasi dana khusus untuk agenda tertentu seperti liburan, pernikahan, atau renovasi.",
       icon: Calendar,
       color: "bg-orange-500",
@@ -166,14 +166,14 @@ export default function LandingPage() {
       image: "https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=600&q=80",
     },
     {
-      title: "Pencatatan Instan via Bot",
+      title: "Pencatatan Instan dengan Bantuan AI",
       desc: "Catat pengeluaran harian dalam 5 detik via integrasi chat messenger Telegram Bot & WhatsApp.",
       icon: MessageSquare,
       color: "bg-teal-500",
       image: "https://images.unsplash.com/photo-1512428559087-560fa5ceab42?auto=format&fit=crop&w=600&q=80",
     },
     {
-      title: "Pengeluaran Rutin (Tagihan)",
+      title: "Pengeluaran Rutin (Tagihan dan Langganan)",
       desc: "Kelola tagihan berulang bulanan seperti biaya listrik, asuransi, dan internet tepat waktu.",
       icon: Clock,
       color: "bg-purple-500",
@@ -308,7 +308,7 @@ export default function LandingPage() {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-start">
-            
+
             {/* Hero Left Content */}
             <div className="lg:col-span-7 flex flex-col items-center lg:items-start text-center lg:text-left reveal-on-scroll">
               <span className="inline-flex items-center gap-2 bg-blue-50 border border-blue-100 text-blue-700 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm mb-6 animate-fade-in-up">
@@ -321,9 +321,8 @@ export default function LandingPage() {
                 Secara{" "}
                 <span className="inline-block relative min-w-[240px] text-center lg:text-left h-[1.2em] overflow-hidden">
                   <span
-                    className={`inline-block bg-blue-600 text-white px-4 py-1.5 rounded-2xl transform -rotate-1.5 shadow-lg shadow-blue-500/20 font-black tracking-normal transition-all duration-300 ${
-                      fade ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-                    }`}
+                    className={`inline-block bg-blue-600 text-white px-4 py-1.5 rounded-2xl transform -rotate-1.5 shadow-lg shadow-blue-500/20 font-black tracking-normal transition-all duration-300 ${fade ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+                      }`}
                   >
                     {words[wordIndex]}
                   </span>
@@ -331,7 +330,7 @@ export default function LandingPage() {
               </h1>
 
               <p className="text-lg text-slate-600 max-w-xl mb-8 leading-relaxed">
-                Pantau portofolio, atur anggaran otomatis, catat pengeluaran harian instan, dan capai target impian dari satu pusat kendali pintar yang gratis diakses.
+                Berhenti menebak kondisi keuanganmu. Saatnya kontrol penuh keuanganmu dan capai target finansial lebih cepat.
               </p>
 
               {/* Checklist */}
@@ -341,10 +340,10 @@ export default function LandingPage() {
                 </p>
                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
                   {[
-                    "Catat instan via Telegram Bot",
+                    "Catat instan dengan bantuan AI",
                     "Simulasi rencana masa depan",
                     "Grafik analisis real-time",
-                    "Target tabungan visual",
+                    "Atur target tabungan",
                     "Kelola hutang & piutang",
                     "Workspace bersama keluarga",
                   ].map((item, idx) => (
@@ -380,7 +379,7 @@ export default function LandingPage() {
             <div className="lg:col-span-5 relative w-full max-w-md mx-auto lg:max-w-none reveal-on-scroll" style={{ transitionDelay: "150ms" }}>
               {/* Background Accent Card */}
               <div className="absolute top-8 left-8 right-0 bottom-0 bg-blue-600 rounded-3xl shadow-xl -rotate-2 transform translate-x-2 translate-y-2 pointer-events-none opacity-90" />
-              
+
               {/* Device/Mockup Window */}
               <div className="relative bg-white rounded-3xl border border-slate-100 shadow-2xl p-6 overflow-hidden">
                 {/* Header Window Buttons */}
@@ -466,7 +465,7 @@ export default function LandingPage() {
             </span>
             <span className="flex items-center gap-2">
               <Smartphone className="w-4 h-4 text-blue-500" />
-              Catat Lewat Telegram & Whatsapp
+              Bisa Catat Lewat Telegram & Whatsapp
             </span>
             <span className="flex items-center gap-2">
               <Shield className="w-4 h-4 text-blue-500" />
@@ -497,20 +496,18 @@ export default function LandingPage() {
               const Icon = feat.icon;
               const isHorizontal = [3, 4, 8, 9, 10, 11].includes(idx);
               const softColor = colorMap[feat.color] || "bg-slate-50 text-slate-600 border border-slate-100";
-              
+
               return (
                 <div
                   key={idx}
-                  className={`bg-white border border-slate-100/85 rounded-3xl p-8 shadow-xs hover:shadow-xl hover:border-slate-200/80 transition-all duration-300 group hover:-translate-y-1 reveal-on-scroll flex flex-col ${
-                    isHorizontal 
-                      ? "lg:flex-row lg:items-start lg:gap-6 lg:col-span-6" 
-                      : "lg:col-span-4"
-                  }`}
+                  className={`bg-white border border-slate-100/85 rounded-3xl p-8 shadow-xs hover:shadow-xl hover:border-slate-200/80 transition-all duration-300 group hover:-translate-y-1 reveal-on-scroll flex flex-col ${isHorizontal
+                    ? "lg:flex-row lg:items-start lg:gap-6 lg:col-span-6"
+                    : "lg:col-span-4"
+                    }`}
                   style={{ transitionDelay: `${(idx % 4) * 100}ms` }}
                 >
-                  <div className={`w-12 h-12 ${softColor} rounded-2xl flex items-center justify-center shrink-0 mb-6 ${
-                    isHorizontal ? "lg:mb-0" : ""
-                  } group-hover:scale-105 transition-transform`}>
+                  <div className={`w-12 h-12 ${softColor} rounded-2xl flex items-center justify-center shrink-0 mb-6 ${isHorizontal ? "lg:mb-0" : ""
+                    } group-hover:scale-105 transition-transform`}>
                     <Icon className="w-6 h-6" />
                   </div>
                   <div className="flex-1">
@@ -532,10 +529,10 @@ export default function LandingPage() {
               Sebelum &amp; Sesudah
             </span>
             <h2 className="text-3xl font-black text-slate-900 tracking-tight mt-4 mb-2">
-              Beralih dari Kebingungan Finansial ke Kejelasan Penuh
+              Tinggalkan cara lama dan mulai beralih ke aplikasi yang lebih modern dan cerdas
             </h2>
             <p className="text-slate-500 text-base">
-              Lihat bagaimana Karsafin memodernisasi cara Anda melacak dan merencanakan kekayaan pribadi Anda.
+              Lihat bagaimana Karsafin memodernisasi cara Anda melacak dan merencanakan keuangan pribadi Anda.
             </p>
           </div>
 
@@ -616,7 +613,7 @@ export default function LandingPage() {
               Langkah Sederhana
             </span>
             <h2 className="text-3xl font-black text-slate-900 tracking-tight mt-4 mb-2">
-              4 Langkah Mudah Menuju Kebebasan Finansial
+              5 Langkah Mudah Menuju Kebebasan Finansial
             </h2>
             <p className="text-slate-500 text-base">
               Proses setup yang sangat cepat dan intuitif agar Anda bisa fokus merapikan keuangan Anda.
@@ -629,14 +626,20 @@ export default function LandingPage() {
 
             {/* Step 1 */}
             <div className="relative flex flex-col lg:flex-row items-stretch gap-8 mb-12 lg:mb-16 reveal-on-scroll" style={{ transitionDelay: "100ms" }}>
-              <div className="lg:w-1/2 lg:text-right flex flex-col justify-center items-start lg:items-end pl-16 lg:pl-0">
-                <span className="text-xs font-bold text-blue-600 mb-1">LANGKAH 01</span>
-                <h3 className="text-lg font-bold text-slate-800 mb-2">Buat Akun Karsafin</h3>
-                <p className="text-slate-500 text-sm leading-relaxed max-w-sm lg:text-right">
-                  Daftarkan diri Anda dalam waktu kurang dari 1 menit. Tanpa kartu kredit, 100% gratis.
-                </p>
+              <div className="lg:w-1/2 flex flex-col justify-center items-start lg:items-end pl-16 lg:pl-0 lg:pr-12">
+                <div className="bg-white p-6 rounded-2xl border border-slate-100/80 shadow-sm hover:shadow-md hover:border-blue-100 transition-all group hover:-translate-y-0.5 w-full text-left lg:text-right">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg inline-block mb-3">
+                    Langkah 01
+                  </span>
+                  <h3 className="text-base font-extrabold text-slate-800 mb-2 group-hover:text-blue-600 transition-colors">
+                    Buat Akun Karsafin
+                  </h3>
+                  <p className="text-slate-500 text-xs leading-relaxed max-w-sm lg:ml-auto">
+                    Daftarkan diri Anda dalam waktu kurang dari 1 menit, gratis.
+                  </p>
+                </div>
               </div>
-              <div className="absolute left-4 lg:left-1/2 w-8 h-8 rounded-full bg-blue-600 text-white font-extrabold flex items-center justify-center text-sm shadow-md shadow-blue-500/20 transform lg:-translate-x-1/2 z-10">
+              <div className="absolute left-4 lg:left-1/2 w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-white font-extrabold flex items-center justify-center text-sm shadow-md shadow-blue-500/20 transform lg:-translate-x-1/2 z-10">
                 1
               </div>
               <div className="lg:w-1/2" />
@@ -645,46 +648,85 @@ export default function LandingPage() {
             {/* Step 2 */}
             <div className="relative flex flex-col lg:flex-row items-stretch gap-8 mb-12 lg:mb-16 reveal-on-scroll" style={{ transitionDelay: "200ms" }}>
               <div className="lg:w-1/2" />
-              <div className="absolute left-4 lg:left-1/2 w-8 h-8 rounded-full bg-blue-600 text-white font-extrabold flex items-center justify-center text-sm shadow-md shadow-blue-500/20 transform lg:-translate-x-1/2 z-10">
+              <div className="absolute left-4 lg:left-1/2 w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-white font-extrabold flex items-center justify-center text-sm shadow-md shadow-blue-500/20 transform lg:-translate-x-1/2 z-10">
                 2
               </div>
-              <div className="lg:w-1/2 flex flex-col justify-center items-start pl-16 lg:pl-8">
-                <span className="text-xs font-bold text-blue-600 mb-1">LANGKAH 02</span>
-                <h3 className="text-lg font-bold text-slate-800 mb-2">Hubungkan Telegram Bot</h3>
-                <p className="text-slate-500 text-sm leading-relaxed max-w-sm">
-                  Aktifkan fitur bot Karsafin. Ketik nominal dan deskripsi pengeluaran langsung dari chat messenger favorit Anda.
-                </p>
+              <div className="lg:w-1/2 flex flex-col justify-center items-start pl-16 lg:pl-12">
+                <div className="bg-white p-6 rounded-2xl border border-slate-100/80 shadow-sm hover:shadow-md hover:border-blue-100 transition-all group hover:-translate-y-0.5 w-full text-left">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg inline-block mb-3">
+                    Langkah 02
+                  </span>
+                  <h3 className="text-base font-extrabold text-slate-800 mb-2 group-hover:text-blue-600 transition-colors">
+                    Atur Akun Keuangan
+                  </h3>
+                  <p className="text-slate-500 text-xs leading-relaxed max-w-sm">
+                    Masukkan semua akun keuangan, rekening bank, e-wallet, hingga kartu kredit.
+                  </p>
+                </div>
               </div>
             </div>
 
             {/* Step 3 */}
-            <div className="relative flex flex-col lg:flex-row items-stretch gap-8 mb-12 lg:mb-16 reveal-on-scroll" style={{ transitionDelay: "100ms" }}>
-              <div className="lg:w-1/2 lg:text-right flex flex-col justify-center items-start lg:items-end pl-16 lg:pl-0">
-                <span className="text-xs font-bold text-blue-600 mb-1">LANGKAH 03</span>
-                <h3 className="text-lg font-bold text-slate-800 mb-2">Tentukan Anggaran &amp; Target</h3>
-                <p className="text-slate-500 text-sm leading-relaxed max-w-sm lg:text-right">
-                  Masukkan target-target tabungan (Dana Darurat, Rumah Impian) dan tetapkan batas pengeluaran untuk setiap kategori belanja.
-                </p>
+            <div className="relative flex flex-col lg:flex-row items-stretch gap-8 mb-12 lg:mb-16 reveal-on-scroll" style={{ transitionDelay: "300ms" }}>
+              <div className="lg:w-1/2 flex flex-col justify-center items-start lg:items-end pl-16 lg:pl-0 lg:pr-12">
+                <div className="bg-white p-6 rounded-2xl border border-slate-100/80 shadow-sm hover:shadow-md hover:border-blue-100 transition-all group hover:-translate-y-0.5 w-full text-left lg:text-right">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg inline-block mb-3">
+                    Langkah 03
+                  </span>
+                  <h3 className="text-base font-extrabold text-slate-800 mb-2 group-hover:text-blue-600 transition-colors">
+                    Tentukan Anggaran &amp; Target
+                  </h3>
+                  <p className="text-slate-500 text-xs leading-relaxed max-w-sm lg:ml-auto">
+                    Masukkan target-target tabungan (Dana Darurat, Rumah Impian) dan tetapkan batas pengeluaran untuk setiap kategori belanja.
+                  </p>
+                </div>
               </div>
-              <div className="absolute left-4 lg:left-1/2 w-8 h-8 rounded-full bg-blue-600 text-white font-extrabold flex items-center justify-center text-sm shadow-md shadow-blue-500/20 transform lg:-translate-x-1/2 z-10">
+              <div className="absolute left-4 lg:left-1/2 w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-white font-extrabold flex items-center justify-center text-sm shadow-md shadow-blue-500/20 transform lg:-translate-x-1/2 z-10">
                 3
               </div>
               <div className="lg:w-1/2" />
             </div>
 
             {/* Step 4 */}
-            <div className="relative flex flex-col lg:flex-row items-stretch gap-8 reveal-on-scroll" style={{ transitionDelay: "200ms" }}>
+            <div className="relative flex flex-col lg:flex-row items-stretch gap-8 mb-12 lg:mb-16 reveal-on-scroll" style={{ transitionDelay: "400ms" }}>
               <div className="lg:w-1/2" />
-              <div className="absolute left-4 lg:left-1/2 w-8 h-8 rounded-full bg-blue-600 text-white font-extrabold flex items-center justify-center text-sm shadow-md shadow-blue-500/20 transform lg:-translate-x-1/2 z-10">
+              <div className="absolute left-4 lg:left-1/2 w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-white font-extrabold flex items-center justify-center text-sm shadow-md shadow-blue-500/20 transform lg:-translate-x-1/2 z-10">
                 4
               </div>
-              <div className="lg:w-1/2 flex flex-col justify-center items-start pl-16 lg:pl-8">
-                <span className="text-xs font-bold text-blue-600 mb-1">LANGKAH 04</span>
-                <h3 className="text-lg font-bold text-slate-800 mb-2">Analisis &amp; Dapatkan Insight</h3>
-                <p className="text-slate-500 text-sm leading-relaxed max-w-sm">
-                  Lihat dasbor Anda terisi otomatis, pelajari pola pengeluaran harian, dan optimalkan strategi menabung dengan aman.
-                </p>
+              <div className="lg:w-1/2 flex flex-col justify-center items-start pl-16 lg:pl-12">
+                <div className="bg-white p-6 rounded-2xl border border-slate-100/80 shadow-sm hover:shadow-md hover:border-blue-100 transition-all group hover:-translate-y-0.5 w-full text-left">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg inline-block mb-3">
+                    Langkah 04
+                  </span>
+                  <h3 className="text-base font-extrabold text-slate-800 mb-2 group-hover:text-blue-600 transition-colors">
+                    Catat Pengeluaran
+                  </h3>
+                  <p className="text-slate-500 text-xs leading-relaxed max-w-sm">
+                    Setiap kali belanja, catat. Di akhir bulan, kamu bisa lihat uang kamu kemana aja.
+                  </p>
+                </div>
               </div>
+            </div>
+
+            {/* Step 5 */}
+            <div className="relative flex flex-col lg:flex-row items-stretch gap-8 reveal-on-scroll" style={{ transitionDelay: "500ms" }}>
+              <div className="lg:w-1/2 flex flex-col justify-center items-start lg:items-end pl-16 lg:pl-0 lg:pr-12">
+                <div className="bg-white p-6 rounded-2xl border border-slate-100/80 shadow-sm hover:shadow-md hover:border-blue-100 transition-all group hover:-translate-y-0.5 w-full text-left lg:text-right">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg inline-block mb-3">
+                    Langkah 05
+                  </span>
+                  <h3 className="text-base font-extrabold text-slate-800 mb-2 group-hover:text-blue-600 transition-colors">
+                    Analisis &amp; Dapatkan Insight
+                  </h3>
+                  <p className="text-slate-500 text-xs leading-relaxed max-w-sm lg:ml-auto">
+                    Lihat dasbor Anda terisi otomatis, pelajari pola pengeluaran harian, dan optimalkan strategi menabung dengan aman.
+                  </p>
+                </div>
+              </div>
+              <div className="absolute left-4 lg:left-1/2 w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-white font-extrabold flex items-center justify-center text-sm shadow-md shadow-blue-500/20 transform lg:-translate-x-1/2 z-10">
+                5
+              </div>
+              <div className="lg:w-1/2" />
             </div>
 
           </div>
@@ -758,7 +800,7 @@ export default function LandingPage() {
       <section className="py-20 bg-slate-900 text-white relative overflow-hidden" id="daftar">
         {/* Decorative elements */}
         <div className="absolute top-0 left-0 right-0 bottom-0 bg-[radial-gradient(ellipse_60%_40%_at_50%_0%,rgba(59,130,246,0.15),transparent_70%)] pointer-events-none" />
-        
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center reveal-on-scroll">
           <span className="text-xs font-bold uppercase text-blue-400 tracking-widest block mb-4">
             Penawaran Terbatas
@@ -794,7 +836,7 @@ export default function LandingPage() {
             <div className="text-center pt-4 mb-6">
               <span className="text-slate-400 font-bold text-xs uppercase tracking-wider block mb-2">Biaya Langganan</span>
               <span className="text-slate-400 line-through text-base block font-bold">Rp 99.000 / Bulan</span>
-              
+
               <div className="mt-2 inline-block bg-blue-600 text-white font-black text-4xl sm:text-5xl px-6 py-2.5 rounded-2xl transform -rotate-1.5 shadow-lg shadow-blue-500/25">
                 Rp 0
               </div>
@@ -883,9 +925,8 @@ export default function LandingPage() {
                     <span className="text-sm sm:text-base">{faq.q}</span>
                   </span>
                   <ChevronDown
-                    className={`w-5 h-5 text-slate-400 transition-transform duration-300 shrink-0 ${
-                      faqOpen === idx ? "transform rotate-180" : ""
-                    }`}
+                    className={`w-5 h-5 text-slate-400 transition-transform duration-300 shrink-0 ${faqOpen === idx ? "transform rotate-180" : ""
+                      }`}
                   />
                 </button>
                 {faqOpen === idx && (
@@ -911,7 +952,7 @@ export default function LandingPage() {
               />
               <span className="font-extrabold text-sm tracking-wider text-white">Karsafin</span>
             </div>
-            
+
             <p className="text-xs text-center md:text-left leading-relaxed text-blue-100">
               © {new Date().getFullYear()} Karsafin. Seluruh hak cipta dilindungi undang-undang.<br />
               Dibuat dengan dedikasi untuk kesehatan keuangan keluarga Indonesia.
