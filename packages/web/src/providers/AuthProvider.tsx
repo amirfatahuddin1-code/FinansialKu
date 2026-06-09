@@ -15,8 +15,8 @@ interface AuthContextValue {
   loading: boolean;
   api: KarsafinAPI;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string, name: string, phone?: string) => Promise<{ error: any }>;
-  signInWithGoogle: () => Promise<{ error: any }>;
+  signUp: (email: string, password: string, name: string, phone?: string, emailRedirectTo?: string) => Promise<{ error: any }>;
+  signInWithGoogle: (redirectTo?: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 }
 
@@ -80,7 +80,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user && !isPublicRoute) {
       router.push("/login");
     } else if (user && (pathname === "/login" || pathname === "/")) {
-      router.push("/dashboard");
+      const hasPlan = typeof window !== "undefined" && window.location.search.includes("plan_id");
+      if (pathname === "/login" && hasPlan) {
+        // Let the login page render checkout/payment even if already logged in
+      } else {
+        router.push("/dashboard");
+      }
     }
   }, [user, loading, pathname, router]);
 
@@ -94,17 +99,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error };
   };
 
-  const signUp = async (email: string, password: string, name: string, phone?: string) => {
-    const { error } = await api.auth.signUp(email, password, name, phone);
+  const signUp = async (email: string, password: string, name: string, phone?: string, emailRedirectTo?: string) => {
+    const { error } = await api.auth.signUp(email, password, name, phone, emailRedirectTo);
     return { error };
   };
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = async (redirectTo?: string) => {
     try {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/dashboard`,
+          redirectTo: redirectTo || `${window.location.origin}/dashboard`,
         },
       });
 

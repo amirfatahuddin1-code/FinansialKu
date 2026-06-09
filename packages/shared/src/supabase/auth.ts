@@ -23,13 +23,14 @@ export function createAuthAPI(supabase: SupabaseClient) {
       }
     },
 
-    async signUp(email: string, password: string, name: string, phone?: string) {
+    async signUp(email: string, password: string, name: string, phone?: string, emailRedirectTo?: string) {
       try {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             data: { name, phone },
+            emailRedirectTo,
           },
         });
         return { data, error };

@@ -83,6 +83,8 @@ export default function LandingPage() {
     seconds: 59,
   });
 
+  const [proCycle, setProCycle] = useState<'bulanan' | 'tahunan' | 'lifetime'>('tahunan');
+
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
@@ -797,6 +799,7 @@ export default function LandingPage() {
       </section>
 
       {/* Offer / CTA Block Section */}
+      {/* Offer / CTA Block Section */}
       <section className="py-20 bg-slate-900 text-white relative overflow-hidden" id="daftar">
         {/* Decorative elements */}
         <div className="absolute top-0 left-0 right-0 bottom-0 bg-[radial-gradient(ellipse_60%_40%_at_50%_0%,rgba(59,130,246,0.15),transparent_70%)] pointer-events-none" />
@@ -805,75 +808,177 @@ export default function LandingPage() {
           <span className="text-xs font-bold uppercase text-blue-400 tracking-widest block mb-4">
             Penawaran Terbatas
           </span>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight mb-8">
-            Dapatkan Akses Gratis Selamanya Sekarang
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight mb-2">
+            Investasi kecil yang buat keuanganmu lebih rapi.
           </h2>
+          <p className="text-slate-400 text-sm max-w-xl mx-auto mb-12">
+            Kurang dari Rp 300/hari — lebih murah dari segelas es teh dan hasilnya jauh lebih bermanfaat.
+          </p>
 
-          {/* Countdown timer */}
-          <div className="flex justify-center gap-3 mb-12 reveal-on-scroll" style={{ transitionDelay: "100ms" }}>
-            {[
-              { val: timeLeft.hours, label: "Jam" },
-              { val: timeLeft.minutes, label: "Menit" },
-              { val: timeLeft.seconds, label: "Detik" },
-            ].map((t, idx) => (
-              <div key={idx} className="bg-slate-800 border border-slate-700/80 rounded-xl min-w-20 p-3 text-center shadow-inner">
-                <span className="font-black text-2xl sm:text-3xl text-white block leading-none tabular-nums">
-                  {String(t.val).padStart(2, "0")}
-                </span>
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mt-1.5">
-                  {t.label}
-                </span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto items-stretch">
+            {/* Card 1: BASIC */}
+            <div className="bg-white text-slate-800 border border-slate-100 rounded-3xl p-8 shadow-2xl relative flex flex-col justify-between reveal-on-scroll" style={{ transitionDelay: "100ms" }}>
+              <div>
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <span className="text-blue-600 bg-blue-50 px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider">
+                      ★ BASIC
+                    </span>
+                    <h3 className="text-2xl font-black mt-3">Basic</h3>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-slate-400 line-through text-xs font-bold block">
+                      Rp 49.000
+                    </span>
+                    <span className="bg-red-50 text-red-500 text-[10px] font-bold px-2 py-0.5 rounded-md inline-block mt-0.5">
+                      -100%
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mb-6 flex items-baseline gap-1">
+                  <span className="text-4xl font-black text-slate-900">Rp 0</span>
+                  <span className="text-xs font-bold text-slate-500">/ selamanya</span>
+                </div>
+
+                <div className="border-t border-slate-100 my-6" />
+
+                <ul className="space-y-3.5 text-left mb-8">
+                  {[
+                    "Kelola 2 dompet / rekening bank",
+                    "Catat pemasukan & pengeluaran manual",
+                    "Atur rencana anggaran dasar",
+                    "Target tabungan (maksimal 2)",
+                    "Laporan & analisis grafis dasar",
+                    "Kalkulator finansial lengkap",
+                    "Integrasi Bot Telegram & WA (Maks 20/hari)",
+                    "20 kuota AI Financial Assistant per hari",
+                  ].map((feat, idx) => (
+                    <li key={idx} className="flex items-start gap-3 text-xs sm:text-sm font-semibold text-slate-600">
+                      <span className="w-5 h-5 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center shrink-0">
+                        <Check className="w-3.5 h-3.5 stroke-[3]" />
+                      </span>
+                      <span>{feat}</span>
+                    </li>
+                  ))}
+                  {[
+                    "Ganti warna & kustomisasi tema penuh",
+                    "Workspace kolaboratif keluarga",
+                    "Quota AI Assistant & Bot Tanpa Batas",
+                  ].map((feat, idx) => (
+                    <li key={idx} className="flex items-start gap-3 text-xs sm:text-sm font-semibold text-slate-350">
+                      <span className="w-5 h-5 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center shrink-0">
+                        ✕
+                      </span>
+                      <span>{feat}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-            ))}
-          </div>
 
-          {/* The Price & Offer Card */}
-          <div className="max-w-md mx-auto bg-gradient-to-b from-slate-800 to-slate-900 border border-slate-700/50 rounded-3xl p-8 shadow-2xl relative reveal-on-scroll" style={{ transitionDelay: "200ms" }}>
-            <span className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white font-extrabold text-[10px] px-4 py-2 rounded-full uppercase tracking-widest shadow-md">
-              Akses Instan
-            </span>
-
-            <div className="text-center pt-4 mb-6">
-              <span className="text-slate-400 font-bold text-xs uppercase tracking-wider block mb-2">Biaya Langganan</span>
-              <span className="text-slate-400 line-through text-base block font-bold">Rp 99.000 / Bulan</span>
-
-              <div className="mt-2 inline-block bg-blue-600 text-white font-black text-4xl sm:text-5xl px-6 py-2.5 rounded-2xl transform -rotate-1.5 shadow-lg shadow-blue-500/25">
-                Rp 0
-              </div>
-              <span className="text-slate-400 block text-xs italic mt-3 font-semibold">Gratis untuk 1.000 pendaftar pertama bulan ini!</span>
+              <Link
+                href="/login?plan_id=basic&price=0&cycle=gratis"
+                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-2xl py-4 font-bold text-sm transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2 mt-auto"
+              >
+                Mulai dengan BASIC
+                <ArrowRight className="w-4 h-4" />
+              </Link>
             </div>
 
-            <div className="border-t border-slate-800 my-6" />
+            {/* Card 2: PRO */}
+            <div className="bg-[#18181b] border-2 border-blue-500 text-white rounded-3xl p-8 shadow-2xl relative flex flex-col justify-between reveal-on-scroll" style={{ transitionDelay: "200ms" }}>
+              <span className="absolute -top-4 right-8 bg-blue-600 text-white font-extrabold text-[10px] px-3.5 py-1.5 rounded-full uppercase tracking-wider shadow-md animate-pulse">
+                PALING POPULER
+              </span>
 
-            <div className="space-y-4 text-left">
-              <span className="text-blue-400 font-extrabold text-[10px] uppercase tracking-wider block">Fitur yang didapatkan:</span>
-              <ul className="space-y-3 text-xs sm:text-sm font-semibold text-slate-300">
-                <li className="flex items-center gap-3">
-                  <span className="w-5 h-5 bg-blue-500/10 text-blue-400 rounded-full flex items-center justify-center shrink-0">✓</span>
-                  <span>Dasbor Finansial Pribadi Terpadu</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <span className="w-5 h-5 bg-blue-500/10 text-blue-400 rounded-full flex items-center justify-center shrink-0">✓</span>
-                  <span>Akses Bot Pencatatan Telegram</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <span className="w-5 h-5 bg-blue-500/10 text-blue-400 rounded-full flex items-center justify-center shrink-0">✓</span>
-                  <span>Modul Target Tabungan &amp; Anggaran</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <span className="w-5 h-5 bg-blue-500/10 text-blue-400 rounded-full flex items-center justify-center shrink-0">✓</span>
-                  <span>Semua Kalkulator Rencana Masa Depan</span>
-                </li>
-              </ul>
+              <div>
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <span className="text-blue-400 bg-blue-950/50 border border-blue-900/50 px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider flex items-center gap-1 w-fit">
+                      <Zap className="w-3 h-3 fill-blue-400 stroke-none animate-bounce" /> PRO
+                    </span>
+                    <h3 className="text-2xl font-black mt-3">Premium Pro</h3>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-slate-400 line-through text-xs font-bold block">
+                      {proCycle === 'bulanan' ? 'Rp 49.000' : proCycle === 'tahunan' ? 'Rp 299.000' : 'Rp 499.000'}
+                    </span>
+                    <span className="bg-blue-950/60 text-blue-400 text-[10px] font-bold px-2 py-0.5 rounded-md inline-block mt-0.5 border border-blue-900/40">
+                      {proCycle === 'bulanan' ? '-59%' : proCycle === 'tahunan' ? '-60%' : '-68%'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Duration/Billing Cycle Tabs */}
+                <div className="flex bg-slate-800/80 p-1 rounded-2xl mb-6 border border-slate-700/40">
+                  {[
+                    { id: 'bulanan', label: 'Bulanan' },
+                    { id: 'tahunan', label: 'Tahunan' },
+                    { id: 'lifetime', label: 'Lifetime' },
+                  ].map((cycle) => (
+                    <button
+                      key={cycle.id}
+                      onClick={() => setProCycle(cycle.id as any)}
+                      className={`flex-1 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                        proCycle === cycle.id
+                          ? 'bg-blue-600 text-white shadow-lg'
+                          : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                      }`}
+                    >
+                      {cycle.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="mb-2 flex items-baseline gap-1">
+                  <span className="text-4xl font-black text-blue-400">
+                    {proCycle === 'bulanan' ? 'Rp 20.000' : proCycle === 'tahunan' ? 'Rp 119.000' : 'Rp 159.000'}
+                  </span>
+                  <span className="text-xs font-semibold text-slate-400">
+                    / {proCycle === 'bulanan' ? 'bulan' : proCycle === 'tahunan' ? 'tahun' : 'sekali bayar'}
+                  </span>
+                </div>
+                <span className="text-blue-400 block text-xs font-bold text-left mb-6">
+                  ✓ Termasuk Kuota AI Asisten Tanpa Batas!
+                </span>
+
+                <div className="border-t border-slate-800 my-6" />
+
+                <ul className="space-y-3.5 text-left mb-8">
+                  {[
+                    "Semua fitur paket BASIC",
+                    "Kelola banyak dompet tanpa batas",
+                    "AI Financial Advisor & Report Analyzer (Tanpa Batas)",
+                    "Lacak aset & net worth otomatis",
+                    "Catat otomatis via Telegram & WhatsApp (Tanpa Batas)",
+                    "Ganti warna & kustomisasi tema penuh",
+                    "Workspace kolaboratif keluarga / bersama pasangan",
+                    "Bebas iklan & prioritas update fitur terbaru",
+                  ].map((feat, idx) => (
+                    <li key={idx} className="flex items-start gap-3 text-xs sm:text-sm font-semibold text-slate-300">
+                      <span className="w-5 h-5 bg-blue-950 text-blue-400 rounded-full flex items-center justify-center shrink-0 border border-blue-900/30">
+                        ✓
+                      </span>
+                      <span>{feat}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <Link
+                href={
+                  proCycle === 'bulanan'
+                    ? "/login?plan_id=bulanan&price=20000&cycle=bulanan"
+                    : proCycle === 'tahunan'
+                    ? "/login?plan_id=tahunan&price=119000&cycle=tahunan"
+                    : "/login?plan_id=lifetime&price=159000&cycle=lifetime"
+                }
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-2xl py-4 font-bold text-sm shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2 mt-auto"
+              >
+                Upgrade ke PRO
+                <ArrowRight className="w-4 h-4" />
+              </Link>
             </div>
-
-            <Link
-              href="/login?register=true"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-2xl py-4 font-bold text-sm shadow-lg shadow-blue-500/15 hover:shadow-xl hover:shadow-blue-500/25 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2 mt-8"
-            >
-              Mulai Daftar Sekarang
-              <ArrowRight className="w-4 h-4" />
-            </Link>
           </div>
         </div>
       </section>
