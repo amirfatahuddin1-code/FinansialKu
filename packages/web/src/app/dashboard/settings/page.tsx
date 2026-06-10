@@ -32,6 +32,10 @@ import {
   Info,
   AlertCircle,
   CheckCircle,
+  Plus,
+  Loader2,
+  FolderOpen,
+  UserPlus,
 } from "lucide-react";
 import { useAuth, useWorkspace } from "@/providers";
 
@@ -70,6 +74,19 @@ export default function SettingsPage() {
 
   // Workspace state
   const [showWorkspace, setShowWorkspace] = useState(false);
+  // Kelola Workspace — pilih workspace untuk dikelola
+  const [showManageWorkspace, setShowManageWorkspace] = useState(false);
+  // Buat Workspace Baru
+  const [showCreateWorkspace, setShowCreateWorkspace] = useState(false);
+  const [newWsName, setNewWsName] = useState("");
+  const [creatingWs, setCreatingWs] = useState(false);
+  const [createWsError, setCreateWsError] = useState<string | null>(null);
+
+  // Join Workspace state
+  const [showJoinWorkspace, setShowJoinWorkspace] = useState(false);
+  const [inviteCode, setInviteCode] = useState("");
+  const [joiningWs, setJoiningWs] = useState(false);
+  const [joinWsError, setJoinWsError] = useState<string | null>(null);
 
   // WhatsApp state
   const [waLinked, setWaLiked] = useState(false);
@@ -174,6 +191,46 @@ export default function SettingsPage() {
       setVerificationError(err.message || "Terjadi kesalahan.");
     } finally {
       setResendingEmail(false);
+    }
+  };
+
+  const handleCreateWorkspace = async () => {
+    if (!user || !newWsName.trim()) return;
+    setCreatingWs(true);
+    setCreateWsError(null);
+    try {
+      const { data, error } = await api.workspaces.create(user.id, newWsName.trim(), "family");
+      if (error) throw error;
+      await refreshWorkspaces();
+      setShowCreateWorkspace(false);
+      setNewWsName("");
+      if (data?.id) {
+        router.push(`/dashboard/settings/workspace?id=${data.id}`);
+      }
+    } catch (err: any) {
+      setCreateWsError(err.message || "Gagal membuat workspace. Coba lagi.");
+    } finally {
+      setCreatingWs(false);
+    }
+  };
+
+  const handleJoinWorkspace = async () => {
+    if (!user || !inviteCode.trim()) return;
+    setJoiningWs(true);
+    setJoinWsError(null);
+    try {
+      const { data, error } = await api.workspaces.join(user.id, inviteCode.trim());
+      if (error) throw error;
+      await refreshWorkspaces();
+      setShowJoinWorkspace(false);
+      setInviteCode("");
+      if (data?.id) {
+        router.push(`/dashboard/settings/workspace?id=${data.id}`);
+      }
+    } catch (err: any) {
+      setJoinWsError(err.message || "Gagal bergabung ke workspace. Pastikan kode benar.");
+    } finally {
+      setJoiningWs(false);
     }
   };
 
@@ -407,14 +464,26 @@ export default function SettingsPage() {
             Workspace
           </h3>
           <div className="space-y-1">
-            <SettingsItem
-              href="/dashboard/settings/workspace"
-              icon={<Users className="h-5 w-5" />}
-              label="Anggota Workspace"
-              description="Kelola anggota dan peran workspace"
-              iconBg="bg-blue-50"
-              iconColor="text-blue-500"
-            />
+            {/* Kelola Workspace */}
+            <button
+              onClick={() => setShowManageWorkspace(true)}
+              className="w-full flex items-center gap-4 p-3 rounded-2xl hover:bg-slate-50 transition-all group cursor-pointer text-left"
+            >
+              <div className="w-11 h-11 bg-blue-50 rounded-xl flex items-center justify-center text-blue-500 group-hover:scale-110 transition-transform">
+                <Users className="h-5 w-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-slate-800 text-sm">Kelola Workspace</span>
+                </div>
+                <p className="text-xs text-dashboard-gray mt-0.5 truncate">
+                  Kelola anggota dan peran workspace
+                </p>
+              </div>
+              <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-dashboard-blue group-hover:translate-x-1 transition-all shrink-0" />
+            </button>
+
+            {/* Pilih Workspace Aktif */}
             <button
               onClick={() => setShowWorkspace(true)}
               className="w-full flex items-center gap-4 p-3 rounded-2xl hover:bg-slate-50 transition-all group cursor-pointer text-left"
@@ -424,10 +493,48 @@ export default function SettingsPage() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="font-bold text-slate-800 text-sm">Pilih Workspace</span>
+                  <span className="font-bold text-slate-800 text-sm">Pilih Workspace Aktif</span>
                 </div>
                 <p className="text-xs text-dashboard-gray mt-0.5 truncate">
                   {activeWorkspace?.name || "Pilih workspace aktif"}
+                </p>
+              </div>
+              <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-dashboard-blue group-hover:translate-x-1 transition-all shrink-0" />
+            </button>
+
+            {/* Tambah Workspace Baru */}
+            <button
+              onClick={() => { setNewWsName(""); setCreateWsError(null); setShowCreateWorkspace(true); }}
+              className="w-full flex items-center gap-4 p-3 rounded-2xl hover:bg-slate-50 transition-all group cursor-pointer text-left"
+            >
+              <div className="w-11 h-11 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-500 group-hover:scale-110 transition-transform">
+                <Plus className="h-5 w-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-slate-800 text-sm">Tambah Workspace Baru</span>
+                </div>
+                <p className="text-xs text-dashboard-gray mt-0.5 truncate">
+                  Buat workspace keluarga atau kolaborasi baru
+                </p>
+              </div>
+              <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-dashboard-blue group-hover:translate-x-1 transition-all shrink-0" />
+            </button>
+
+            {/* Gabung Workspace */}
+            <button
+              onClick={() => { setInviteCode(""); setJoinWsError(null); setShowJoinWorkspace(true); }}
+              className="w-full flex items-center gap-4 p-3 rounded-2xl hover:bg-slate-50 transition-all group cursor-pointer text-left"
+            >
+              <div className="w-11 h-11 bg-amber-50 rounded-xl flex items-center justify-center text-amber-500 group-hover:scale-110 transition-transform">
+                <UserPlus className="h-5 w-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-slate-800 text-sm">Gabung Workspace</span>
+                </div>
+                <p className="text-xs text-dashboard-gray mt-0.5 truncate">
+                  Gabung ke workspace lain dengan kode undangan
                 </p>
               </div>
               <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-dashboard-blue group-hover:translate-x-1 transition-all shrink-0" />
@@ -619,12 +726,12 @@ export default function SettingsPage() {
         </ModalOverlay>
       )}
 
-      {/* ─── MODAL: Pilih Workspace ─── */}
+      {/* ─── MODAL: Pilih Workspace Aktif ─── */}
       {showWorkspace && (
         <ModalOverlay onClose={() => setShowWorkspace(false)}>
           <div className="bg-white rounded-3xl p-8 w-full max-w-md mx-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-black text-slate-800">Pilih Workspace</h3>
+              <h3 className="text-lg font-black text-slate-800">Pilih Workspace Aktif</h3>
               <button onClick={() => setShowWorkspace(false)} className="cursor-pointer p-1 hover:bg-slate-100 rounded-xl transition-colors">
                 <X className="h-5 w-5 text-slate-400" />
               </button>
@@ -659,6 +766,187 @@ export default function SettingsPage() {
                   </div>
                 </button>
               ))}
+            </div>
+          </div>
+        </ModalOverlay>
+      )}
+
+      {/* ─── MODAL: Kelola Workspace (pilih workspace) ─── */}
+      {showManageWorkspace && (
+        <ModalOverlay onClose={() => setShowManageWorkspace(false)}>
+          <div className="bg-white rounded-3xl p-8 w-full max-w-md mx-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-lg font-black text-slate-800">Kelola Workspace</h3>
+              <button onClick={() => setShowManageWorkspace(false)} className="cursor-pointer p-1 hover:bg-slate-100 rounded-xl transition-colors">
+                <X className="h-5 w-5 text-slate-400" />
+              </button>
+            </div>
+            <p className="text-xs text-dashboard-gray mb-6">Pilih workspace yang ingin kamu kelola anggota dan perannya.</p>
+            <div className="space-y-2">
+              {workspaces.filter((ws) => ws.type !== "personal").length === 0 ? (
+                <div className="text-center py-10">
+                  <FolderOpen className="h-10 w-10 text-slate-200 mx-auto mb-3" />
+                  <p className="text-sm font-bold text-slate-400">Belum ada workspace keluarga.</p>
+                  <p className="text-xs text-slate-300 mt-1">Buat workspace baru untuk mengelola anggota.</p>
+                  <button
+                    onClick={() => { setShowManageWorkspace(false); setNewWsName(""); setCreateWsError(null); setShowCreateWorkspace(true); }}
+                    className="mt-4 px-5 py-2.5 bg-dashboard-blue text-white text-sm font-bold rounded-2xl hover:bg-blue-700 transition-colors cursor-pointer"
+                  >
+                    Buat Workspace Baru
+                  </button>
+                </div>
+              ) : (
+                workspaces
+                  .filter((ws) => ws.type !== "personal")
+                  .map((ws) => (
+                    <button
+                      key={ws.id}
+                      onClick={() => {
+                        setShowManageWorkspace(false);
+                        router.push(`/dashboard/settings/workspace?id=${ws.id}`);
+                      }}
+                      className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-slate-100 hover:border-dashboard-blue hover:bg-blue-50/30 transition-all cursor-pointer text-left group"
+                    >
+                      <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-dashboard-blue to-blue-400 flex items-center justify-center font-bold text-white text-lg shadow-sm">
+                        {ws.name?.charAt(0)?.toUpperCase() || "W"}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <span className="font-bold text-sm text-slate-800 block truncate">{ws.name}</span>
+                        <p className="text-xs text-dashboard-gray mt-0.5">Workspace Keluarga</p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-dashboard-blue group-hover:translate-x-1 transition-all shrink-0" />
+                    </button>
+                  ))
+              )}
+            </div>
+          </div>
+        </ModalOverlay>
+      )}
+
+      {/* ─── MODAL: Tambah Workspace Baru ─── */}
+      {showCreateWorkspace && (
+        <ModalOverlay onClose={() => setShowCreateWorkspace(false)}>
+          <div className="bg-white rounded-3xl p-8 w-full max-w-md mx-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-emerald-50 rounded-2xl flex items-center justify-center">
+                  <Plus className="h-5 w-5 text-emerald-500" />
+                </div>
+                <h3 className="text-lg font-black text-slate-800">Workspace Baru</h3>
+              </div>
+              <button onClick={() => setShowCreateWorkspace(false)} className="cursor-pointer p-1 hover:bg-slate-100 rounded-xl transition-colors">
+                <X className="h-5 w-5 text-slate-400" />
+              </button>
+            </div>
+            <p className="text-sm text-dashboard-gray mb-6 leading-relaxed">
+              Buat workspace keluarga atau kolaborasi untuk berbagi catatan keuangan bersama anggota lainnya.
+            </p>
+
+            {createWsError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-xl text-sm text-red-600 font-semibold flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                {createWsError}
+              </div>
+            )}
+
+            <div className="mb-6">
+              <label className="block text-xs font-black text-slate-700 uppercase tracking-widest mb-2">
+                Nama Workspace
+              </label>
+              <input
+                type="text"
+                value={newWsName}
+                onChange={(e) => setNewWsName(e.target.value)}
+                placeholder="Contoh: Keluarga Amirullah, Tim Usaha"
+                className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-dashboard-blue/30 focus:border-dashboard-blue transition-all"
+                maxLength={50}
+                onKeyDown={(e) => e.key === "Enter" && !creatingWs && newWsName.trim() && handleCreateWorkspace()}
+              />
+              <p className="text-[11px] text-slate-400 mt-1.5">{newWsName.length}/50 karakter</p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowCreateWorkspace(false)}
+                className="flex-1 py-3.5 border border-slate-200 rounded-2xl text-sm font-bold text-slate-600 hover:bg-slate-50 cursor-pointer transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleCreateWorkspace}
+                disabled={creatingWs || !newWsName.trim()}
+                className="flex-1 py-3.5 bg-dashboard-blue text-white rounded-2xl text-sm font-bold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all flex items-center justify-center gap-2 shadow-md shadow-blue-200"
+              >
+                {creatingWs ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" />Membuat...</>
+                ) : (
+                  <><Plus className="h-4 w-4" />Buat Workspace</>
+                )}
+              </button>
+            </div>
+          </div>
+        </ModalOverlay>
+      )}
+
+      {/* ─── MODAL: Gabung Workspace ─── */}
+      {showJoinWorkspace && (
+        <ModalOverlay onClose={() => setShowJoinWorkspace(false)}>
+          <div className="bg-white rounded-3xl p-8 w-full max-w-md mx-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-amber-50 rounded-2xl flex items-center justify-center">
+                  <UserPlus className="h-5 w-5 text-amber-500" />
+                </div>
+                <h3 className="text-lg font-black text-slate-800">Gabung Workspace</h3>
+              </div>
+              <button onClick={() => setShowJoinWorkspace(false)} className="cursor-pointer p-1 hover:bg-slate-100 rounded-xl transition-colors">
+                <X className="h-5 w-5 text-slate-400" />
+              </button>
+            </div>
+            <p className="text-sm text-dashboard-gray mb-6 leading-relaxed">
+              Masukkan kode undangan unik (invite code) untuk bergabung ke workspace keluarga atau kolaborasi yang sudah ada.
+            </p>
+
+            {joinWsError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-xl text-sm text-red-600 font-semibold flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                {joinWsError}
+              </div>
+            )}
+
+            <div className="mb-6">
+              <label className="block text-xs font-black text-slate-700 uppercase tracking-widest mb-2">
+                Kode Undangan
+              </label>
+              <input
+                type="text"
+                value={inviteCode}
+                onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+                placeholder="Contoh: A1B2C3"
+                className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-dashboard-blue/30 focus:border-dashboard-blue transition-all font-mono uppercase tracking-[0.1em]"
+                maxLength={20}
+                onKeyDown={(e) => e.key === "Enter" && !joiningWs && inviteCode.trim() && handleJoinWorkspace()}
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowJoinWorkspace(false)}
+                className="flex-1 py-3.5 border border-slate-200 rounded-2xl text-sm font-bold text-slate-600 hover:bg-slate-50 cursor-pointer transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleJoinWorkspace}
+                disabled={joiningWs || !inviteCode.trim()}
+                className="flex-1 py-3.5 bg-dashboard-blue text-white rounded-2xl text-sm font-bold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all flex items-center justify-center gap-2 shadow-md shadow-blue-200"
+              >
+                {joiningWs ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" />Bergabung...</>
+                ) : (
+                  <><UserPlus className="h-4 w-4" />Gabung</>
+                )}
+              </button>
             </div>
           </div>
         </ModalOverlay>

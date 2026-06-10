@@ -451,10 +451,10 @@ export default function FinancialProfilePage() {
       {/* 1. Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-slate-800 tracking-tight flex items-center gap-2.5">
+          <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-800 flex items-center gap-2.5">
             Profil Keuangan
           </h1>
-          <p className="text-slate-500 font-medium mt-1">
+          <p className="text-dashboard-gray text-lg mt-2 max-w-xl">
             Kelola gambaran keuanganmu secara lengkap
           </p>
         </div>
@@ -468,7 +468,7 @@ export default function FinancialProfilePage() {
             <TrendingUp className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">PEMASUKAN BULANAN</p>
+            <p className="text-xs font-black text-dashboard-gray tracking-widest">Pemasukan Bulanan</p>
             <p className="text-lg font-black text-slate-800 mt-0.5">{formatRupiah(totalMonthlyIncome)}</p>
           </div>
         </div>
@@ -479,9 +479,9 @@ export default function FinancialProfilePage() {
             <Coins className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">TOTAL TABUNGAN</p>
+            <p className="text-xs font-black text-dashboard-gray tracking-widest">Total Tabungan</p>
             <p className="text-lg font-black text-slate-800 mt-0.5">{formatRupiah(totalSavingsAmount)}</p>
-            <p className="text-xs text-slate-400 mt-0.5 font-medium">{totalSavingsCount} rekening</p>
+            <p className="text-xs text-slate-400 mt-0.5 font-bold">{totalSavingsCount} rekening</p>
           </div>
         </div>
 
@@ -491,9 +491,9 @@ export default function FinancialProfilePage() {
             <ArrowDownLeft className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">TOTAL UTANG</p>
+            <p className="text-xs font-black text-dashboard-gray tracking-widest">Total Utang</p>
             <p className="text-lg font-black text-slate-800 mt-0.5">{formatRupiah(totalDebtAmount)}</p>
-            <p className="text-xs text-slate-400 mt-0.5 font-medium">{totalDebtCount} transaksi</p>
+            <p className="text-xs text-slate-400 mt-0.5 font-bold">{totalDebtCount} transaksi</p>
           </div>
         </div>
 
@@ -503,9 +503,9 @@ export default function FinancialProfilePage() {
             <Calendar className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">PENGELUARAN BULANAN</p>
+            <p className="text-xs font-black text-dashboard-gray tracking-widest">Pengeluaran Bulanan</p>
             <p className="text-lg font-black text-slate-800 mt-0.5">{formatRupiah(totalMonthlyExpense)}</p>
-            <p className="text-xs text-slate-400 mt-0.5 font-medium">Bulan ini</p>
+            <p className="text-xs text-slate-400 mt-0.5 font-bold">Bulan ini</p>
           </div>
         </div>
       </div>
@@ -525,13 +525,13 @@ export default function FinancialProfilePage() {
             </div>
             <button
               onClick={() => setShowAddIncomeModal(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-black text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" /> Tambah
             </button>
           </div>
           {incomeSources.length === 0 ? (
-            <div className="text-center py-8 text-slate-400 font-medium">
+            <div className="text-sm font-bold text-slate-400 text-center py-8">
               Belum ada sumber pemasukan
             </div>
           ) : (
@@ -539,7 +539,7 @@ export default function FinancialProfilePage() {
               {incomeSources.map((source) => (
                 <div key={source.id} className="p-4 rounded-2xl border border-slate-100 bg-slate-50/50 flex items-center justify-between group">
                   <div>
-                    <p className="font-black text-slate-850 text-sm">{source.name}</p>
+                    <p className="font-bold text-slate-800 text-sm">{source.name}</p>
                     <p className="text-xs text-slate-500 mt-1 font-bold">{formatRupiah(source.nominal)} / bln</p>
                   </div>
                   <button
@@ -568,7 +568,7 @@ export default function FinancialProfilePage() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowAddAccountModal(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-black text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" /> Tambah
               </button>
@@ -576,7 +576,7 @@ export default function FinancialProfilePage() {
           </div>
 
           {dbAccounts.length === 0 ? (
-            <div className="text-center py-8 text-slate-400 font-medium">
+            <div className="text-sm font-bold text-slate-400 text-center py-8">
               Belum ada dompet atau rekening. Silakan klik "+ Tambah" untuk menambahkan.
             </div>
           ) : (
@@ -587,14 +587,14 @@ export default function FinancialProfilePage() {
                     <InstitutionLogo name={account.name} icon={account.icon} size="md" />
                     <div>
                       <div className="flex items-center gap-1.5">
-                        <span className="font-black text-slate-850 text-sm">{account.name}</span>
+                        <span className="font-bold text-slate-800 text-sm">{account.name}</span>
                         {account.is_default && (
-                          <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-600 font-black text-[9px] uppercase tracking-wide">
-                            DEFAULT
+                          <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-600 font-bold text-[10px] tracking-wide">
+                            Default
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-slate-500 mt-0.5 font-bold uppercase tracking-wider">
+                      <p className="text-xs text-slate-500 mt-0.5 font-bold tracking-wider">
                         {account.type === "bank" ? "Tabungan Bank" : account.type === "ewallet" ? "Dompet Digital" : account.type === "investment" ? "Investasi" : "Uang Kas"} - {formatRupiah(account.balance || 0)}
                       </p>
                     </div>
@@ -634,7 +634,7 @@ export default function FinancialProfilePage() {
             </div>
             <button
               onClick={() => setShowAddDebtModal(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-black text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" /> Tambah
             </button>
@@ -645,9 +645,9 @@ export default function FinancialProfilePage() {
             <div className="bg-slate-100 p-1.5 rounded-2xl flex max-w-xs w-full">
               <button
                 onClick={() => setActiveDebtTab("payable")}
-                className={`flex-1 text-center py-2.5 rounded-xl font-black text-xs transition-all cursor-pointer ${
+                className={`flex-1 text-center py-2.5 rounded-xl font-bold text-sm transition-all cursor-pointer ${
                   activeDebtTab === "payable"
-                    ? "bg-white text-red-650 shadow-sm"
+                    ? "bg-white text-red-600 shadow-sm"
                     : "text-slate-500 hover:text-slate-800"
                 }`}
               >
@@ -655,9 +655,9 @@ export default function FinancialProfilePage() {
               </button>
               <button
                 onClick={() => setActiveDebtTab("receivable")}
-                className={`flex-1 text-center py-2.5 rounded-xl font-black text-xs transition-all cursor-pointer ${
+                className={`flex-1 text-center py-2.5 rounded-xl font-bold text-sm transition-all cursor-pointer ${
                   activeDebtTab === "receivable"
-                    ? "bg-white text-green-650 shadow-sm"
+                    ? "bg-white text-green-600 shadow-sm"
                     : "text-slate-500 hover:text-slate-800"
                 }`}
               >
@@ -679,7 +679,7 @@ export default function FinancialProfilePage() {
 
           {/* List or Empty State */}
           {dbDebts.filter(d => d.type === activeDebtTab).length === 0 ? (
-            <div className="text-center py-10 text-slate-400 font-medium">
+            <div className="text-sm font-bold text-slate-400 text-center py-10">
               {activeDebtTab === "payable" ? "Gak ada utang" : "Gak ada piutang"}
             </div>
           ) : (
@@ -688,12 +688,12 @@ export default function FinancialProfilePage() {
                 <div key={debt.id} className="p-4 rounded-2xl border border-slate-100 bg-slate-50/30 flex flex-col justify-between relative group">
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="font-black text-slate-850 text-sm">{debt.counterpart || debt.name}</p>
+                      <p className="font-bold text-slate-800 text-sm">{debt.counterpart || debt.name}</p>
                       <p className="text-xs text-slate-400 mt-0.5 font-bold">
                         {debt.due_date ? `Jatuh tempo: ${new Date(debt.due_date).toLocaleDateString("id-ID", { year: 'numeric', month: 'short', day: 'numeric' })}` : "Tanpa jatuh tempo"}
                       </p>
                     </div>
-                    <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider ${
+                    <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold tracking-wider ${
                       debt.status === "paid" 
                         ? "bg-emerald-50 text-emerald-600" 
                         : "bg-amber-50 text-amber-600"
@@ -704,12 +704,12 @@ export default function FinancialProfilePage() {
 
                   <div className="mt-4 flex items-center justify-between">
                     <div>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">NOMINAL</p>
+                      <p className="text-xs font-black text-dashboard-gray tracking-widest">Nominal</p>
                       <p className="text-sm font-black text-slate-800">{formatRupiah(debt.amount)}</p>
                     </div>
                     {debt.paid > 0 && (
                       <div className="text-right">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">TERBAYAR</p>
+                        <p className="text-xs font-black text-dashboard-gray tracking-widest">Terbayar</p>
                         <p className="text-xs font-bold text-slate-600">{formatRupiah(debt.paid)}</p>
                       </div>
                     )}
@@ -740,14 +740,14 @@ export default function FinancialProfilePage() {
             </div>
             <button
               onClick={() => setShowAddSavingsModal(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-black text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" /> Tambah
             </button>
           </div>
 
           {dbSavings.length === 0 ? (
-            <div className="text-center py-8 text-slate-400 font-medium">
+            <div className="text-sm font-bold text-slate-400 text-center py-8">
               Belum ada target tabungan
             </div>
           ) : (
@@ -757,7 +757,7 @@ export default function FinancialProfilePage() {
                 return (
                   <div key={item.id} className="p-4 rounded-2xl border border-slate-100 bg-slate-50/30 flex flex-col justify-between relative group">
                     <div>
-                      <p className="font-black text-slate-850 text-sm">{item.name}</p>
+                      <p className="font-bold text-slate-800 text-sm">{item.name}</p>
                       <div className="flex items-center justify-between text-xs font-bold text-slate-500 mt-2">
                         <span>{formatRupiah(item.current)}</span>
                         <span>{percent}%</span>
@@ -769,8 +769,8 @@ export default function FinancialProfilePage() {
                           style={{ width: `${percent}%` }}
                         />
                       </div>
-                      <p className="text-[10px] text-slate-400 mt-2 font-bold uppercase tracking-wider">
-                        TARGET: {formatRupiah(item.target)}
+                      <p className="text-xs text-dashboard-gray mt-2 font-bold tracking-widest">
+                        Target: {formatRupiah(item.target)}
                       </p>
                     </div>
 
@@ -800,14 +800,14 @@ export default function FinancialProfilePage() {
             </div>
             <Link
               href="/dashboard/planning/investments"
-              className="bg-blue-600 hover:bg-blue-700 text-white font-black text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               Kelola
             </Link>
           </div>
 
           {investments.length === 0 ? (
-            <div className="text-center py-8 text-slate-400 font-medium">
+            <div className="text-sm font-bold text-slate-400 text-center py-8">
               Belum ada portofolio investasi
             </div>
           ) : (
@@ -818,15 +818,15 @@ export default function FinancialProfilePage() {
                   <div key={asset.id} className="p-4 rounded-2xl border border-slate-100 bg-slate-50/30 flex flex-col justify-between relative group">
                     <div>
                       <div className="flex items-center justify-between">
-                        <p className="font-black text-slate-850 text-sm">{asset.name}</p>
-                        <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-600 font-black text-[9px] uppercase tracking-wide">
+                        <p className="font-bold text-slate-800 text-sm">{asset.name}</p>
+                        <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-600 font-bold text-[10px] tracking-wide">
                           {asset.type}
                         </span>
                       </div>
                       <p className="text-xs text-slate-500 mt-1 font-bold">{asset.platform}</p>
                       
                       <div className="mt-4">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">TOTAL NILAI</p>
+                        <p className="text-xs font-black text-dashboard-gray tracking-widest">Total Nilai</p>
                         <p className="text-sm font-black text-slate-800">{formatRupiah(totalValue)}</p>
                       </div>
                     </div>
@@ -849,7 +849,7 @@ export default function FinancialProfilePage() {
             </div>
             <button
               onClick={() => setShowAddCreditCardModal(true)}
-              className="border border-blue-600 text-blue-600 hover:bg-blue-50 font-black text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer bg-white"
+              className="border border-blue-600 text-blue-600 hover:bg-blue-50 font-bold text-sm px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer bg-white"
             >
               <Plus className="w-3.5 h-3.5" /> Tambah Kartu
             </button>
@@ -860,13 +860,13 @@ export default function FinancialProfilePage() {
               <div className="w-14 h-14 bg-blue-50/50 border border-blue-100 rounded-2xl flex items-center justify-center text-blue-500 mb-4 shadow-sm">
                 <CardIcon className="w-6 h-6" />
               </div>
-              <h3 className="font-black text-slate-800 text-sm">Belum ada kartu kredit</h3>
-              <p className="text-slate-455 text-xs mt-1.5 leading-relaxed font-bold">
+              <h3 className="text-sm font-bold text-slate-400">Belum ada kartu kredit</h3>
+              <p className="text-slate-400 text-xs mt-1.5 leading-relaxed font-bold">
                 Tambahkan kartu kredit Anda untuk memantau limit belanja, tagihan berjalan, dan tanggal jatuh tempo pembayaran.
               </p>
               <button
                 onClick={() => setShowAddCreditCardModal(true)}
-                className="mt-5 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-md shadow-blue-500/10 cursor-pointer transition-all"
+                className="mt-5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-md shadow-blue-500/10 cursor-pointer transition-all"
               >
                 <Plus className="w-3.5 h-3.5" /> Tambah Kartu Pertama
               </button>
@@ -881,10 +881,10 @@ export default function FinancialProfilePage() {
                     <div>
                       <div className="flex items-center gap-2">
                         <CardIcon className="w-4 h-4 text-blue-500 shrink-0" />
-                        <p className="font-black text-slate-850 text-sm leading-none">{cc.name}</p>
+                        <p className="font-bold text-slate-800 text-sm leading-none">{cc.name}</p>
                       </div>
-                      <p className="text-[10px] text-slate-400 mt-2 font-bold uppercase tracking-wider">
-                        JATUH TEMPO: {cc.dueDate}
+                      <p className="text-xs text-dashboard-gray mt-2 font-bold tracking-widest">
+                        Jatuh Tempo: {cc.dueDate}
                       </p>
 
                       <div className="mt-4 flex items-center justify-between text-xs font-bold text-slate-600">
@@ -897,8 +897,8 @@ export default function FinancialProfilePage() {
                           style={{ width: `${limitUsage}%` }}
                         />
                       </div>
-                      <p className="text-[10px] text-slate-400 mt-2 font-bold uppercase tracking-wider">
-                        LIMIT KARTU: {formatRupiah(cc.limit)}
+                      <p className="text-xs text-dashboard-gray mt-2 font-bold tracking-widest">
+                        Limit Kartu: {formatRupiah(cc.limit)}
                       </p>
                     </div>
 
@@ -925,13 +925,13 @@ export default function FinancialProfilePage() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md" onClick={() => setShowAddIncomeModal(false)} />
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 relative z-10 animate-in zoom-in-95 duration-200">
-            <button onClick={() => setShowAddIncomeModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-650 p-1.5 hover:bg-slate-50 rounded-xl transition-all">
+            <button onClick={() => setShowAddIncomeModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1.5 hover:bg-slate-50 rounded-xl transition-all">
               <X className="w-4.5 h-4.5" />
             </button>
-            <h3 className="text-base font-black text-slate-800 mb-4">Tambah Sumber Pemasukan</h3>
+            <h3 className="text-lg font-black text-slate-800 mb-4">Tambah Sumber Pemasukan</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5">Nama Pemasukan</label>
+                <label className="block text-xs font-bold text-dashboard-gray mb-1.5">Nama Pemasukan</label>
                 <input
                   type="text"
                   placeholder="Gaji Pokok, Freelance, Kontrakan"
@@ -941,9 +941,9 @@ export default function FinancialProfilePage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5">Nominal Bulanan</label>
+                <label className="block text-xs font-bold text-dashboard-gray mb-1.5">Nominal Bulanan</label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-black text-slate-450">Rp</span>
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400">Rp</span>
                   <input
                     type="text"
                     placeholder="0"
@@ -959,13 +959,13 @@ export default function FinancialProfilePage() {
               <div className="flex gap-2 pt-2">
                 <button
                   onClick={() => setShowAddIncomeModal(false)}
-                  className="flex-1 py-3 text-xs font-black border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer"
+                  className="flex-1 py-3.5 text-sm font-bold text-slate-600 border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   onClick={handleAddIncome}
-                  className="flex-1 py-3 text-xs font-black bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md shadow-blue-500/10 transition-all cursor-pointer"
+                  className="flex-1 py-3.5 text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md shadow-blue-500/10 transition-all cursor-pointer"
                 >
                   Simpan
                 </button>
@@ -981,13 +981,13 @@ export default function FinancialProfilePage() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md" onClick={() => setShowAddAccountModal(false)} />
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 relative z-10 animate-in zoom-in-95 duration-200">
-            <button onClick={() => setShowAddAccountModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-650 p-1.5 hover:bg-slate-50 rounded-xl transition-all">
+            <button onClick={() => setShowAddAccountModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1.5 hover:bg-slate-50 rounded-xl transition-all">
               <X className="w-4.5 h-4.5" />
             </button>
-            <h3 className="text-base font-black text-slate-850 mb-4">Tambah Rekening / Dompet Baru</h3>
+            <h3 className="text-lg font-black text-slate-800 mb-4">Tambah Rekening / Dompet Baru</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5">Nama Rekening</label>
+                <label className="block text-xs font-bold text-dashboard-gray mb-1.5">Nama Rekening</label>
                 <input
                   type="text"
                   placeholder="e.g. BCA Mandiri, GoPay Utama"
@@ -997,7 +997,7 @@ export default function FinancialProfilePage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5">Tipe Akun</label>
+                <label className="block text-xs font-bold text-dashboard-gray mb-1.5">Tipe Akun</label>
                 <select
                   value={newAccountType}
                   onChange={(e) => setNewAccountType(e.target.value as any)}
@@ -1010,9 +1010,9 @@ export default function FinancialProfilePage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5">Saldo Awal</label>
+                <label className="block text-xs font-bold text-dashboard-gray mb-1.5">Saldo Awal</label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-black text-slate-450">Rp</span>
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400">Rp</span>
                   <input
                     type="text"
                     placeholder="0"
@@ -1028,14 +1028,14 @@ export default function FinancialProfilePage() {
               <div className="flex gap-2 pt-2">
                 <button
                   onClick={() => setShowAddAccountModal(false)}
-                  className="flex-1 py-3 text-xs font-black border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer"
+                  className="flex-1 py-3.5 text-sm font-bold text-slate-600 border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   onClick={handleAddAccount}
                   disabled={savingAccount}
-                  className="flex-1 py-3 text-xs font-black bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-xl shadow-md shadow-blue-500/10 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="flex-1 py-3.5 text-sm font-bold bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-xl shadow-md shadow-blue-500/10 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   {savingAccount ? "Menyimpan..." : "Simpan Akun"}
                 </button>
@@ -1051,13 +1051,13 @@ export default function FinancialProfilePage() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md" onClick={() => setEditingAccount(null)} />
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 relative z-10 animate-in zoom-in-95 duration-200">
-            <button onClick={() => setEditingAccount(null)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-650 p-1.5 hover:bg-slate-50 rounded-xl transition-all">
+            <button onClick={() => setEditingAccount(null)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1.5 hover:bg-slate-50 rounded-xl transition-all">
               <X className="w-4.5 h-4.5" />
             </button>
-            <h3 className="text-base font-black text-slate-800 mb-4">Edit Rekening / Dompet</h3>
+            <h3 className="text-lg font-black text-slate-800 mb-4">Edit Rekening / Dompet</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5">Nama Rekening</label>
+                <label className="block text-xs font-bold text-dashboard-gray mb-1.5">Nama Rekening</label>
                 <input
                   type="text"
                   value={editAccountName}
@@ -1066,7 +1066,7 @@ export default function FinancialProfilePage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5">Tipe Akun</label>
+                <label className="block text-xs font-bold text-dashboard-gray mb-1.5">Tipe Akun</label>
                 <select
                   value={editAccountType}
                   onChange={(e) => setEditAccountType(e.target.value as any)}
@@ -1079,7 +1079,7 @@ export default function FinancialProfilePage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5">Saldo Saat Ini</label>
+                <label className="block text-xs font-bold text-dashboard-gray mb-1.5">Saldo Saat Ini</label>
                 <div className="relative">
                   <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">Rp</span>
                   <input
@@ -1097,14 +1097,14 @@ export default function FinancialProfilePage() {
               <div className="flex gap-2 pt-2">
                 <button
                   onClick={() => setEditingAccount(null)}
-                  className="flex-1 py-3 text-xs font-black border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer"
+                  className="flex-1 py-3.5 text-sm font-bold text-slate-600 border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   onClick={handleUpdateAccount}
                   disabled={updatingAccount}
-                  className="flex-1 py-3 text-xs font-black bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-xl shadow-md shadow-blue-500/10 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="flex-1 py-3.5 text-sm font-bold bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-xl shadow-md shadow-blue-500/10 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   {updatingAccount ? "Menyimpan..." : "Update Akun"}
                 </button>
@@ -1120,13 +1120,13 @@ export default function FinancialProfilePage() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md" onClick={() => setShowAddDebtModal(false)} />
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 relative z-10 animate-in zoom-in-95 duration-200">
-            <button onClick={() => setShowAddDebtModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-650 p-1.5 hover:bg-slate-50 rounded-xl transition-all">
+            <button onClick={() => setShowAddDebtModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1.5 hover:bg-slate-50 rounded-xl transition-all">
               <X className="w-4.5 h-4.5" />
             </button>
-            <h3 className="text-base font-black text-slate-800 mb-4">Tambah Utang / Piutang</h3>
+            <h3 className="text-lg font-black text-slate-800 mb-4">Tambah Utang / Piutang</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5">Nama Kontak / Peminjam</label>
+                <label className="block text-xs font-bold text-dashboard-gray mb-1.5">Nama Kontak / Peminjam</label>
                 <input
                   type="text"
                   placeholder="e.g. Budi, Bank Mandiri"
@@ -1136,7 +1136,7 @@ export default function FinancialProfilePage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5">Tipe Transaksi</label>
+                <label className="block text-xs font-bold text-dashboard-gray mb-1.5">Tipe Transaksi</label>
                 <select
                   value={newDebtType}
                   onChange={(e) => setNewDebtType(e.target.value as any)}
@@ -1147,9 +1147,9 @@ export default function FinancialProfilePage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5">Nominal Pinjaman</label>
+                <label className="block text-xs font-bold text-dashboard-gray mb-1.5">Nominal Pinjaman</label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-black text-slate-450">Rp</span>
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400">Rp</span>
                   <input
                     type="text"
                     placeholder="0"
@@ -1163,7 +1163,7 @@ export default function FinancialProfilePage() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5">Jatuh Tempo (Opsional)</label>
+                <label className="block text-xs font-bold text-dashboard-gray mb-1.5">Jatuh Tempo (Opsional)</label>
                 <input
                   type="date"
                   value={newDebtDueDate}
@@ -1172,7 +1172,7 @@ export default function FinancialProfilePage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5">Catatan</label>
+                <label className="block text-xs font-bold text-dashboard-gray mb-1.5">Catatan</label>
                 <textarea
                   placeholder="Keterangan atau info tambahan"
                   value={newDebtNotes}
@@ -1183,14 +1183,14 @@ export default function FinancialProfilePage() {
               <div className="flex gap-2 pt-2">
                 <button
                   onClick={() => setShowAddDebtModal(false)}
-                  className="flex-1 py-3 text-xs font-black border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer"
+                  className="flex-1 py-3.5 text-sm font-bold text-slate-600 border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   onClick={handleAddDebt}
                   disabled={savingDebt}
-                  className="flex-1 py-3 text-xs font-black bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-xl shadow-md shadow-blue-500/10 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="flex-1 py-3.5 text-sm font-bold bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-xl shadow-md shadow-blue-500/10 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   {savingDebt ? "Menyimpan..." : "Simpan Utang"}
                 </button>
@@ -1206,13 +1206,13 @@ export default function FinancialProfilePage() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md" onClick={() => setShowAddSavingsModal(false)} />
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 relative z-10 animate-in zoom-in-95 duration-200">
-            <button onClick={() => setShowAddSavingsModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-650 p-1.5 hover:bg-slate-50 rounded-xl transition-all">
+            <button onClick={() => setShowAddSavingsModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1.5 hover:bg-slate-50 rounded-xl transition-all">
               <X className="w-4.5 h-4.5" />
             </button>
-            <h3 className="text-base font-black text-slate-800 mb-4">Tambah Target Tabungan</h3>
+            <h3 className="text-lg font-black text-slate-800 mb-4">Tambah Target Tabungan</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5">Nama Target</label>
+                <label className="block text-xs font-bold text-dashboard-gray mb-1.5">Nama Target</label>
                 <input
                   type="text"
                   placeholder="e.g. Beli Laptop Baru, Liburan Akhir Tahun"
@@ -1222,9 +1222,9 @@ export default function FinancialProfilePage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5">Target Dana</label>
+                <label className="block text-xs font-bold text-dashboard-gray mb-1.5">Target Dana</label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-black text-slate-450">Rp</span>
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400">Rp</span>
                   <input
                     type="text"
                     placeholder="0"
@@ -1238,9 +1238,9 @@ export default function FinancialProfilePage() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5">Saldo Terkumpul Awal (Opsional)</label>
+                <label className="block text-xs font-bold text-dashboard-gray mb-1.5">Saldo Terkumpul Awal (Opsional)</label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-black text-slate-450">Rp</span>
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400">Rp</span>
                   <input
                     type="text"
                     placeholder="0"
@@ -1254,7 +1254,7 @@ export default function FinancialProfilePage() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5">Batas Waktu (Deadline - Opsional)</label>
+                <label className="block text-xs font-bold text-dashboard-gray mb-1.5">Batas Waktu (Deadline - Opsional)</label>
                 <input
                   type="date"
                   value={newSavingsDeadline}
@@ -1265,14 +1265,14 @@ export default function FinancialProfilePage() {
               <div className="flex gap-2 pt-2">
                 <button
                   onClick={() => setShowAddSavingsModal(false)}
-                  className="flex-1 py-3 text-xs font-black border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer"
+                  className="flex-1 py-3.5 text-sm font-bold text-slate-600 border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   onClick={handleAddSavings}
                   disabled={savingSavings}
-                  className="flex-1 py-3 text-xs font-black bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-xl shadow-md shadow-blue-500/10 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="flex-1 py-3.5 text-sm font-bold bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-xl shadow-md shadow-blue-500/10 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   {savingSavings ? "Menyimpan..." : "Simpan Target"}
                 </button>
@@ -1288,13 +1288,13 @@ export default function FinancialProfilePage() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md" onClick={() => setShowAddCreditCardModal(false)} />
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 relative z-10 animate-in zoom-in-95 duration-200">
-            <button onClick={() => setShowAddCreditCardModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-650 p-1.5 hover:bg-slate-50 rounded-xl transition-all">
+            <button onClick={() => setShowAddCreditCardModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1.5 hover:bg-slate-50 rounded-xl transition-all">
               <X className="w-4.5 h-4.5" />
             </button>
-            <h3 className="text-base font-black text-slate-800 mb-4">Tambah Kartu Kredit</h3>
+            <h3 className="text-lg font-black text-slate-800 mb-4">Tambah Kartu Kredit</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5">Nama Kartu</label>
+                <label className="block text-xs font-bold text-dashboard-gray mb-1.5">Nama Kartu</label>
                 <input
                   type="text"
                   placeholder="e.g. BCA Platinum, Mandiri Signature"
@@ -1304,9 +1304,9 @@ export default function FinancialProfilePage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5">Limit Kredit</label>
+                <label className="block text-xs font-bold text-dashboard-gray mb-1.5">Limit Kredit</label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-black text-slate-450">Rp</span>
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400">Rp</span>
                   <input
                     type="text"
                     placeholder="0"
@@ -1320,9 +1320,9 @@ export default function FinancialProfilePage() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5">Tagihan Berjalan (Outstanding)</label>
+                <label className="block text-xs font-bold text-dashboard-gray mb-1.5">Tagihan Berjalan (Outstanding)</label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-black text-slate-450">Rp</span>
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400">Rp</span>
                   <input
                     type="text"
                     placeholder="0"
@@ -1336,7 +1336,7 @@ export default function FinancialProfilePage() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5">Tanggal Jatuh Tempo</label>
+                <label className="block text-xs font-bold text-dashboard-gray mb-1.5">Tanggal Jatuh Tempo</label>
                 <input
                   type="text"
                   placeholder="e.g. Setiap tanggal 20"
@@ -1348,13 +1348,13 @@ export default function FinancialProfilePage() {
               <div className="flex gap-2 pt-2">
                 <button
                   onClick={() => setShowAddCreditCardModal(false)}
-                  className="flex-1 py-3 text-xs font-black border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer"
+                  className="flex-1 py-3.5 text-sm font-bold text-slate-600 border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   onClick={handleAddCreditCard}
-                  className="flex-1 py-3 text-xs font-black bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md shadow-blue-500/10 transition-all cursor-pointer"
+                  className="flex-1 py-3.5 text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md shadow-blue-500/10 transition-all cursor-pointer"
                 >
                   Simpan Kartu
                 </button>
@@ -1369,7 +1369,7 @@ export default function FinancialProfilePage() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md" onClick={() => setActiveInfoModal(null)} />
           <div className="bg-white rounded-3xl w-full max-w-sm relative z-10 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <button onClick={() => setActiveInfoModal(null)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-650 p-1.5 hover:bg-slate-50 rounded-xl transition-all cursor-pointer">
+            <button onClick={() => setActiveInfoModal(null)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1.5 hover:bg-slate-50 rounded-xl transition-all cursor-pointer">
               <X className="w-5 h-5" />
             </button>
             <div className="p-6">
@@ -1377,12 +1377,12 @@ export default function FinancialProfilePage() {
                 <HelpCircle className="w-5 h-5 text-blue-500" />
                 {activeInfoModal.title}
               </h3>
-              <p className="text-sm font-medium text-slate-600 leading-relaxed">
+              <p className="text-sm text-dashboard-gray leading-relaxed">
                 {activeInfoModal.desc}
               </p>
               <button
                 onClick={() => setActiveInfoModal(null)}
-                className="w-full mt-6 py-3 text-xs font-black bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md shadow-blue-500/10 transition-all cursor-pointer"
+                className="w-full mt-6 py-3.5 text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md shadow-blue-500/10 transition-all cursor-pointer"
               >
                 Mengerti
               </button>
