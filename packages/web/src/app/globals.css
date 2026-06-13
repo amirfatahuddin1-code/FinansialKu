@@ -89,3 +89,13 @@
   }
 }
 
+/* Global text color override: Change all gray font colors to black */
+.text-slate-300, .text-slate-400, .text-slate-500, .text-slate-600, .text-slate-700,
+.text-gray-300, .text-gray-400, .text-gray-500, .text-gray-600, .text-gray-700,
+.text-zinc-300, .text-zinc-400, .text-zinc-500, .text-zinc-600, .text-zinc-700,
+.text-neutral-300, .text-neutral-400, .text-neutral-500, .text-neutral-600, .text-neutral-700,
+.text-stone-300, .text-stone-400, .text-stone-500, .text-stone-600, .text-stone-700,
+.text-dashboard-gray {
+  color: #000000 !important;
+}
+
