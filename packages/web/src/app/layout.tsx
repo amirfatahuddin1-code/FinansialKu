@@ -11,6 +11,20 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Karsafin - Personal Finance Dashboard",
   description: "Pantau kesehatan portofolio keuangan Anda, cek efisiensi pengeluaran harian, dan susun prioritas tabungan dari satu pusat kendali.",
+  manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/karsafin-logo.png", sizes: "192x192", type: "image/png" },
+      { url: "/karsafin-logo.png", sizes: "512x512", type: "image/png" },
+    ],
+    shortcut: "/karsafin-logo.png",
+    apple: "/karsafin-logo.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Karsafin",
+  },
 };
 
 import { AppProviders } from "@/providers";
@@ -26,6 +40,21 @@ export default function RootLayout({
         <AppProviders>
           {children}
         </AppProviders>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js').then(function(reg) {
+                    console.log('Karsafin PWA: Service Worker registered', reg.scope);
+                  }).catch(function(err) {
+                    console.warn('Karsafin PWA: Service Worker registration failed', err);
+                  });
+                });
+              }
+            `,
+          }}
+        />
       </body>
     </html>
   );

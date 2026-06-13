@@ -15,6 +15,7 @@ interface AuthContextValue {
   user: User | null;
   loading: boolean;
   api: KarsafinAPI;
+  setApi: (newApi: KarsafinAPI) => void;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, name: string, phone?: string, emailRedirectTo?: string) => Promise<{ error: any }>;
   signInWithGoogle: (redirectTo?: string) => Promise<{ error: any }>;
@@ -28,6 +29,7 @@ const AuthContext = createContext<AuthContextValue>({
   user: null,
   loading: true,
   api,
+  setApi: () => {},
   signIn: async () => ({ error: null }),
   signUp: async () => ({ error: null }),
   signInWithGoogle: async () => ({ error: null }),
@@ -46,6 +48,7 @@ const PUBLIC_ROUTES = [
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [currentApi, setCurrentApi] = useState<KarsafinAPI>(api);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -128,7 +131,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, api, signIn, signUp, signInWithGoogle, signOut }}>
+    <AuthContext.Provider value={{ user, loading, api: currentApi, setApi: setCurrentApi, signIn, signUp, signInWithGoogle, signOut }}>
       {children}
     </AuthContext.Provider>
   );

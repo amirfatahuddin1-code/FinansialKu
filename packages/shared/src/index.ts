@@ -16,6 +16,12 @@ export { executeQuery, evaluateCondition, computeExpression } from './feature/in
 // Types
 export * from './types';
 
+// Sync Engine (Offline + Auto-Sync)
+export { SyncEngine, createConflictResolver, setConnectivityDetector, getConnectivityDetector, isOnline } from './sync';
+export type { ConnectivityDetector } from './sync';
+export type { LocalDatabase, SyncStatus, SyncQueueItem, SyncConflict, SyncState, SyncProgress, SyncTable, SyncEventMap } from './sync';
+export { SYNC_TABLES } from './sync';
+
 // Utilities
 export {
   formatCurrency,

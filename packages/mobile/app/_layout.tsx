@@ -11,6 +11,8 @@ import 'react-native-reanimated';
 import { useColorScheme } from '@/components/useColorScheme';
 import { AuthProvider, useAuth } from '@/providers/AuthProvider';
 import { WorkspaceProvider } from '@/providers/WorkspaceProvider';
+import { SyncProvider } from '@/providers/SyncProvider';
+import { SyncPopup } from '@/components';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Colors, { setAppPrimaryColor, useColors } from '@/constants/Colors';
 import { MobileAds } from '@/utils/mobile-ads-wrapper';
@@ -125,6 +127,7 @@ function RootLayoutNav() {
   return (
     <ThemeProvider value={theme}>
       <WorkspaceProvider>
+        <SyncProvider>
         <AuthGate>
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="login" options={{ headerShown: false, animation: 'fade' }} />
@@ -134,7 +137,9 @@ function RootLayoutNav() {
             <Stack.Screen name="kuota-ai" options={{ presentation: 'modal' }} />
             <Stack.Screen name="workspace-members" options={{ presentation: 'modal' }} />
           </Stack>
+          <SyncPopup />
         </AuthGate>
+        </SyncProvider>
       </WorkspaceProvider>
     </ThemeProvider>
   );
