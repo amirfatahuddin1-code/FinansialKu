@@ -36,6 +36,32 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id" className={`${inter.variable} h-full antialiased`} suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var path = window.location.pathname;
+                  if (path === '/' || path === '/login') {
+                    var hasToken = false;
+                    for (var i = 0; i < localStorage.length; i++) {
+                      var key = localStorage.key(i);
+                      if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+                        hasToken = true;
+                        break;
+                      }
+                    }
+                    if (hasToken) {
+                      document.documentElement.classList.add('hide-for-auth');
+                    }
+                  }
+                } catch(e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col font-[family-name:var(--font-inter)] selection:bg-blue-100" suppressHydrationWarning>
         <AppProviders>
           {children}

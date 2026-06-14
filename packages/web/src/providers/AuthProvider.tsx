@@ -95,6 +95,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user, loading, pathname, router]);
 
+  // Prevent flash of landing page
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      if (!loading) {
+        const hasPlan = window.location.search.includes("plan_id");
+        if (!user && (pathname === "/" || pathname === "/login")) {
+          // Not logged in, remove loading screen to show public page
+          document.documentElement.classList.remove("hide-for-auth");
+        } else if (user && pathname === "/login" && hasPlan) {
+          // Logged in but allowed to stay on login page for checkout
+          document.documentElement.classList.remove("hide-for-auth");
+        } else if (pathname !== "/" && pathname !== "/login") {
+          // Navigated away from public pages
+          document.documentElement.classList.remove("hide-for-auth");
+        }
+      }
+    }
+  }, [loading, user, pathname]);
+
   const signIn = async (email: string, password: string) => {
     const { error } = await api.auth.signIn(email, password);
     if (!error) {

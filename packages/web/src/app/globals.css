@@ -99,3 +99,23 @@
   color: #000000 !important;
 }
 
+/* Auth Loading State */
+.hide-for-auth body {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+.hide-for-auth::before {
+  content: "";
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 40px;
+  height: 40px;
+  margin-top: -20px;
+  margin-left: -20px;
+  border: 4px solid #e2e8f0;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  z-index: 99999;
+}
