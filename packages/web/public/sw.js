@@ -1,8 +1,12 @@
-const CACHE_NAME = 'karsafin-cache-v1';
+const CACHE_NAME = 'karsafin-cache-v2';
 
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
+  '/dashboard',
+  '/dashboard/transactions',
+  '/dashboard/analysis',
+  '/login'
 ];
 
 self.addEventListener('install', (event) => {
@@ -31,7 +35,7 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  if (url.origin !== self.location.origin) return;
+  if (url.origin !== self.location.origin && !url.hostname.includes('supabase')) return;
 
   if (url.pathname.startsWith('/_next/static/')) {
     event.respondWith(
@@ -50,7 +54,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (url.pathname.startsWith('/api/') || url.pathname.includes('supabase')) {
+  if (url.pathname.startsWith('/api/') || url.hostname.includes('supabase')) {
     event.respondWith(
       caches.open('karsafin-api-v1').then((cache) => {
         return fetch(request)

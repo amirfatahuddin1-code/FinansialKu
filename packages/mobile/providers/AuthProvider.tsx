@@ -13,6 +13,7 @@ interface User {
   id: string;
   email?: string;
   user_metadata?: { name?: string; phone?: string };
+  email_confirmed_at?: string | null;
 }
 
 interface AuthContextValue {
@@ -21,7 +22,8 @@ interface AuthContextValue {
   api: KarsafinAPI;
   setApi: (newApi: KarsafinAPI) => void;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string, name: string, phone?: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, name: string, phone?: string) => Promise<{ data?: any, error: any }>;
+  resendEmailConfirmation: (email: string) => Promise<{ error: any }>;
   signInWithGoogle: () => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 }
@@ -37,7 +39,8 @@ const AuthContext = createContext<AuthContextValue>({
   api,
   setApi: () => {},
   signIn: async () => ({ error: null }),
-  signUp: async () => ({ error: null }),
+  signUp: async () => ({ data: null, error: null }),
+  resendEmailConfirmation: async () => ({ error: null }),
   signInWithGoogle: async () => ({ error: null }),
   signOut: async () => {},
 });
@@ -103,7 +106,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signUp = async (email: string, password: string, name: string, phone?: string) => {
-    const { error } = await api.auth.signUp(email, password, name, phone);
+    const { data, error } = await api.auth.signUp(email, password, name, phone);
+    return { data, error };
+  };
+
+  const resendEmailConfirmation = async (email: string) => {
+    const { error } = await api.auth.resendConfirmation(email);
     return { error };
   };
 
@@ -237,7 +245,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, api: currentApi, setApi: setCurrentApi, signIn, signUp, signInWithGoogle, signOut }}>
+    <AuthContext.Provider value={{ user, loading, api: currentApi, setApi: setCurrentApi, signIn, signUp, resendEmailConfirmation, signInWithGoogle, signOut }}>
       {children}
     </AuthContext.Provider>
   );

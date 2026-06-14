@@ -35,19 +35,31 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   const { activeWorkspace } = useWorkspace();
   const { api, setApi } = useAuth();
   const [syncState, setSyncState] = useState<SyncState>(defaultSyncState);
+  const [dbReady, setDbReady] = useState(false);
   const engineRef = useRef<SyncEngine | null>(null);
   const dbRef = useRef<LocalDatabase | null>(null);
   const detectorRef = useRef<ConnectivityDetector | null>(null);
   const initRef = useRef(false);
+  const apiReplacedRef = useRef(false);
+
+  React.useMemo(() => {
+    if (!api.supabase || apiReplacedRef.current) return;
+    const db = createWebDatabase();
+    dbRef.current = db;
+    const offlineApi = createOfflineAPI(createKarsafinAPI(api.supabase), db);
+    setApi(offlineApi);
+    apiReplacedRef.current = true;
+  }, [api]);
 
   useEffect(() => {
     if (initRef.current) return;
     initRef.current = true;
 
     const init = async () => {
-      const db = createWebDatabase();
-      await db.init();
+      const db = dbRef.current || createWebDatabase();
       dbRef.current = db;
+      await db.init();
+      setDbReady(true);
 
       const supabase = getSupabaseClient();
       const engine = new SyncEngine(db, supabase);
@@ -57,11 +69,11 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         engine.setWorkspaceId(activeWorkspace.id);
       }
 
-      const offlineApi = createOfflineAPI(
-        createKarsafinAPI(supabase),
-        db,
-      );
-      setApi(offlineApi);
+      if (!apiReplacedRef.current) {
+        const offlineApi = createOfflineAPI(createKarsafinAPI(supabase), db);
+        setApi(offlineApi);
+        apiReplacedRef.current = true;
+      }
 
       const connectivity = createBrowserConnectivityDetector();
       detectorRef.current = connectivity;
@@ -91,6 +103,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (engineRef.current && activeWorkspace) {
       engineRef.current.setWorkspaceId(activeWorkspace.id);
+      engineRef.current.sync().catch(console.warn);
     }
   }, [activeWorkspace?.id]);
 

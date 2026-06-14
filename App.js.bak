@@ -1,0 +1,10 @@
+import { registerRootComponent } from 'expo';
+import { ExpoRoot } from 'expo-router';
+
+const ctx = require.context('./packages/mobile/app');
+
+function App() {
+  return require('react').createElement(ExpoRoot, { context: ctx });
+}
+
+registerRootComponent(App);

@@ -24,16 +24,20 @@ class KarsafinDB extends Dexie {
       tableSchemas.push(`${table}: id`);
     }
 
-    this.version(1).stores({
+    this.version(2).stores({
       syncQueue: '++id, table_name, record_id, status, created_at',
       syncConflicts: '++id, table_name, record_id, resolved',
       syncMetadata: 'key',
+      _profile_cache: 'id',
+      _workspace_cache: 'id',
       ...Object.fromEntries(SYNC_TABLES.map(t => [t, 'id'])),
     });
 
     for (const table of SYNC_TABLES) {
       this.dataTables.set(table, this.table(table));
     }
+    this.dataTables.set('_profile_cache', this.table('_profile_cache'));
+    this.dataTables.set('_workspace_cache', this.table('_workspace_cache'));
   }
 }
 

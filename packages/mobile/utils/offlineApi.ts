@@ -34,9 +34,16 @@ export function createOfflineAPI(api: KarsafinAPI, db: LocalDatabase): KarsafinA
     if (typeof apiModule.getAll === 'function') {
       const originalGetAll = apiModule.getAll.bind(apiModule);
       wrapped.getAll = async (...args: any[]) => {
+        let result = { data: null as any, error: null as any };
         try {
-          const result = await originalGetAll(...args);
-          if (result.data) {
+          result = await originalGetAll(...args);
+        } catch (e) {
+          result.error = e;
+        }
+
+        if (result.data && result.data.length >= 0 && !result.error) {
+          // Run local database synchronization in the background without blocking the UI
+          (async () => {
             for (const record of result.data) {
               try {
                 const existing = await db.find(tableName, record.id);
@@ -48,23 +55,25 @@ export function createOfflineAPI(api: KarsafinAPI, db: LocalDatabase): KarsafinA
                 await db.setSyncStatus(tableName, record.id, 'synced', record.updated_at);
               } catch {}
             }
-          }
+          })().catch(err => console.warn(`Background sync error for ${tableName}:`, err));
           return result;
-        } catch {
-          try {
-            const records = await db.findAll(tableName);
-            const filters = args[0] || {};
-            let filtered = records;
+        }
+        
+        // Fallback to local DB
+        try {
+          const records = await db.findAll(tableName);
+          const firstArg = args[0];
+          const filters = (typeof firstArg === 'string') ? {} : (firstArg || {});
+          let filtered = records;
 
-            if (filters.type) filtered = filtered.filter((r: any) => r.type === filters.type);
-            if (filters.startDate) filtered = filtered.filter((r: any) => r.date >= filters.startDate);
-            if (filters.endDate) filtered = filtered.filter((r: any) => r.date <= filters.endDate);
-            if (filters.categoryId) filtered = filtered.filter((r: any) => r.category_id === filters.categoryId);
+          if (filters.type) filtered = filtered.filter((r: any) => r.type === filters.type);
+          if (filters.startDate) filtered = filtered.filter((r: any) => r.date >= filters.startDate);
+          if (filters.endDate) filtered = filtered.filter((r: any) => r.date <= filters.endDate);
+          if (filters.categoryId) filtered = filtered.filter((r: any) => r.category_id === filters.categoryId);
 
-            return { data: filtered, error: null };
-          } catch (e) {
-            return { data: null, error: e as Error };
-          }
+          return { data: filtered, error: null };
+        } catch (e) {
+          return { data: null, error: e as Error };
         }
       };
     }
@@ -86,24 +95,28 @@ export function createOfflineAPI(api: KarsafinAPI, db: LocalDatabase): KarsafinA
         try {
           await db.insert(tableName, record);
           await db.setSyncStatus(tableName, localId, 'pending_create');
-          await db.enqueue({
-            id: localId,
-            table_name: tableName,
-            record_id: localId,
-            operation: 'create',
-            data: record,
-          });
         } catch (e) {
           console.warn(`Failed to queue offline create for ${tableName}:`, e);
         }
 
         if (isOnline()) {
           try {
-            return await originalCreate(userId, input);
-          } catch {
-            return { data: record, error: null };
-          }
+            const result = await originalCreate(userId, input);
+            if (result.data) {
+              await db.delete(tableName, localId);
+              await db.insert(tableName, result.data);
+              await db.setSyncStatus(tableName, result.data.id, 'synced', result.data.updated_at);
+              return result;
+            }
+          } catch {}
         }
+        await db.enqueue({
+          id: localId,
+          table_name: tableName,
+          record_id: localId,
+          operation: 'create',
+          data: record,
+        });
         return { data: record, error: null };
       };
     }
@@ -140,7 +153,7 @@ export function createOfflineAPI(api: KarsafinAPI, db: LocalDatabase): KarsafinA
       const originalDelete = apiModule.delete.bind(apiModule);
       wrapped.delete = async (id: string) => {
         try {
-          await db.setSyncStatus(tableName, id, 'pending_delete');
+          await db.delete(tableName, id);
           await db.enqueue({
             id: generateId(),
             table_name: tableName,
@@ -170,10 +183,75 @@ export function createOfflineAPI(api: KarsafinAPI, db: LocalDatabase): KarsafinA
     ...api,
     supabase: api.supabase,
     auth: api.auth,
-    profiles: api.profiles,
-    categories: wrapWithOffline('categories', api.categories),
+    profiles: (() => {
+      const wrapped = { ...api.profiles };
+      wrapped.get = async (userId: string) => {
+        let result = { data: null as any, error: null as any };
+        try { result = await api.profiles.get(userId); } catch(e) { result.error = e; }
+        if (result.data && !result.error) {
+          try { await db.insert('_profile_cache' as any, { id: userId, ...result.data }); } catch {}
+          return result;
+        }
+        try {
+          const cached = await db.find('_profile_cache' as any, userId);
+          if (cached) return { data: cached, error: null };
+        } catch {}
+        return result;
+      };
+      return wrapped;
+    })(),
+    categories: (() => {
+      const wrapped = wrapWithOffline('categories', api.categories);
+      const originalGetOrCreate = api.categories.getOrCreateByName?.bind(api.categories);
+      if (originalGetOrCreate) {
+        wrapped.getOrCreateByName = async (userId: string, name: string, type: string) => {
+          if (isOnline()) {
+            try { return await originalGetOrCreate(userId, name, type); } catch {}
+          }
+          const all = await wrapped.getAll({ type });
+          if (all.data) {
+            const existing = all.data.find((c: any) => c.name.toLowerCase() === name.toLowerCase());
+            if (existing) return { data: existing, error: null };
+          }
+          return await wrapped.create(userId, { name, type, icon: 'help-circle' });
+        };
+      }
+      return wrapped;
+    })(),
     transactions: wrapWithOffline('transactions', api.transactions),
-    budgets: wrapWithOffline('budgets', api.budgets),
+    budgets: (() => {
+      const wrapped = wrapWithOffline('budgets', api.budgets);
+      const originalGetByMonth = api.budgets.getByMonth.bind(api.budgets);
+      wrapped.getByMonth = async (wsId: string, month: string) => {
+        let result = { data: null as any, error: null as any };
+        try { result = await originalGetByMonth(wsId, month); } catch(e) { result.error = e; }
+        if (result.data && !result.error) {
+          try {
+            for (const b of result.data) {
+               await db.insert('budgets' as any, b);
+               await db.setSyncStatus('budgets' as any, b.id, 'synced', b.updated_at);
+            }
+          } catch {}
+          return result;
+        }
+        try {
+          const all = await db.findAll('budgets');
+          const filtered = all.filter((b: any) => b.month === month && b.workspace_id === wsId);
+          return { data: filtered, error: null };
+        } catch {}
+        return result;
+      };
+      const originalUpsert = api.budgets.upsert?.bind(api.budgets);
+      if (originalUpsert) {
+        wrapped.upsert = async (...args: any[]) => {
+          if (isOnline()) {
+            try { return await originalUpsert(...args); } catch {}
+          }
+          return { data: null, error: new Error('Offline') };
+        };
+      }
+      return wrapped;
+    })(),
     savings: wrapWithOffline('savings', api.savings),
     events: wrapWithOffline('events', api.events),
     eventItems: wrapWithOffline('eventItems', api.eventItems),
@@ -181,7 +259,30 @@ export function createOfflineAPI(api: KarsafinAPI, db: LocalDatabase): KarsafinA
     debts: wrapWithOffline('debts', api.debts),
     accounts: wrapWithOffline('accounts', api.accounts),
     members: api.members,
-    workspaces: api.workspaces,
+    workspaces: (() => {
+      const wrapped = { ...api.workspaces };
+      const origGetAll = api.workspaces.getAll.bind(api.workspaces);
+      wrapped.getAll = async (...args: any[]) => {
+        let result = { data: null as any, error: null as any };
+        try { result = await origGetAll(...args); } catch(e) { result.error = e; }
+        if (result.data && !result.error) {
+          try {
+            for (const ws of result.data) {
+              await db.insert('_workspace_cache' as any, ws);
+            }
+          } catch {}
+          return result;
+        }
+        try {
+          const cached = await db.findAll('_workspace_cache' as any);
+          if (cached && cached.length > 0) {
+            return { data: cached, error: null };
+          }
+        } catch {}
+        return result;
+      };
+      return wrapped;
+    })(),
     whatsapp: api.whatsapp,
     telegram: api.telegram,
     telegramGroup: api.telegramGroup,

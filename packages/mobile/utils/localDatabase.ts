@@ -17,14 +17,37 @@ export function createMobileDatabase(dbName = 'karsafin_offline.db'): LocalDatab
       db = await SQLite.openDatabaseAsync(dbName);
 
       for (const table of SYNC_TABLES) {
+        try {
+          // Check if table has 'data' column, if not, drop it to migrate to new schema
+          const info = await db.getAllAsync<any>(`PRAGMA table_info("${table}")`);
+          const hasDataCol = info.some(col => col.name === 'data');
+          if (!hasDataCol) {
+            await db.execAsync(`DROP TABLE IF EXISTS "${table}"`);
+          }
+        } catch {
+          await db.execAsync(`DROP TABLE IF EXISTS "${table}"`);
+        }
+
         await db.execAsync(`
           CREATE TABLE IF NOT EXISTS "${table}" (
             id TEXT PRIMARY KEY,
+            data TEXT,
             _sync_status TEXT NOT NULL DEFAULT 'synced',
             _local_updated_at TEXT NOT NULL DEFAULT (datetime('now')),
             _server_updated_at TEXT
           );
         `);
+      }
+
+      try {
+        // Check if _sync_queue has 'status' column, if not, drop it to recreate with status column
+        const queueInfo = await db.getAllAsync<any>(`PRAGMA table_info(_sync_queue)`);
+        const hasStatusCol = queueInfo.some(col => col.name === 'status');
+        if (!hasStatusCol) {
+          await db.execAsync(`DROP TABLE IF EXISTS _sync_queue`);
+        }
+      } catch {
+        await db.execAsync(`DROP TABLE IF EXISTS _sync_queue`);
       }
 
       await db.execAsync(`
@@ -36,7 +59,8 @@ export function createMobileDatabase(dbName = 'karsafin_offline.db'): LocalDatab
           data TEXT NOT NULL,
           created_at TEXT NOT NULL DEFAULT (datetime('now')),
           retry_count INTEGER NOT NULL DEFAULT 0,
-          last_error TEXT
+          last_error TEXT,
+          status TEXT NOT NULL DEFAULT 'pending'
         );
       `);
 
@@ -59,6 +83,26 @@ export function createMobileDatabase(dbName = 'karsafin_offline.db'): LocalDatab
           value TEXT NOT NULL
         );
       `);
+
+      await db.execAsync(`
+        CREATE TABLE IF NOT EXISTS _profile_cache (
+          id TEXT PRIMARY KEY,
+          data TEXT,
+          _sync_status TEXT NOT NULL DEFAULT 'synced',
+          _local_updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+          _server_updated_at TEXT
+        );
+      `);
+
+      await db.execAsync(`
+        CREATE TABLE IF NOT EXISTS _workspace_cache (
+          id TEXT PRIMARY KEY,
+          data TEXT,
+          _sync_status TEXT NOT NULL DEFAULT 'synced',
+          _local_updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+          _server_updated_at TEXT
+        );
+      `);
     },
 
     async close() {
@@ -70,43 +114,75 @@ export function createMobileDatabase(dbName = 'karsafin_offline.db'): LocalDatab
       const row = await db.getFirstAsync<any>(
         `SELECT * FROM "${table}" WHERE id = ?`, id
       );
-      return row || null;
+      if (!row) return null;
+      try {
+        const record = JSON.parse(row.data || '{}');
+        return {
+          ...record,
+          id: row.id,
+          _sync_status: row._sync_status,
+          _local_updated_at: row._local_updated_at,
+          _server_updated_at: row._server_updated_at,
+        };
+      } catch {
+        return null;
+      }
     },
 
     async findAll(table: SyncTable, query?: Record<string, any>) {
       if (!db) return [];
-      if (query && Object.keys(query).length > 0) {
-        const conditions = Object.entries(query)
-          .map(([k, v]) => `"${k}" = '${String(v).replace(/'/g, "''")}'`)
-          .join(' AND ');
-        return db.getAllAsync<any>(`SELECT * FROM "${table}" WHERE ${conditions}`);
+      const rows = await db.getAllAsync<any>(`SELECT * FROM "${table}"`);
+      const records: Record<string, any>[] = [];
+      for (const row of rows) {
+        try {
+          const record = JSON.parse(row.data || '{}');
+          const fullRecord = {
+            ...record,
+            id: row.id,
+            _sync_status: row._sync_status,
+            _local_updated_at: row._local_updated_at,
+            _server_updated_at: row._server_updated_at,
+          };
+
+          if (query) {
+            let match = true;
+            for (const [k, v] of Object.entries(query)) {
+              if (fullRecord[k] !== v) {
+                match = false;
+                break;
+              }
+            }
+            if (match) records.push(fullRecord);
+          } else {
+            records.push(fullRecord);
+          }
+        } catch {}
       }
-      return db.getAllAsync<any>(`SELECT * FROM "${table}"`);
+      return records;
     },
 
     async insert(table: SyncTable, record: Record<string, any>) {
       if (!db) return;
-      const cols = Object.keys(record);
-      const vals = cols.map(c => record[c]);
-      const placeholders = cols.map(() => '?').join(',');
-      const quotedCols = cols.map(c => `"${c}"`).join(',');
+      const { _sync_status, _local_updated_at, _server_updated_at, ...cleanRecord } = record;
+      const dataStr = JSON.stringify(cleanRecord);
+      const status = _sync_status || 'synced';
 
       await db.runAsync(
-        `INSERT OR REPLACE INTO "${table}" (${quotedCols}, _sync_status, _local_updated_at) VALUES (${placeholders}, 'synced', datetime('now'))`,
-        ...vals
+        `INSERT OR REPLACE INTO "${table}" (id, data, _sync_status, _local_updated_at, _server_updated_at) VALUES (?, ?, ?, datetime('now'), ?)`,
+        record.id, dataStr, status, _server_updated_at || null
       );
     },
 
     async update(table: SyncTable, id: string, changes: Record<string, any>) {
       if (!db) return;
-      const setClauses = Object.keys(changes)
-        .map(k => `"${k}" = ?`)
-        .join(', ');
-      const vals = Object.values(changes);
+      const existing = await this.find(table, id);
+      const updatedData = { ...(existing || {}), ...changes };
+      const { _sync_status, _local_updated_at, _server_updated_at, ...cleanRecord } = updatedData;
+      const dataStr = JSON.stringify(cleanRecord);
 
       await db.runAsync(
-        `UPDATE "${table}" SET ${setClauses}, _local_updated_at = datetime('now') WHERE id = ?`,
-        ...vals, id
+        `UPDATE "${table}" SET data = ?, _local_updated_at = datetime('now') WHERE id = ?`,
+        dataStr, id
       );
     },
 
@@ -117,9 +193,23 @@ export function createMobileDatabase(dbName = 'karsafin_offline.db'): LocalDatab
 
     async getPendingRecords(table: SyncTable) {
       if (!db) return [];
-      return db.getAllAsync<any>(
+      const rows = await db.getAllAsync<any>(
         `SELECT * FROM "${table}" WHERE _sync_status IN ('pending_create', 'pending_update', 'pending_delete')`
       );
+      const records: Record<string, any>[] = [];
+      for (const row of rows) {
+        try {
+          const record = JSON.parse(row.data || '{}');
+          records.push({
+            ...record,
+            id: row.id,
+            _sync_status: row._sync_status,
+            _local_updated_at: row._local_updated_at,
+            _server_updated_at: row._server_updated_at,
+          });
+        } catch {}
+      }
+      return records;
     },
 
     async getSyncStatus(table: SyncTable, id: string): Promise<SyncStatus | null> {

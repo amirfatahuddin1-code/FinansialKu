@@ -34,19 +34,31 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   const { user, api, setApi } = useAuth();
   const { activeWorkspace } = useWorkspace();
   const [syncState, setSyncState] = useState<SyncState>(defaultSyncState);
+  const [dbReady, setDbReady] = useState(false);
   const engineRef = useRef<SyncEngine | null>(null);
   const dbRef = useRef<LocalDatabase | null>(null);
   const detectorRef = useRef<ConnectivityDetector | null>(null);
   const initRef = useRef(false);
+  const apiReplacedRef = useRef(false);
+
+  React.useMemo(() => {
+    if (!user || !api.supabase || apiReplacedRef.current) return;
+    const db = createMobileDatabase();
+    dbRef.current = db;
+    const offlineApi = createOfflineAPI(api, db);
+    setApi(offlineApi);
+    apiReplacedRef.current = true;
+  }, [user, api]);
 
   useEffect(() => {
     if (!user || !api.supabase || initRef.current) return;
     initRef.current = true;
 
     const init = async () => {
-      const db = createMobileDatabase();
-      await db.init();
+      const db = dbRef.current || createMobileDatabase();
       dbRef.current = db;
+      await db.init();
+      setDbReady(true);
 
       const detector = createConnectivityDetector();
       detectorRef.current = detector;
@@ -59,8 +71,11 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         engine.setWorkspaceId(activeWorkspace.id);
       }
 
-      const offlineApi = createOfflineAPI(api, db);
-      setApi(offlineApi);
+      if (!apiReplacedRef.current) {
+        const offlineApi = createOfflineAPI(api, db);
+        setApi(offlineApi);
+        apiReplacedRef.current = true;
+      }
 
       detector.onOnline(async () => {
         setSyncState(prev => ({ ...prev, isOnline: true }));
@@ -82,7 +97,14 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     return () => {
       detectorRef.current?.destroy();
     };
-  }, [user, activeWorkspace?.id]);
+  }, [user]);
+
+  useEffect(() => {
+    if (engineRef.current && activeWorkspace) {
+      engineRef.current.setWorkspaceId(activeWorkspace.id);
+      engineRef.current.sync().catch(console.warn);
+    }
+  }, [activeWorkspace?.id]);
 
   const pendingIntervalRef = useRef<any>(null);
 

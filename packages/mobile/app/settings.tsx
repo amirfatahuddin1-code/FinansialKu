@@ -62,6 +62,8 @@ export default function SettingsScreen() {
   const [showSubscription, setShowSubscription] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [showTheme, setShowTheme] = useState(false);
+  const [showEmailVerification, setShowEmailVerification] = useState(false);
+  const [resendingEmail, setResendingEmail] = useState(false);
   const [planDurationTab, setPlanDurationTab] = useState<'Bulanan' | 'Tahunan' | 'Lifetime'>('Bulanan');
 
   const [newAccountName, setNewAccountName] = useState('');
@@ -548,6 +550,23 @@ export default function SettingsScreen() {
     ]);
   };
 
+  const handleResendConfirmation = async () => {
+    if (!user?.email) return;
+    setResendingEmail(true);
+    try {
+      const { error } = await api.auth.resendConfirmation(user.email);
+      if (error) {
+        Alert.alert('Gagal', error.message || 'Gagal mengirim email verifikasi.');
+      } else {
+        Alert.alert('Terkirim!', `Tautan konfirmasi telah dikirim ke ${user.email}. Silakan periksa kotak masuk atau spam Anda.`);
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Terjadi kesalahan.');
+    } finally {
+      setResendingEmail(false);
+    }
+  };
+
   const processSimulatedSubscription = async (plan: SubscriptionPlan) => {
     if (!user) return;
     setSaving(true);
@@ -857,6 +876,7 @@ export default function SettingsScreen() {
           <View style={[styles.menuCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             {sectionHeader('Akun')}
             {menuItem('👤', 'Profil Saya', () => setShowProfile(true))}
+            {menuItem('✉️', 'Status Email', () => setShowEmailVerification(true))}
             {menuItem('🏦', 'Akun Keuangan', () => router.push('/akun-keuangan'))}
             {menuItem('🏷️', 'Kategori Transaksi', () => setShowCategory(true))}
             {menuItem('📅', 'Atur Tanggal Pemasukan', () => router.push('/atur-tanggal-pemasukan'))}
@@ -885,6 +905,61 @@ export default function SettingsScreen() {
           <Text style={styles.versionText}>Karsafin v1.0.0</Text>
         </View>
       </ScrollView>
+
+      {/* Email Verification */}
+      <BottomSheet visible={showEmailVerification} onClose={() => setShowEmailVerification(false)} title="Status Email">
+        <View style={{ alignItems: 'center', marginBottom: 20 }}>
+          {user?.email_confirmed_at ? (
+            <>
+              <FontAwesome name="check-circle" size={48} color="#10b981" />
+              <Text style={{ marginTop: 12, fontSize: 18, fontWeight: 'bold', color: colors.text }}>Email Terverifikasi</Text>
+              <Text style={{ marginTop: 8, fontSize: 14, color: colors.textSecondary, textAlign: 'center' }}>
+                Email kamu ({user.email}) telah berhasil dikonfirmasi. Akun kamu aman dan kamu memiliki akses penuh ke fitur Karsafin.
+              </Text>
+            </>
+          ) : (
+            <>
+              <FontAwesome name="exclamation-circle" size={48} color="#f59e0b" />
+              <Text style={{ marginTop: 12, fontSize: 18, fontWeight: 'bold', color: colors.text }}>Belum Diverifikasi</Text>
+              <Text style={{ marginTop: 8, fontSize: 14, color: colors.textSecondary, textAlign: 'center' }}>
+                Email kamu ({user.email}) belum dikonfirmasi. 
+              </Text>
+            </>
+          )}
+        </View>
+
+        {!user?.email_confirmed_at && (
+          <View style={{ backgroundColor: colorScheme === 'dark' ? '#334155' : '#fef3c7', padding: 16, borderRadius: 16, marginBottom: 20 }}>
+            <Text style={{ fontSize: 14, fontWeight: 'bold', color: colorScheme === 'dark' ? '#fcd34d' : '#92400e', marginBottom: 8 }}>Mengapa ini penting?</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 }}>
+              <FontAwesome name="shield" size={14} color={colorScheme === 'dark' ? '#fcd34d' : '#b45309'} style={{ marginTop: 2, marginRight: 8 }} />
+              <Text style={{ fontSize: 13, color: colorScheme === 'dark' ? '#fde68a' : '#92400e', flex: 1 }}>Memastikan email ini milik kamu untuk perlindungan akun.</Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 }}>
+              <FontAwesome name="key" size={14} color={colorScheme === 'dark' ? '#fcd34d' : '#b45309'} style={{ marginTop: 2, marginRight: 8 }} />
+              <Text style={{ fontSize: 13, color: colorScheme === 'dark' ? '#fde68a' : '#92400e', flex: 1 }}>Memudahkan pemulihan kata sandi jika kamu lupa.</Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+              <FontAwesome name="envelope" size={14} color={colorScheme === 'dark' ? '#fcd34d' : '#b45309'} style={{ marginTop: 2, marginRight: 8 }} />
+              <Text style={{ fontSize: 13, color: colorScheme === 'dark' ? '#fde68a' : '#92400e', flex: 1 }}>Menerima laporan tagihan dan informasi Karsafin penting.</Text>
+            </View>
+          </View>
+        )}
+
+        {!user?.email_confirmed_at && (
+          <TouchableOpacity
+            style={[styles.primaryBtn, { backgroundColor: '#f59e0b', opacity: resendingEmail ? 0.7 : 1 }]}
+            onPress={handleResendConfirmation}
+            disabled={resendingEmail}
+          >
+            {resendingEmail ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={styles.primaryBtnText}>Kirim Ulang Email Konfirmasi</Text>
+            )}
+          </TouchableOpacity>
+        )}
+      </BottomSheet>
 
       {/* Profile */}
       <BottomSheet visible={showProfile} onClose={() => setShowProfile(false)} title="Profil Saya">

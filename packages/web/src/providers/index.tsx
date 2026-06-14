@@ -11,16 +11,16 @@ import SyncPopup from "@/components/SyncPopup";
 export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider>
-      <WorkspaceProvider>
-        <SyncProvider>
+      <SyncProvider>
+        <WorkspaceProvider>
         <ThemeProvider>
           <FeatureProvider>
             {children}
             <SyncPopup />
           </FeatureProvider>
         </ThemeProvider>
-        </SyncProvider>
-      </WorkspaceProvider>
+        </WorkspaceProvider>
+      </SyncProvider>
     </AuthProvider>
   );
 }

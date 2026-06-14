@@ -127,9 +127,11 @@ function LoginContent() {
           emailRedirectTo = `${window.location.origin}/login?activated=true`;
         }
 
-        const { error: err } = await signUp(email, password, name, phone || undefined, emailRedirectTo);
+        const { data, error: err } = await signUp(email, password, name, phone || undefined, emailRedirectTo);
         if (err) {
           setError(err.message || "Gagal melakukan pendaftaran.");
+        } else if (data?.session) {
+          setSuccess("Pendaftaran berhasil! Kamu telah masuk otomatis.");
         } else {
           // Auto-login immediately on successful signup
           const { error: signInErr } = await signIn(email, password);

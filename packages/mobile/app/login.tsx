@@ -49,9 +49,12 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       if (isRegister) {
-        const { error } = await signUp(email, password, name, phone);
+        const { data, error } = await signUp(email, password, name, phone);
         if (error) {
           Alert.alert('Registrasi Gagal', error.message || 'Terjadi kesalahan');
+        } else if (data?.session) {
+          Alert.alert('Berhasil!', 'Akun berhasil dibuat dan Anda telah masuk.');
+          setIsRegister(false);
         } else {
           Alert.alert('Berhasil!', 'Akun berhasil dibuat. Silakan cek email untuk verifikasi.');
           setIsRegister(false);
