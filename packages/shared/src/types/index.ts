@@ -381,6 +381,7 @@ export interface ShoppingItem {
   unitPrice: number;
   total: number;
   isRealized: boolean;
+  realizedAmount?: number;
 }
 
 export interface ShoppingPlan {

@@ -94,7 +94,7 @@ export default function ShoppingPlanningPage() {
     setPlanDate(getLocalToday());
     setPlanType("daily");
     setItems([
-      { id: generateId(), name: "", qty: 1, unitPrice: 0, total: 0, isRealized: false }
+      { id: generateId(), name: "", qty: 1, unitPrice: 0, total: 0, isRealized: false, realizedAmount: 0 }
     ]);
     setShowModal(true);
   };
@@ -105,7 +105,7 @@ export default function ShoppingPlanningPage() {
     setPlanName(plan.name);
     setPlanDate(plan.date);
     setPlanType(plan.type);
-    setItems(plan.items.map(item => ({ ...item }))); // clone items
+    setItems(plan.items.map(item => ({ ...item, realizedAmount: item.realizedAmount ?? (item.isRealized ? item.total : 0) }))); // clone items
     setShowModal(true);
   };
 
@@ -113,7 +113,7 @@ export default function ShoppingPlanningPage() {
   const handleAddItemRow = () => {
     setItems([
       ...items,
-      { id: generateId(), name: "", qty: 1, unitPrice: 0, total: 0, isRealized: false }
+      { id: generateId(), name: "", qty: 1, unitPrice: 0, total: 0, isRealized: false, realizedAmount: 0 }
     ]);
   };
 
@@ -160,15 +160,24 @@ export default function ShoppingPlanningPage() {
 
     setSaving(true);
     try {
-      const totalPlanned = filteredItems.reduce((sum, item) => sum + item.total, 0);
-      const totalRealized = filteredItems.reduce((sum, item) => sum + (item.isRealized ? item.total : 0), 0);
-      const allRealized = filteredItems.every(item => item.isRealized);
+      const processedItems = items.filter(item => item.name.trim() !== "").map(item => {
+        const isItemRealized = typeof item.realizedAmount === "number" && item.realizedAmount > 0;
+        return {
+          ...item,
+          isRealized: isItemRealized,
+          realizedAmount: item.realizedAmount ?? 0
+        };
+      });
+
+      const totalPlanned = processedItems.reduce((sum, item) => sum + item.total, 0);
+      const totalRealized = processedItems.reduce((sum, item) => sum + (item.realizedAmount || 0), 0);
+      const allRealized = processedItems.every(item => item.isRealized);
 
       const payload = {
         name: planName.trim(),
         date: planDate,
         type: planType,
-        items: filteredItems,
+        items: processedItems,
         total_planned: totalPlanned,
         total_realized: totalRealized,
         is_realized: allRealized,
@@ -213,9 +222,10 @@ export default function ShoppingPlanningPage() {
       const nextIsRealized = !plan.is_realized;
       const updatedItems = plan.items.map(item => ({
         ...item,
-        isRealized: nextIsRealized
+        isRealized: nextIsRealized,
+        realizedAmount: nextIsRealized ? item.total : 0
       }));
-      const totalRealized = updatedItems.reduce((sum, item) => sum + (item.isRealized ? item.total : 0), 0);
+      const totalRealized = updatedItems.reduce((sum, item) => sum + (item.realizedAmount || 0), 0);
 
       const { error } = await api.shoppingPlans.update(plan.id, {
         items: updatedItems,
@@ -249,7 +259,8 @@ export default function ShoppingPlanningPage() {
       // Reset items realization status when copying to new plan
       const freshItems = reusePlan.items.map(item => ({
         ...item,
-        isRealized: false
+        isRealized: false,
+        realizedAmount: 0
       }));
 
       const payload = {
@@ -603,11 +614,11 @@ export default function ShoppingPlanningPage() {
 
                 {/* Table Header */}
                 <div className="hidden sm:grid sm:grid-cols-12 gap-3 px-2 py-1 text-slate-400 text-[10px] font-black uppercase tracking-wider">
-                  <div className="col-span-5">Nama Barang</div>
+                  <div className={editId ? "col-span-4" : "col-span-6"}>Nama Barang</div>
                   <div className="col-span-2">Jumlah</div>
                   <div className="col-span-2">Harga Satuan</div>
                   <div className="col-span-2">Total</div>
-                  <div className="col-span-1 text-center">Dibeli</div>
+                  {editId && <div className="col-span-2 text-center">Realisasi</div>}
                 </div>
 
                 {/* Table Rows */}
@@ -616,7 +627,7 @@ export default function ShoppingPlanningPage() {
                     <div key={item.id} className="grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-3 p-3 sm:p-1.5 sm:bg-transparent bg-slate-50 border sm:border-0 border-slate-100 rounded-2xl sm:rounded-none items-center">
                       
                       {/* Name input */}
-                      <div className="col-span-12 sm:col-span-5 flex items-center gap-2">
+                      <div className={`col-span-12 ${editId ? "sm:col-span-4" : "sm:col-span-6"} flex items-center gap-2`}>
                         <button
                           type="button"
                           onClick={() => handleRemoveItemRow(item.id)}
@@ -666,21 +677,19 @@ export default function ShoppingPlanningPage() {
                         </span>
                       </div>
 
-                      {/* Realized checkbox */}
-                      <div className="col-span-3 sm:col-span-1 flex items-center justify-end sm:justify-center">
-                        <span className="sm:hidden text-[10px] font-black text-slate-400 uppercase mr-3">Dibeli:</span>
-                        <button
-                          type="button"
-                          onClick={() => handleUpdateItemValue(item.id, "isRealized", !item.isRealized)}
-                          className={`w-6 h-6 rounded-lg border flex items-center justify-center transition-all cursor-pointer ${
-                            item.isRealized
-                              ? "bg-emerald-500 border-emerald-500 text-white"
-                              : "border-slate-300 bg-white"
-                          }`}
-                        >
-                          {item.isRealized && <Check className="h-4 w-4" />}
-                        </button>
-                      </div>
+                      {/* Realized input (Only visible when editing) */}
+                      {editId && (
+                        <div className="col-span-12 sm:col-span-2 flex items-center sm:block">
+                          <span className="sm:hidden text-[10px] font-black text-slate-400 uppercase w-24 shrink-0">Realisasi:</span>
+                          <input
+                            type="number"
+                            placeholder="0"
+                            value={item.realizedAmount ?? ""}
+                            onChange={(e) => handleUpdateItemValue(item.id, "realizedAmount", Number(e.target.value))}
+                            className="w-full bg-white sm:bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs font-bold text-slate-800 focus:outline-none"
+                          />
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -690,9 +699,11 @@ export default function ShoppingPlanningPage() {
                   <div className="text-slate-500">
                     Total Rencana: <span className="text-slate-800 text-sm ml-1">{formatRupiah(items.reduce((sum, i) => sum + i.total, 0))}</span>
                   </div>
-                  <div className="text-emerald-600">
-                    Total Realisasi: <span className="text-emerald-700 text-sm ml-1">{formatRupiah(items.reduce((sum, i) => sum + (i.isRealized ? i.total : 0), 0))}</span>
-                  </div>
+                  {editId && (
+                    <div className="text-emerald-600">
+                      Total Realisasi: <span className="text-emerald-700 text-sm ml-1">{formatRupiah(items.reduce((sum, i) => sum + (i.realizedAmount || 0), 0))}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
