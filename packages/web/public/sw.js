@@ -3,9 +3,6 @@ const CACHE_NAME = 'karsafin-cache-v2';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
-  '/dashboard',
-  '/dashboard/transactions',
-  '/dashboard/analysis',
   '/login'
 ];
 
@@ -33,6 +30,8 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const { request } = event;
+  if (request.method !== 'GET') return;
+
   const url = new URL(request.url);
 
   if (url.origin !== self.location.origin && !url.hostname.includes('supabase')) return;
@@ -41,13 +40,13 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       caches.open(CACHE_NAME).then((cache) => {
         return cache.match(request).then((cached) => {
-          const fetchPromise = fetch(request).then((response) => {
+          if (cached) return cached;
+          return fetch(request).then((response) => {
             if (response && response.status === 200) {
               cache.put(request, response.clone());
             }
             return response;
-          }).catch(() => cached);
-          return cached || fetchPromise;
+          });
         });
       })
     );
@@ -60,12 +59,15 @@ self.addEventListener('fetch', (event) => {
         return fetch(request)
           .then((response) => {
             if (response && response.status === 200) {
-              const clone = response.clone();
-              cache.put(request, clone);
+              cache.put(request, response.clone());
             }
             return response;
           })
-          .catch(() => cache.match(request));
+          .catch(async (err) => {
+            const cached = await cache.match(request);
+            if (cached) return cached;
+            throw err;
+          });
       })
     );
     return;
@@ -79,7 +81,10 @@ self.addEventListener('fetch', (event) => {
           cache.then((c) => c.put(request, response.clone()));
         }
         return response;
-      }).catch(() => cached);
+      }).catch((err) => {
+        if (cached) return cached;
+        throw err;
+      });
 
       return cached || fetchPromise;
     })
