@@ -674,27 +674,29 @@ export default function SettingsScreen() {
   const handleSubscribe = async (plan: SubscriptionPlan) => {
     if (!user) return;
     
-    const options: any[] = [
-      { text: 'Batal', style: 'cancel' },
-      {
-        text: 'Google Play (Asli)',
-        onPress: () => processRevenueCatPurchase(plan),
-      },
-    ];
-
     if (__DEV__) {
-      options.push({
-        text: 'Aktifkan Instan (Simulasi)',
-        style: 'default',
-        onPress: () => processSimulatedSubscription(plan),
-      });
-    }
+      const options: any[] = [
+        { text: 'Batal', style: 'cancel' },
+        {
+          text: 'Google Play (Asli)',
+          onPress: () => processRevenueCatPurchase(plan),
+        },
+        {
+          text: 'Aktifkan Instan (Simulasi)',
+          style: 'default',
+          onPress: () => processSimulatedSubscription(plan),
+        }
+      ];
 
-    Alert.alert(
-      'Aktifkan Langganan',
-      `Pilih metode pembayaran untuk paket ${plan.name} (Rp ${plan.price.toLocaleString('id-ID')}):`,
-      options
-    );
+      Alert.alert(
+        'Aktifkan Langganan (Dev Mode)',
+        `Pilih metode pembayaran untuk paket ${plan.name} (Rp ${plan.price.toLocaleString('id-ID')}):`,
+        options
+      );
+    } else {
+      // Langsung panggil pembelian Google Play di build produksi
+      processRevenueCatPurchase(plan);
+    }
   };
 
   const handleCancelSubscription = async () => {
