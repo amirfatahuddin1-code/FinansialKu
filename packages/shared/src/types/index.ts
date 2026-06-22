@@ -372,3 +372,30 @@ export type {
   CreateFeatureInput,
   UpdateFeatureInput,
 } from './features';
+
+// ========== Shopping Plan ==========
+export interface ShoppingItem {
+  id: string;
+  name: string;
+  qty: number;
+  unitPrice: number;
+  total: number;
+  isRealized: boolean;
+}
+
+export interface ShoppingPlan {
+  id: string;
+  user_id: string;
+  workspace_id?: string;
+  name: string;
+  date: string;
+  type: 'daily' | 'monthly';
+  items: ShoppingItem[];
+  total_planned: number;
+  total_realized: number;
+  is_realized: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export type CreateShoppingPlanInput = Omit<ShoppingPlan, 'id' | 'user_id' | 'created_at' | 'updated_at'>;

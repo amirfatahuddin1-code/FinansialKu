@@ -102,6 +102,7 @@ export default function SettingsPage() {
   const [verificationSent, setVerificationSent] = useState(false);
   const [verificationError, setVerificationError] = useState<string | null>(null);
   const [isEmailVerifiedParam, setIsEmailVerifiedParam] = useState(false);
+  const [showEmailVerification, setShowEmailVerification] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -455,6 +456,44 @@ export default function SettingsPage() {
               iconBg="bg-orange-50"
               iconColor="text-orange-500"
             />
+            <button
+              onClick={() => {
+                setVerificationSent(false);
+                setVerificationError(null);
+                setShowEmailVerification(true);
+              }}
+              className="w-full flex items-center gap-4 p-3 rounded-2xl hover:bg-slate-50 transition-all group cursor-pointer text-left"
+            >
+              <div
+                className={`w-11 h-11 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform ${
+                  user?.email_confirmed_at
+                    ? "bg-emerald-50 text-emerald-500"
+                    : "bg-amber-50 text-amber-500"
+                }`}
+              >
+                <Mail className="h-5 w-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-slate-800 text-sm">Status Email</span>
+                  <span
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      user?.email_confirmed_at
+                        ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
+                        : "bg-amber-50 text-amber-600 border border-amber-100"
+                    }`}
+                  >
+                    {user?.email_confirmed_at ? "Terverifikasi" : "Belum Diverifikasi"}
+                  </span>
+                </div>
+                <p className="text-xs text-dashboard-gray mt-0.5 truncate">
+                  {user?.email_confirmed_at
+                    ? "Email Anda telah terverifikasi dengan aman"
+                    : "Verifikasi email Anda untuk mengamankan akun"}
+                </p>
+              </div>
+              <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-dashboard-blue group-hover:translate-x-1 transition-all shrink-0" />
+            </button>
           </div>
         </div>
 
@@ -1219,6 +1258,129 @@ export default function SettingsPage() {
             </p>
             <div className="mt-6 pt-6 border-t border-slate-100">
               <p className="text-xs text-dashboard-gray">&copy; 2026 Karsafin</p>
+            </div>
+          </div>
+        </ModalOverlay>
+      )}
+
+      {/* ─── MODAL: Verifikasi Email ─── */}
+      {showEmailVerification && (
+        <ModalOverlay onClose={() => setShowEmailVerification(false)}>
+          <div className="bg-white rounded-3xl p-8 w-full max-w-md mx-4 shadow-2xl relative overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="absolute right-0 top-0 w-32 h-32 bg-dashboard-blue/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
+            
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${
+                  user?.email_confirmed_at ? "bg-emerald-50 text-emerald-500" : "bg-amber-50 text-amber-500"
+                }`}>
+                  {user?.email_confirmed_at ? <CheckCircle className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
+                </div>
+                <h3 className="text-lg font-black text-slate-800">Status Verifikasi Email</h3>
+              </div>
+              <button onClick={() => setShowEmailVerification(false)} className="cursor-pointer p-1 hover:bg-slate-100 rounded-xl transition-colors">
+                <X className="h-5 w-5 text-slate-400" />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* Status Header */}
+              <div className="text-center py-4 bg-slate-50 rounded-2xl border border-slate-100">
+                <p className="text-xs font-bold text-dashboard-gray uppercase tracking-widest">Alamat Email</p>
+                <p className="text-base font-extrabold text-slate-800 mt-1">{user?.email}</p>
+                <div className="mt-3 flex justify-center">
+                  <span className={`text-xs font-extrabold px-3 py-1 rounded-full flex items-center gap-1.5 ${
+                    user?.email_confirmed_at
+                      ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
+                      : "bg-amber-50 text-amber-600 border border-amber-100"
+                  }`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${user?.email_confirmed_at ? "bg-emerald-500" : "bg-amber-500"}`} />
+                    {user?.email_confirmed_at ? "Terverifikasi" : "Belum Diverifikasi"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Detail Penjelasan */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-black text-slate-700 uppercase tracking-widest">
+                  Mengapa verifikasi email penting?
+                </h4>
+                <div className="space-y-3.5">
+                  <div className="flex gap-3 items-start">
+                    <div className="mt-0.5 p-1 bg-blue-50 text-blue-500 rounded-lg shrink-0">
+                      <Shield className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-slate-800 block">Keamanan Akun</span>
+                      <span className="text-[11px] text-dashboard-gray leading-relaxed block mt-0.5">
+                        Melindungi akun Anda dari upaya akses ilegal oleh pihak ketiga.
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex gap-3 items-start">
+                    <div className="mt-0.5 p-1 bg-blue-50 text-blue-500 rounded-lg shrink-0">
+                      <User className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-slate-800 block">Pemulihan Akun & Reset Sandi</span>
+                      <span className="text-[11px] text-dashboard-gray leading-relaxed block mt-0.5">
+                        Memastikan Anda dapat memulihkan akses akun dengan mudah jika lupa password.
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex gap-3 items-start">
+                    <div className="mt-0.5 p-1 bg-blue-50 text-blue-500 rounded-lg shrink-0">
+                      <Mail className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-slate-800 block">Notifikasi Laporan & Tagihan</span>
+                      <span className="text-[11px] text-dashboard-gray leading-relaxed block mt-0.5">
+                        Mendapatkan rangkuman laporan finansial bulanan serta tagihan Midtrans.
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Aksi */}
+              {!user?.email_confirmed_at && (
+                <div className="pt-2 border-t border-slate-100">
+                  {verificationSent ? (
+                    <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex items-start gap-3 text-emerald-700 text-xs font-bold leading-relaxed">
+                      <CheckCircle className="h-5 w-5 shrink-0 text-emerald-500 mt-0.5" />
+                      <div>
+                        <span>Tautan konfirmasi telah dikirim!</span>
+                        <p className="text-[10px] text-emerald-600 font-semibold mt-0.5">
+                          Periksa kotak masuk atau folder spam email Anda.
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      <button
+                        onClick={handleResendConfirmation}
+                        disabled={resendingEmail}
+                        className="w-full py-3.5 bg-dashboard-blue text-white rounded-2xl text-xs font-bold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all flex items-center justify-center gap-2 shadow-md shadow-blue-200"
+                      >
+                        {resendingEmail ? (
+                          <>
+                            <RefreshCw className="h-4 w-4 animate-spin" />
+                            <span>Mengirim Ulang...</span>
+                          </>
+                        ) : (
+                          <span>Kirim Ulang Email Konfirmasi</span>
+                        )}
+                      </button>
+                      {verificationError && (
+                        <p className="text-xs font-bold text-red-500 text-center mt-2 flex items-center justify-center gap-1">
+                          <AlertCircle className="h-4 w-4" />
+                          {verificationError}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </ModalOverlay>

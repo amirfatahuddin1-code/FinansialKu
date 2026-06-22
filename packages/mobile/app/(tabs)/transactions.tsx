@@ -269,7 +269,7 @@ export default function TransactionsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.headerSection, { backgroundColor: colors.tint }]}
+      <View style={[styles.headerSection, { backgroundColor: colors.tint, paddingTop: insets.top + 16 }]}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
           <TouchableOpacity onPress={() => router.back()} style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' }}>
@@ -658,6 +658,7 @@ export default function TransactionsScreen() {
       )}
 
       <FlatList
+        style={{ flex: 1 }}
         data={dateKeys}
         keyExtractor={(item) => item}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.tint} />} 
@@ -895,7 +896,6 @@ const styles = StyleSheet.create({
 
   headerSection: {
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 60 : 36,
     paddingBottom: 16,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,

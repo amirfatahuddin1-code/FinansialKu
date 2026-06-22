@@ -7,6 +7,7 @@ import {
   Wallet,
   TrendingUp,
   PiggyBank,
+  ShoppingCart,
 } from "lucide-react";
 
 const navCards = [
@@ -49,6 +50,16 @@ const navCards = [
     icon: TrendingUp,
     gradient: "from-amber-500 to-orange-600",
     shadowColor: "shadow-amber-500/20",
+  },
+  {
+    emoji: "🛒",
+    title: "Belanja",
+    subtitle: "Shopping",
+    description: "Rencanakan belanja harian/bulanan & catat realisasinya",
+    href: "/dashboard/planning/shopping",
+    icon: ShoppingCart,
+    gradient: "from-rose-500 to-red-600",
+    shadowColor: "shadow-rose-500/20",
   },
 ];
 
@@ -94,7 +105,7 @@ export default function PlanningPage() {
       </section>
 
       {/* Navigation Cards */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-10">
         {navCards.map((card) => (
           <Link key={card.href} href={card.href} className="group h-full flex flex-col">
             <div

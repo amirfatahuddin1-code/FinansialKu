@@ -126,8 +126,8 @@ function RootLayoutNav() {
 
   return (
     <ThemeProvider value={theme}>
-      <SyncProvider>
-        <WorkspaceProvider>
+      <WorkspaceProvider>
+        <SyncProvider>
         <AuthGate>
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="login" options={{ headerShown: false, animation: 'fade' }} />
@@ -139,8 +139,8 @@ function RootLayoutNav() {
           </Stack>
           <SyncPopup />
         </AuthGate>
-        </WorkspaceProvider>
-      </SyncProvider>
+        </SyncProvider>
+      </WorkspaceProvider>
     </ThemeProvider>
   );
 }

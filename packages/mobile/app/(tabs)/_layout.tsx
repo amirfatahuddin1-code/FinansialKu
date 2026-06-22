@@ -633,8 +633,9 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
 
   const currentRoute = state.routes[state.index];
   const isAiRoute = currentRoute?.name === 'ai';
+  const isTransactionsRoute = currentRoute?.name === 'transactions';
 
-  if (isAiRoute) return null;
+  if (isAiRoute || isTransactionsRoute) return null;
 
   return (
     <>

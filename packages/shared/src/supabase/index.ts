@@ -15,6 +15,7 @@ import { createWhatsAppAPI } from './whatsapp';
 import { createSubscriptionAPI } from './subscription';
 import { createWorkspacesAPI } from './workspaces';
 import { createFeaturesAPI } from './features';
+import { createShoppingPlansAPI } from './shoppingPlans';
 
 /**
  * Create the full Karsafin API object.
@@ -74,6 +75,8 @@ export function createKarsafinAPI(supabase?: SupabaseClient) {
     workspaces: createWorkspacesAPI(client),
     /** User-created features (Kreasi User) */
     features: createFeaturesAPI(client),
+    /** Shopping plans planning module */
+    shoppingPlans: createShoppingPlansAPI(client),
   };
 }
 
@@ -88,6 +91,7 @@ export { createTransactionsAPI } from './transactions';
 export { createBudgetsAPI } from './budgets';
 export { createSavingsAPI } from './savings';
 export { createEventsAPI, createEventItemsAPI, createEventIncomesAPI } from './events';
+export { createShoppingPlansAPI } from './shoppingPlans';
 export { createDebtsAPI } from './debts';
 export { createAccountsAPI } from './accounts';
 export { createMembersAPI } from './members';

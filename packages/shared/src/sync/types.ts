@@ -66,7 +66,8 @@ export type SyncTable =
   | 'financial_accounts'
   | 'events'
   | 'event_items'
-  | 'event_incomes';
+  | 'event_incomes'
+  | 'shopping_plans';
 
 export const SYNC_TABLES: SyncTable[] = [
   'transactions',
@@ -79,4 +80,5 @@ export const SYNC_TABLES: SyncTable[] = [
   'events',
   'event_items',
   'event_incomes',
+  'shopping_plans',
 ];

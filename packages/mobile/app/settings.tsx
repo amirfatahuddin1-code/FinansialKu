@@ -616,10 +616,42 @@ export default function SettingsScreen() {
         return;
       }
 
-      const productId = plan.id; // Harus sama dengan Product ID di Google Play Console dan RevenueCat
+      // Dapatkan offerings dari RevenueCat (akan otomatis membaca Offering Default atau Sale yang aktif di dashboard)
+      const offerings = await Purchases.getOfferings();
+      if (!offerings.current || offerings.current.availablePackages.length === 0) {
+        Alert.alert('Error', 'Tidak ada paket penawaran aktif yang ditemukan di RevenueCat.');
+        return;
+      }
 
-      // Mulai proses pembelian menggunakan Purchases SDK
-      const { customerInfo } = await Purchases.purchaseProduct(productId);
+      // Cari package yang sesuai berdasarkan durasi di database Supabase
+      let packageToPurchase = null;
+      if (plan.duration_days === 30) {
+        packageToPurchase = offerings.current.monthly;
+      } else if (plan.duration_days === 365) {
+        packageToPurchase = offerings.current.annual;
+      } else if (plan.duration_days > 10000) {
+        packageToPurchase = offerings.current.lifetime;
+      }
+
+      // Fallback jika pemetaan durasi standar tidak cocok (cari berdasarkan substring ID produk)
+      if (!packageToPurchase) {
+        packageToPurchase = offerings.current.availablePackages.find(
+          (pkg) =>
+            pkg.product.identifier === plan.id ||
+            pkg.product.identifier.startsWith(plan.id + ':')
+        );
+      }
+
+      if (!packageToPurchase) {
+        Alert.alert(
+          'Error',
+          `Tidak dapat menemukan paket RevenueCat yang cocok untuk durasi ${plan.duration_days} hari.`
+        );
+        return;
+      }
+
+      // Mulai proses pembelian menggunakan package dari Offering RevenueCat
+      const { customerInfo } = await Purchases.purchasePackage(packageToPurchase);
       
       // Jika entitlement 'karsafin_pro' aktif setelah pembelian sukses
       if (typeof customerInfo.entitlements.active['karsafin_pro'] !== 'undefined') {
