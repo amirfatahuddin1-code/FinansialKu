@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useAuth } from "./AuthProvider";
+import { useSync } from "./SyncProvider";
 import { Workspace, workspaceContext } from "@karsafin/shared";
 
 interface WorkspaceContextType {
@@ -18,6 +19,7 @@ const WORKSPACE_STORAGE_KEY = "karsafin_active_workspace";
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const { user, api } = useAuth();
+  const { engine } = useSync();
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [activeWorkspace, setActiveWorkspace] = useState<Workspace | null>(null);
   const [loadingWorkspaces, setLoadingWorkspaces] = useState(true);
@@ -118,6 +120,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       }
     }
   };
+
+  useEffect(() => {
+    if (engine && activeWorkspace) {
+      engine.setWorkspaceId(activeWorkspace.id);
+      engine.sync().catch(console.warn);
+    }
+  }, [activeWorkspace?.id, engine]);
 
   return (
     <WorkspaceContext.Provider

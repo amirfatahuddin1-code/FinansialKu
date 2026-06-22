@@ -7,7 +7,6 @@ import { createWebDatabase } from '@/utils/localDatabase';
 import { createBrowserConnectivityDetector } from '@/utils/connectivityDetector';
 import { createOfflineAPI } from '@/utils/offlineApi';
 import type { LocalDatabase, ConnectivityDetector } from '@karsafin/shared';
-import { useWorkspace } from './WorkspaceProvider';
 import { useAuth } from './AuthProvider';
 
 interface SyncContextValue {
@@ -32,7 +31,6 @@ const SyncContext = createContext<SyncContextValue>({
 });
 
 export function SyncProvider({ children }: { children: React.ReactNode }) {
-  const { activeWorkspace } = useWorkspace();
   const { api, setApi } = useAuth();
   const [syncState, setSyncState] = useState<SyncState>(defaultSyncState);
   const [dbReady, setDbReady] = useState(false);
@@ -65,10 +63,6 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       const engine = new SyncEngine(db, supabase);
       engineRef.current = engine;
 
-      if (activeWorkspace) {
-        engine.setWorkspaceId(activeWorkspace.id);
-      }
-
       if (!apiReplacedRef.current) {
         const offlineApi = createOfflineAPI(createKarsafinAPI(supabase), db);
         setApi(offlineApi);
@@ -100,12 +94,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  useEffect(() => {
-    if (engineRef.current && activeWorkspace) {
-      engineRef.current.setWorkspaceId(activeWorkspace.id);
-      engineRef.current.sync().catch(console.warn);
-    }
-  }, [activeWorkspace?.id]);
+
 
   useEffect(() => {
     if (!engineRef.current) return;
