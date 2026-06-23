@@ -79,7 +79,7 @@ export default function SettingsScreen() {
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryIcon, setNewCategoryIcon] = useState('');
   const [newCategoryColor, setNewCategoryColor] = useState('#4F46E5');
-  const [newCategoryType, setNewCategoryType] = useState<'income' | 'expense' | 'savings'>('expense');
+  const [newCategoryType, setNewCategoryType] = useState<'income' | 'expense' | 'savings' | 'investment'>('expense');
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
   const { workspaces, activeWorkspace, switchWorkspace, refreshWorkspaces } = useWorkspace();
@@ -948,7 +948,7 @@ export default function SettingsScreen() {
               <FontAwesome name="check-circle" size={48} color="#10b981" />
               <Text style={{ marginTop: 12, fontSize: 18, fontWeight: 'bold', color: colors.text }}>Email Terverifikasi</Text>
               <Text style={{ marginTop: 8, fontSize: 14, color: colors.textSecondary, textAlign: 'center' }}>
-                Email kamu ({user.email}) telah berhasil dikonfirmasi. Akun kamu aman dan kamu memiliki akses penuh ke fitur Karsafin.
+                Email kamu ({user?.email}) telah berhasil dikonfirmasi. Akun kamu aman dan kamu memiliki akses penuh ke fitur Karsafin.
               </Text>
             </>
           ) : (
@@ -956,7 +956,7 @@ export default function SettingsScreen() {
               <FontAwesome name="exclamation-circle" size={48} color="#f59e0b" />
               <Text style={{ marginTop: 12, fontSize: 18, fontWeight: 'bold', color: colors.text }}>Belum Diverifikasi</Text>
               <Text style={{ marginTop: 8, fontSize: 14, color: colors.textSecondary, textAlign: 'center' }}>
-                Email kamu ({user.email}) belum dikonfirmasi. 
+                Email kamu ({user?.email}) belum dikonfirmasi. 
               </Text>
             </>
           )}
@@ -982,14 +982,14 @@ export default function SettingsScreen() {
 
         {!user?.email_confirmed_at && (
           <TouchableOpacity
-            style={[styles.primaryBtn, { backgroundColor: '#f59e0b', opacity: resendingEmail ? 0.7 : 1 }]}
+            style={[{ backgroundColor: '#f59e0b', opacity: resendingEmail ? 0.7 : 1, padding: 16, borderRadius: 12, alignItems: 'center' }]}
             onPress={handleResendConfirmation}
             disabled={resendingEmail}
           >
             {resendingEmail ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
-              <Text style={styles.primaryBtnText}>Kirim Ulang Email Konfirmasi</Text>
+              <Text style={{ color: '#fff', fontSize: 16, fontWeight: 'bold' }}>Kirim Ulang Email Konfirmasi</Text>
             )}
           </TouchableOpacity>
         )}
@@ -1307,6 +1307,8 @@ export default function SettingsScreen() {
               </View>
             ))
           )}
+
+
         </ScrollView>
       </BottomSheet>
 

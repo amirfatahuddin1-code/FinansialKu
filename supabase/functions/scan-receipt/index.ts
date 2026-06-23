@@ -59,6 +59,8 @@ Return ONLY valid JSON with this exact structure:
     {
       "type": "expense",
       "amount": number,
+      "qty": number,
+      "unit_price": number,
       "description": "item description",
       "category": "Makanan|Transport|Belanja|Tagihan|Hiburan|Kesehatan|Lainnya",
       "account": "optional account name if visible",
@@ -70,11 +72,20 @@ Return ONLY valid JSON with this exact structure:
 }
 
 Rules:
-- Always use type "expense" for purchases
-- amount must be in Indonesian Rupiah (integer)
-- category must match existing categories as closely as possible
-- If the receipt doesn't have a clear date, use today's date
-- If multiple items on the receipt, create separate transactions for each logical group
+- Always use type "expense" for purchases.
+- amount must be the total cost of this item group in Indonesian Rupiah (integer).
+- qty must be the quantity/number of items purchased (integer).
+  - Look for numbers preceding or succeeding units like "box", "pack", "pak", "pcs", "pc", "bks", "bungkus", "botol", "btl", "kaleng", "can", "biji", "kg", "gr", "l", "lembar", "lbr", "pasang", "psg", "set", "sack", "bag", "roll", "slop", "x", or similar.
+  - For example: "2 Box Indomie" -> qty: 2; "Indomie 3 pcs" -> qty: 3; "Indomie 2x" -> qty: 2; "3 bungkus kopi" -> qty: 3.
+  - If no quantity/unit is mentioned, default qty to 1.
+- unit_price must be the price of a single item/unit in Indonesian Rupiah (integer).
+  - Look for unit prices explicitly written in formats like "@ [price]" or "[qty] x [price]" or similar on the receipt.
+  - If not explicitly written on the receipt, you must calculate it as amount / qty.
+- description must be the clean name of the item.
+  - Crucial: Strip the quantity and unit prefix/suffix from the description so it only contains the item name itself (e.g. convert "2 Box Indomie Goreng" or "Indomie Goreng 2 pcs" to "Indomie Goreng"). Do not include the qty or unit name in the description itself.
+- category must match existing categories as closely as possible.
+- If the receipt doesn't have a clear date, use today's date.
+- If multiple items on the receipt, create separate transactions for each logical group.
 - Return ONLY the JSON, no other text`,
                             },
                             { type: 'image_url', image_url: { url: dataUrl } },

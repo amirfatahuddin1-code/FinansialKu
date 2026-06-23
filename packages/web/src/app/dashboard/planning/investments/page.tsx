@@ -37,17 +37,32 @@ interface InvestmentAsset {
   avgBuyPrice: number;
   currentPrice: number;
   platform: string;
+  accountId?: string; // ID akun investasi
   purchaseDate?: string;
+  transactionId?: string; // ID transaksi terkait pembelian di Supabase
   createdAt: string;
 }
 
 const ASSET_TYPES = [
-  { key: "saham" as const, label: "Saham", icon: TrendingUp, color: "text-blue-600", bg: "bg-blue-50" },
-  { key: "reksadana" as const, label: "Reksadana", icon: BarChart3, color: "text-emerald-600", bg: "bg-emerald-50" },
-  { key: "emas" as const, label: "Emas", icon: Coins, color: "text-yellow-600", bg: "bg-yellow-50" },
-  { key: "obligasi" as const, label: "Obligasi", icon: Shield, color: "text-indigo-600", bg: "bg-indigo-50" },
-  { key: "crypto" as const, label: "Crypto", icon: Activity, color: "text-rose-600", bg: "bg-rose-50" },
+  { key: "saham" as const, label: "Saham", icon: TrendingUp, color: "text-blue-600", bg: "bg-blue-50", unitLabel: "lembar" },
+  { key: "reksadana" as const, label: "Reksadana", icon: BarChart3, color: "text-emerald-600", bg: "bg-emerald-50", unitLabel: "unit" },
+  { key: "emas" as const, label: "Emas", icon: Coins, color: "text-yellow-600", bg: "bg-yellow-50", unitLabel: "gram" },
+  { key: "obligasi" as const, label: "Obligasi", icon: Shield, color: "text-indigo-600", bg: "bg-indigo-50", unitLabel: "surat" },
+  { key: "crypto" as const, label: "Crypto", icon: Activity, color: "text-rose-600", bg: "bg-rose-50", unitLabel: "koin" },
 ];
+
+function getUnitLabel(type: "saham" | "reksadana" | "emas" | "obligasi" | "crypto"): string {
+  return ASSET_TYPES.find(t => t.key === type)?.unitLabel ?? "unit";
+}
+
+function getAssetTypeFromCategory(categoryName: string): "saham" | "reksadana" | "emas" | "obligasi" | "crypto" {
+  const normalizedCat = categoryName.toLowerCase();
+  if (normalizedCat.includes("reksadana")) return "reksadana";
+  if (normalizedCat.includes("emas") || normalizedCat.includes("gold")) return "emas";
+  if (normalizedCat.includes("obligasi") || normalizedCat.includes("bond")) return "obligasi";
+  if (normalizedCat.includes("crypto") || normalizedCat.includes("kripto")) return "crypto";
+  return "saham";
+}
 
 const DEFAULT_PLATFORMS = ["Bibit", "Ajaib", "Stockbit", "Tokopedia Emas", "Pluang"];
 
@@ -98,6 +113,7 @@ export default function InvestmentsPage() {
   const [formAvgBuy, setFormAvgBuy] = useState("");
   const [formCurrentPrice, setFormCurrentPrice] = useState("");
   const [formPlatform, setFormPlatform] = useState("");
+  const [formAccountId, setFormAccountId] = useState("");
   const [formPurchaseDate, setFormPurchaseDate] = useState("");
   const [formPurchaseTime, setFormPurchaseTime] = useState("");
   const [formCatatTransaksi, setFormCatatTransaksi] = useState(false);
@@ -136,9 +152,25 @@ export default function InvestmentsPage() {
   const [isBulkUpdateModalOpen, setIsBulkUpdateModalOpen] = useState(false);
   const [bulkPrices, setBulkPrices] = useState<Record<string, string>>({});
   
+  // Sell Modal State
+  const [isSellModalOpen, setIsSellModalOpen] = useState(false);
+  const [sellAsset, setSellAsset] = useState<InvestmentAsset | null>(null);
+  const [sellUnits, setSellUnits] = useState("");
+  const [sellPrice, setSellPrice] = useState("");
+  const [sellRecordTransaction, setSellRecordTransaction] = useState(true);
+  const [sellReceiverAccountId, setSellReceiverAccountId] = useState("");
+  const [isSellAccountDropdownOpen, setIsSellAccountDropdownOpen] = useState(false);
+
+  // Add Account Modal State
+  const [showAddAccountModal, setShowAddAccountModal] = useState(false);
+  const [newAccountName, setNewAccountName] = useState("");
+  const [newAccountBalance, setNewAccountBalance] = useState("");
+  const [savingAccount, setSavingAccount] = useState(false);
+
   const txAccountDropdownRef = useRef<HTMLDivElement>(null);
   const txCategoryDropdownRef = useRef<HTMLDivElement>(null);
   const txPlatformDropdownRef = useRef<HTMLDivElement>(null);
+  const sellAccountDropdownRef = useRef<HTMLDivElement>(null);
 
   // Set mounted state
   useEffect(() => {
@@ -215,6 +247,9 @@ export default function InvestmentsPage() {
       if (formAccountDropdownRef.current && !formAccountDropdownRef.current.contains(event.target as Node)) {
         setIsFormAccountDropdownOpen(false);
       }
+      if (sellAccountDropdownRef.current && !sellAccountDropdownRef.current.contains(event.target as Node)) {
+        setIsSellAccountDropdownOpen(false);
+      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -235,7 +270,12 @@ export default function InvestmentsPage() {
     setFormUnits("");
     setFormAvgBuy("");
     setFormCurrentPrice("");
-    setFormPlatform("");
+    
+    const invAccounts = dbAccounts.filter((a) => a.type === "investment");
+    const defInvAcc = invAccounts[0] || dbAccounts[0];
+    setFormAccountId(defInvAcc?.id || "");
+    setFormPlatform(defInvAcc?.name || "");
+
     setFormPurchaseDate(todayStr);
     setFormPurchaseTime(`${hours}:${minutes}`);
     setFormCatatTransaksi(false);
@@ -271,6 +311,7 @@ export default function InvestmentsPage() {
     setFormUnits(String(asset.units));
     setFormAvgBuy(asset.avgBuyPrice.toLocaleString("id-ID"));
     setFormCurrentPrice(asset.currentPrice.toLocaleString("id-ID"));
+    setFormAccountId(asset.accountId || "");
     setFormPlatform(asset.platform);
     setFormPurchaseDate(initialDate || todayStr);
     setFormPurchaseTime(initialTime);
@@ -381,7 +422,7 @@ export default function InvestmentsPage() {
     }
     const unitsNum = Number(formUnits.replace(/[^0-9.]/g, ""));
     if (unitsNum <= 0) {
-      alert("Jumlah unit/lembar harus lebih besar dari 0");
+      alert(`Jumlah ${getUnitLabel(formType)} harus lebih besar dari 0`);
       return;
     }
     const avgBuyNum = Number(formAvgBuy.replace(/\D/g, ""));
@@ -406,6 +447,8 @@ export default function InvestmentsPage() {
 
     setLoading(true);
     try {
+      let transactionId: string | undefined = undefined;
+
       // Record transaction if requested (only for new assets)
       if (!editingId && formCatatTransaksi) {
         if (!formSumberDana) {
@@ -423,7 +466,7 @@ export default function InvestmentsPage() {
         let categoryId = "";
         if (dbCategories.length > 0) {
           const found = dbCategories.find(
-            (c) => c.name.toLowerCase() === categoryLabel.toLowerCase() && c.type === "savings"
+            (c) => c.name.toLowerCase() === categoryLabel.toLowerCase() && c.type === "investment"
           );
           if (found) {
             categoryId = found.id;
@@ -434,9 +477,9 @@ export default function InvestmentsPage() {
           const matchingCat = CATEGORIES_SAVINGS.find(c => c.label === categoryLabel);
           const catConfig = {
             name: categoryLabel,
-            type: "savings",
+            type: "investment",
             icon: matchingCat?.emoji || "📈",
-            color: "#3b82f6",
+            color: "#f59e0b",
           };
           const { data: newCat, error: catErr } = await api.categories.getOrCreateByName(user.id, catConfig as any);
           if (catErr) throw catErr;
@@ -488,10 +531,10 @@ export default function InvestmentsPage() {
         }
 
         const totalAmount = unitsNum * avgBuyNum;
-        const { error: txErr } = await api.transactions.create(user.id, {
-          type: "savings",
+        const { data: newTx, error: txErr } = await api.transactions.create(user.id, {
+          type: "investment",
           amount: totalAmount,
-          description: serializeDescriptionAndTags(`Pembelian Aset: ${formName.trim().toUpperCase()} (${unitsNum} unit)`, [formName.trim().toUpperCase()]),
+          description: serializeDescriptionAndTags(`Pembelian Aset: ${formName.trim().toUpperCase()} (${unitsNum} ${getUnitLabel(formType)})`, [formName.trim().toUpperCase()]),
           date: purchaseDateTimeStr,
           category_id: categoryId,
           account_id: accountId,
@@ -499,10 +542,45 @@ export default function InvestmentsPage() {
         });
 
         if (txErr) throw txErr;
+        if (newTx) {
+          transactionId = newTx.id;
+        }
       }
 
       let updatedAssets = [];
       if (editingId) {
+        // If the asset has a linked transaction, update it in Supabase
+        const assetToUpdate = assets.find(a => a.id === editingId);
+        if (assetToUpdate?.transactionId) {
+          try {
+            const categoryLabel = formType === "saham" ? "Saham" 
+              : formType === "reksadana" ? "Reksadana" 
+              : formType === "emas" ? "Emas" 
+              : formType === "obligasi" ? "Obligasi" 
+              : "Crypto";
+
+            let categoryId = "";
+            if (dbCategories.length > 0) {
+              const found = dbCategories.find(
+                (c) => c.name.toLowerCase() === categoryLabel.toLowerCase() && c.type === "investment"
+              );
+              if (found) {
+                categoryId = found.id;
+              }
+            }
+
+            const totalAmount = unitsNum * avgBuyNum;
+            await api.transactions.update(assetToUpdate.transactionId, {
+              amount: totalAmount,
+              description: serializeDescriptionAndTags(`Pembelian Aset: ${formName.trim().toUpperCase()} (${unitsNum} ${getUnitLabel(formType)})`, [formName.trim().toUpperCase()]),
+              date: purchaseDateTimeStr,
+              category_id: categoryId || undefined,
+            });
+          } catch (txErr) {
+            console.error("Failed to update linked transaction:", txErr);
+          }
+        }
+
         updatedAssets = assets.map((a) =>
           a.id === editingId
             ? {
@@ -527,6 +605,7 @@ export default function InvestmentsPage() {
           currentPrice: currentPriceNum,
           platform: formPlatform,
           purchaseDate: purchaseDateTimeStr,
+          transactionId,
           createdAt: new Date().toISOString(),
         };
         updatedAssets = [...assets, newAsset];
@@ -590,7 +669,7 @@ export default function InvestmentsPage() {
       }
       const unitsNum = Number(txAssetUnits.replace(/[^0-9.]/g, ""));
       if (unitsNum <= 0) {
-        alert("Jumlah unit/lembar harus lebih besar dari 0");
+        alert(`Jumlah ${getUnitLabel(getAssetTypeFromCategory(txCategory))} harus lebih besar dari 0`);
         return;
       }
       if (!txAssetPlatform) {
@@ -605,7 +684,7 @@ export default function InvestmentsPage() {
       let categoryId = "";
       if (dbCategories.length > 0) {
         const found = dbCategories.find(
-          (c) => c.name.toLowerCase() === txCategory.toLowerCase() && c.type === "savings"
+          (c) => c.name.toLowerCase() === txCategory.toLowerCase() && c.type === "investment"
         );
         if (found) {
           categoryId = found.id;
@@ -617,9 +696,9 @@ export default function InvestmentsPage() {
         const matchingCat = CATEGORIES_SAVINGS.find(c => c.label === txCategory);
         const catConfig = {
           name: txCategory,
-          type: "savings",
+          type: "investment",
           icon: matchingCat?.emoji || "📈",
-          color: "#3b82f6",
+          color: "#f59e0b",
         };
         const { data: newCat, error: catErr } = await api.categories.getOrCreateByName(user.id, catConfig as any);
         if (catErr) throw catErr;
@@ -675,8 +754,8 @@ export default function InvestmentsPage() {
       const txDateTimeStr = `${txDate}T${txTime || "00:00"}:00`;
 
       // Create transaction in Supabase
-      const { error: txErr } = await api.transactions.create(user.id, {
-        type: "savings",
+      const { data: newTx, error: txErr } = await api.transactions.create(user.id, {
+        type: "investment",
         amount: amountNum,
         description: serializeDescriptionAndTags(txNotes || `Pembelian Investasi: ${txCategory}`, txSelectedTags),
         date: txDateTimeStr,
@@ -710,6 +789,7 @@ export default function InvestmentsPage() {
                 units: newUnits,
                 avgBuyPrice: newAvgBuyPrice,
                 currentPrice: avgPrice, // Update current price to latest purchase price
+                transactionId: newTx?.id,
               };
             }
             return a;
@@ -737,6 +817,7 @@ export default function InvestmentsPage() {
             currentPrice: avgPrice,
             platform: txAssetPlatform,
             purchaseDate: txDateTimeStr,
+            transactionId: newTx?.id,
             createdAt: new Date().toISOString(),
           };
           updatedAssets = [...assets, newAsset];
@@ -768,15 +849,212 @@ export default function InvestmentsPage() {
   };
 
   // Delete Asset
-  const handleDelete = (id: string, e: React.MouseEvent) => {
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!user) return;
+    const asset = assets.find((a) => a.id === id);
     if (!confirm("Apakah Anda yakin ingin menghapus aset investasi ini dari portofolio?")) return;
+
+    if (asset?.transactionId) {
+      if (confirm("Apakah Anda juga ingin menghapus transaksi pembelian terkait dari riwayat keuangan?")) {
+        try {
+          await api.transactions.delete(asset.transactionId);
+        } catch (err) {
+          console.error("Failed to delete linked transaction:", err);
+        }
+      }
+    }
 
     const updatedAssets = assets.filter((a) => a.id !== id);
     setAssets(updatedAssets);
     const key = `karsafin_investments_${user.id}`;
     localStorage.setItem(key, JSON.stringify(updatedAssets));
+  };
+
+  const handleOpenSellModal = (asset: InvestmentAsset, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSellAsset(asset);
+    setSellUnits("");
+    setSellPrice(asset.currentPrice.toString());
+    setSellRecordTransaction(true);
+    
+    // Default receiving account: first non-investment account
+    const defReceiver = dbAccounts.find((a) => a.type !== "investment" && a.is_default)?.name || 
+                        dbAccounts.find((a) => a.type !== "investment")?.name || 
+                        dbAccounts[0]?.name || "";
+    setSellReceiverAccountId(defReceiver);
+    setIsSellModalOpen(true);
+  };
+
+  const handleSaveSell = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !sellAsset) return;
+
+    const unitsSold = Number(sellUnits.replace(/[^0-9.]/g, ""));
+    if (unitsSold <= 0) {
+      alert("Jumlah unit yang dijual harus lebih besar dari 0");
+      return;
+    }
+    if (unitsSold > sellAsset.units) {
+      alert(`Jumlah unit yang dijual (${unitsSold}) melebihi kepemilikan (${sellAsset.units} ${getUnitLabel(sellAsset.type)})`);
+      return;
+    }
+    const pricePerUnit = Number(sellPrice.replace(/\D/g, ""));
+    if (pricePerUnit <= 0) {
+      alert("Harga jual harus lebih besar dari 0");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const totalSellValue = unitsSold * pricePerUnit;
+
+      // Update asset units
+      const newUnits = sellAsset.units - unitsSold;
+      let updatedAssets: InvestmentAsset[];
+      if (newUnits <= 0) {
+        updatedAssets = assets.filter((a) => a.id !== sellAsset.id);
+      } else {
+        updatedAssets = assets.map((a) => {
+          if (a.id === sellAsset.id) {
+            return { ...a, units: newUnits };
+          }
+          return a;
+        });
+      }
+
+      setAssets(updatedAssets);
+      const key = `karsafin_investments_${user.id}`;
+      localStorage.setItem(key, JSON.stringify(updatedAssets));
+
+      // Record transaction if requested
+      if (sellRecordTransaction && sellReceiverAccountId) {
+        // Find or create 'Hasil Investasi' INCOME category
+        let categoryId = "";
+        const categoryLabel = "Hasil Investasi";
+        
+        if (dbCategories.length > 0) {
+          const found = dbCategories.find(
+            (c) => c.name.toLowerCase() === categoryLabel.toLowerCase() && c.type === "income"
+          );
+          if (found) {
+            categoryId = found.id;
+          }
+        }
+
+        if (!categoryId) {
+          const catConfig = {
+            name: categoryLabel,
+            type: "income",
+            icon: "💹",
+            color: "#10b981",
+          };
+          const { data: newCat, error: catErr } = await api.categories.getOrCreateByName(user.id, catConfig as any);
+          if (catErr) throw catErr;
+          if (newCat) {
+            categoryId = newCat.id;
+          }
+        }
+
+        // Find receiving account ID
+        let accountId = "";
+        if (dbAccounts.length > 0) {
+          const found = dbAccounts.find(
+            (a) => a.name.toLowerCase() === sellReceiverAccountId.toLowerCase()
+          );
+          if (found) {
+            accountId = found.id;
+          }
+        }
+
+        if (!accountId && dbAccounts.length === 0) {
+          // If no accounts exist (fallback case), create default account
+          const { data: newAcc, error: accErr } = await api.accounts.create(user.id, {
+            name: sellReceiverAccountId,
+            type: "bank",
+            is_default: false,
+            color: "#0066AE",
+            icon: "🏦",
+            balance: 0,
+          });
+          if (accErr) throw accErr;
+          if (newAcc) {
+            accountId = newAcc.id;
+          }
+        }
+
+        if (!accountId) {
+          alert("Akun keuangan penerima tidak ditemukan");
+          setLoading(false);
+          return;
+        }
+
+        const txDateTimeStr = new Date().toISOString(); // Current time/date for sell transaction
+
+        await api.transactions.create(user.id, {
+          type: "income",
+          amount: totalSellValue,
+          description: serializeDescriptionAndTags(`Jual ${sellAsset.name.toUpperCase()} — ${unitsSold} ${getUnitLabel(sellAsset.type)} @ Rp ${pricePerUnit.toLocaleString("id-ID")}`, [sellAsset.name.toUpperCase()]),
+          date: txDateTimeStr,
+          category_id: categoryId,
+          account_id: accountId,
+          source: "manual"
+        });
+      }
+
+      alert("Aset investasi berhasil dijual!");
+      setIsSellModalOpen(false);
+      setSellAsset(null);
+
+      // Reload db data to reflect changes
+      if (activeWorkspace) {
+        const [accRes, catRes] = await Promise.all([
+          api.accounts.getAll(),
+          api.categories.getAll()
+        ]);
+        if (accRes.data) setDbAccounts(accRes.data);
+        if (catRes.data) setDbCategories(catRes.data);
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || "Gagal menjual aset");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateInvestmentAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    if (!newAccountName.trim()) {
+      alert("Nama akun tidak boleh kosong");
+      return;
+    }
+    setSavingAccount(true);
+    try {
+      const initialBalance = Number(newAccountBalance.replace(/\D/g, "")) || 0;
+      const { data: newAcc, error } = await api.accounts.create(user.id, {
+        name: newAccountName.trim(),
+        type: "investment",
+        icon: "📈",
+        color: "#f59e0b",
+        is_default: false,
+        balance: initialBalance,
+      });
+      if (error) throw error;
+      if (newAcc) {
+        setDbAccounts((prev) => [...prev, newAcc]);
+        setFormAccountId(newAcc.id);
+        setFormPlatform(newAcc.name);
+        alert(`Akun investasi "${newAcc.name}" berhasil dibuat.`);
+        setShowAddAccountModal(false);
+      }
+    } catch (err) {
+      console.error("Gagal membuat akun investasi:", err);
+      alert("Gagal membuat akun investasi");
+    } finally {
+      setSavingAccount(false);
+    }
   };
 
   // Calculations
@@ -1034,7 +1312,7 @@ export default function InvestmentsPage() {
                           </span>
                         </div>
                         <div className="text-xs text-dashboard-gray font-bold">
-                          {item.units.toLocaleString("id-ID")} unit • Rata-rata {formatRupiah(item.avgBuyPrice)}
+                          {item.units.toLocaleString("id-ID")} {getUnitLabel(item.type)} • Rata-rata {formatRupiah(item.avgBuyPrice)}
                         </div>
                       </div>
                     </div>
@@ -1071,6 +1349,14 @@ export default function InvestmentsPage() {
                           {formatRupiah(currentVal)}
                         </span>
                       </div>
+
+                      <button
+                        onClick={(e) => handleOpenSellModal(item, e)}
+                        className="h-10 px-4 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-150 hover:border-emerald-200 transition-colors cursor-pointer shrink-0 font-bold text-xs"
+                        title="Jual Aset"
+                      >
+                        Jual
+                      </button>
 
                       <button
                         onClick={(e) => handleDelete(item.id, e)}
@@ -1208,11 +1494,11 @@ export default function InvestmentsPage() {
                   {/* Units Input */}
                   <div>
                     <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
-                      Jumlah Unit / Lembar
+                      Jumlah ({getUnitLabel(formType)})
                     </label>
                     <input
                       type="text"
-                      placeholder="0"
+                      placeholder={`0 ${getUnitLabel(formType)}`}
                       value={formUnits}
                       onChange={(e) => {
                         const raw = e.target.value.replace(/[^0-9.]/g, "");
@@ -1226,7 +1512,7 @@ export default function InvestmentsPage() {
                   {/* Average Buy Price */}
                   <div>
                     <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
-                      Harga Beli Rata-Rata per Unit
+                      Harga Beli Rata-Rata per {getUnitLabel(formType)}
                     </label>
                     <div className="relative">
                       <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-slate-400 text-sm">
@@ -1271,9 +1557,22 @@ export default function InvestmentsPage() {
 
                   {/* Platform Dropdown */}
                   <div className="relative" ref={platformDropdownRef}>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
-                      Platform Investasi (Broker)
-                    </label>
+                    <div className="flex justify-between items-center mb-1.5">
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        Akun Investasi (Platform/Broker)
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowAddAccountModal(true);
+                          setIsPlatformDropdownOpen(false);
+                        }}
+                        className="text-[10px] font-black text-blue-650 hover:text-blue-750 flex items-center gap-1 cursor-pointer border-none bg-transparent"
+                      >
+                        <Plus className="h-3 w-3" />
+                        Tambah Akun Baru
+                      </button>
+                    </div>
                     <button
                       type="button"
                       onClick={() => setIsPlatformDropdownOpen(!isPlatformDropdownOpen)}
@@ -1282,77 +1581,55 @@ export default function InvestmentsPage() {
                       {formPlatform ? (
                         <span>{formPlatform}</span>
                       ) : (
-                        <span className="text-slate-400 font-bold">Pilih platform...</span>
+                        <span className="text-slate-400 font-bold">Pilih akun investasi...</span>
                       )}
                       <ChevronDown className={`h-4 w-4 text-dashboard-gray transition-transform duration-200 ${isPlatformDropdownOpen ? "rotate-180" : ""}`} />
                     </button>
 
                     {isPlatformDropdownOpen && (
                       <div className="absolute left-0 right-0 mt-1.5 bg-white border border-slate-150 rounded-2xl shadow-xl z-[210] max-h-56 overflow-hidden flex flex-col">
-                        <div className="overflow-y-auto max-h-36 py-1.5 shrink-0">
-                          {[...DEFAULT_PLATFORMS, ...customPlatforms].map((p) => (
+                        <div className="overflow-y-auto max-h-48 py-1.5 shrink-0">
+                          {dbAccounts.filter((a) => a.type === "investment").length === 0 ? (
+                            <div className="px-4 py-3 text-xs text-slate-400 font-bold text-center">
+                              Belum ada akun investasi
+                            </div>
+                          ) : (
+                            dbAccounts.filter((a) => a.type === "investment").map((acc) => (
+                              <button
+                                key={acc.id}
+                                type="button"
+                                onClick={() => {
+                                  setFormPlatform(acc.name);
+                                  setFormAccountId(acc.id);
+                                  setIsPlatformDropdownOpen(false);
+                                }}
+                                className={`w-full px-4 py-2.5 text-left text-sm font-bold transition-colors cursor-pointer border-none bg-transparent flex items-center justify-between ${
+                                  formAccountId === acc.id || formPlatform === acc.name
+                                    ? "bg-blue-50/50 text-dashboard-blue font-black"
+                                    : "text-slate-700 hover:bg-slate-50"
+                                }`}
+                              >
+                                <span>{acc.name}</span>
+                                <span className="text-[10px] text-slate-400 font-bold">
+                                  {formatRupiah(acc.balance)}
+                                </span>
+                              </button>
+                            ))
+                          )}
+                          <div className="border-t border-slate-100 mt-1.5">
                             <button
-                              key={p}
                               type="button"
                               onClick={() => {
-                                setFormPlatform(p);
+                                setShowAddAccountModal(true);
                                 setIsPlatformDropdownOpen(false);
                               }}
-                              className={`w-full px-4 py-2 text-left text-sm font-bold transition-colors cursor-pointer border-none bg-transparent ${
-                                formPlatform === p
-                                  ? "bg-blue-50/50 text-dashboard-blue font-black"
-                                  : "text-slate-700 hover:bg-slate-50"
-                              }`}
-                            >
-                              {p}
-                            </button>
-                          ))}
-                        </div>
-
-                        {/* Custom platform addition inline */}
-                        {isAddingPlatform ? (
-                          <div className="px-3 py-2 border-t border-slate-100 flex items-center gap-2 bg-slate-50 shrink-0">
-                            <input
-                              type="text"
-                              placeholder="Nama platform..."
-                              value={newPlatformInput}
-                              onChange={(e) => setNewPlatformInput(e.target.value)}
-                              className="flex-1 px-2.5 py-1.5 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-100 bg-white"
-                              onClick={(e) => e.stopPropagation()}
-                              autoFocus
-                            />
-                            <button
-                              type="button"
-                              onClick={handleSaveCustomPlatform}
-                              className="p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors cursor-pointer border-none shrink-0"
+                              className="w-full px-4 py-2.5 text-left text-xs font-black text-blue-650 hover:bg-blue-50/50 transition-colors flex items-center gap-1.5 border-none bg-transparent cursor-pointer"
                             >
                               <Plus className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setIsAddingPlatform(false);
-                                setNewPlatformInput("");
-                              }}
-                              className="p-1.5 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-lg transition-colors cursor-pointer border-none shrink-0"
-                            >
-                              <X className="h-3.5 w-3.5" />
+                              Buat Akun Investasi Baru
                             </button>
                           </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setIsAddingPlatform(true);
-                            }}
-                            className="w-full px-4 py-2.5 text-left text-xs font-black text-blue-600 hover:bg-blue-50/50 transition-colors flex items-center gap-1.5 border-t border-slate-100 cursor-pointer border-none bg-transparent shrink-0"
-                          >
-                            <Plus className="h-3.5 w-3.5" />
-                            Tambah Platform Investasi
-                          </button>
-                        )}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1415,7 +1692,7 @@ export default function InvestmentsPage() {
                             Catat sebagai transaksi pengeluaran/tabungan
                           </span>
                           <p className="text-[10px] text-dashboard-gray font-bold">
-                            Akumulasi biaya beli ({formUnits || '0'} unit @ Rp {formAvgBuy || '0'}) otomatis tercatat di kas keuangan.
+                            Akumulasi biaya beli ({formUnits || '0'} {getUnitLabel(formType)} @ Rp {formAvgBuy || '0'}) otomatis tercatat di kas keuangan.
                           </p>
                         </div>
                       </label>
@@ -1757,9 +2034,24 @@ export default function InvestmentsPage() {
 
                         {/* Platform */}
                         <div className="relative" ref={txPlatformDropdownRef}>
-                          <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
-                            Platform / Broker
-                          </label>
+                          <div className="flex justify-between items-center mb-1.5">
+                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                              Akun Investasi (Platform/Broker)
+                            </label>
+                            {!assets.some((a) => a.name.toUpperCase() === txCategory.toUpperCase()) && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setShowAddAccountModal(true);
+                                  setIsTxPlatformDropdownOpen(false);
+                                }}
+                                className="text-[10px] font-black text-blue-650 hover:text-blue-700 flex items-center gap-1 cursor-pointer border-none bg-transparent"
+                              >
+                                <Plus className="h-3 w-3" />
+                                Tambah Akun Baru
+                              </button>
+                            )}
+                          </div>
                           <button
                             type="button"
                             onClick={() => {
@@ -1782,66 +2074,47 @@ export default function InvestmentsPage() {
 
                           {isTxPlatformDropdownOpen && (
                             <div className="absolute left-0 right-0 mt-1 bg-white border border-slate-150 rounded-xl shadow-xl z-[220] max-h-56 overflow-hidden flex flex-col">
-                              <div className="overflow-y-auto max-h-36 py-1 shrink-0">
-                                {[...DEFAULT_PLATFORMS, ...customPlatforms].map((p) => (
+                              <div className="overflow-y-auto max-h-48 py-1 shrink-0">
+                                {dbAccounts.filter((a) => a.type === "investment").length === 0 ? (
+                                  <div className="px-4 py-3 text-xs text-slate-400 font-bold text-center">
+                                    Belum ada akun investasi
+                                  </div>
+                                ) : (
+                                  dbAccounts.filter((a) => a.type === "investment").map((acc) => (
+                                    <button
+                                      key={acc.id}
+                                      type="button"
+                                      onClick={() => {
+                                        setTxAssetPlatform(acc.name);
+                                        setIsTxPlatformDropdownOpen(false);
+                                      }}
+                                      className={`w-full px-4 py-2.5 text-left text-sm font-bold transition-colors cursor-pointer border-none bg-transparent flex items-center justify-between ${
+                                        txAssetPlatform === acc.name
+                                          ? "bg-blue-50/50 text-dashboard-blue font-black"
+                                          : "text-slate-700 hover:bg-slate-50"
+                                      }`}
+                                    >
+                                      <span>{acc.name}</span>
+                                      <span className="text-[10px] text-slate-400 font-bold">
+                                        {formatRupiah(acc.balance)}
+                                      </span>
+                                    </button>
+                                  ))
+                                )}
+                                <div className="border-t border-slate-100 mt-1.5">
                                   <button
-                                    key={p}
                                     type="button"
                                     onClick={() => {
-                                      setTxAssetPlatform(p);
+                                      setShowAddAccountModal(true);
                                       setIsTxPlatformDropdownOpen(false);
                                     }}
-                                    className="w-full px-4 py-2 text-left text-sm font-bold text-slate-700 hover:bg-slate-50 cursor-pointer border-none bg-transparent"
-                                  >
-                                    {p}
-                                  </button>
-                                ))}
-                              </div>
-
-                              {/* Custom platform addition inline */}
-                              {isAddingPlatform ? (
-                                <div className="px-3 py-2 border-t border-slate-100 flex items-center gap-2 bg-slate-50 shrink-0">
-                                  <input
-                                    type="text"
-                                    placeholder="Nama platform..."
-                                    value={newPlatformInput}
-                                    onChange={(e) => setNewPlatformInput(e.target.value)}
-                                    className="flex-1 px-2.5 py-1.5 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-100 bg-white"
-                                    onClick={(e) => e.stopPropagation()}
-                                    autoFocus
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={handleSaveCustomPlatform}
-                                    className="p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors cursor-pointer border-none shrink-0"
+                                    className="w-full px-4 py-2.5 text-left text-xs font-black text-blue-650 hover:bg-blue-50/50 transition-colors flex items-center gap-1.5 border-none bg-transparent cursor-pointer"
                                   >
                                     <Plus className="h-3.5 w-3.5" />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setIsAddingPlatform(false);
-                                      setNewPlatformInput("");
-                                    }}
-                                    className="p-1.5 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-lg transition-colors cursor-pointer border-none shrink-0"
-                                  >
-                                    <X className="h-3.5 w-3.5" />
+                                    Buat Akun Investasi Baru
                                   </button>
                                 </div>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setIsAddingPlatform(true);
-                                  }}
-                                  className="w-full px-4 py-2.5 text-left text-xs font-black text-blue-600 hover:bg-blue-50/50 transition-colors flex items-center gap-1.5 border-t border-slate-100 cursor-pointer border-none bg-transparent shrink-0"
-                                >
-                                  <Plus className="h-3.5 w-3.5" />
-                                  Tambah Platform Investasi
-                                </button>
-                              )}
+                              </div>
                             </div>
                           )}
                         </div>
@@ -1849,11 +2122,11 @@ export default function InvestmentsPage() {
                         {/* Units */}
                         <div>
                           <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
-                            Jumlah Unit / Lembar
+                            Jumlah ({getUnitLabel(getAssetTypeFromCategory(txCategory))})
                           </label>
                           <input
                             type="text"
-                            placeholder="1"
+                            placeholder={`1 ${getUnitLabel(getAssetTypeFromCategory(txCategory))}`}
                             value={txAssetUnits}
                             onChange={(e) => {
                               const raw = e.target.value.replace(/[^0-9.]/g, "");
@@ -1936,7 +2209,7 @@ export default function InvestmentsPage() {
                                 {asset.name}
                               </span>
                               <span className="text-[10px] font-bold text-dashboard-gray block">
-                                {asset.platform} • {asset.units.toLocaleString("id-ID")} unit
+                                {asset.platform} • {asset.units.toLocaleString("id-ID")} {getUnitLabel(asset.type)}
                               </span>
                             </div>
                           </div>
@@ -1982,6 +2255,277 @@ export default function InvestmentsPage() {
                   >
                     <Save className="h-4 w-4" />
                     Simpan Perubahan
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {/* Modal Jual Aset Investasi */}
+      {isSellModalOpen && sellAsset &&
+        createPortal(
+          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+            <div className="absolute inset-0" onClick={() => { setIsSellModalOpen(false); setSellAsset(null); }} />
+
+            <div className="bg-white rounded-3xl border border-slate-100 shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200 relative z-10">
+              <form onSubmit={handleSaveSell} className="flex flex-col h-full overflow-hidden">
+                {/* Header */}
+                <div className="flex justify-between items-center px-6 py-4 border-b border-slate-100 shrink-0">
+                  <h3 className="text-lg font-black text-slate-800">
+                    Jual Aset Investasi — {sellAsset.name}
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => { setIsSellModalOpen(false); setSellAsset(null); }}
+                    className="p-2 hover:bg-slate-50 text-slate-400 hover:text-slate-600 rounded-xl transition-colors cursor-pointer border-none"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+
+                {/* Body */}
+                <div className="p-6 space-y-4 overflow-y-auto flex-1">
+                  <div className="bg-emerald-50 border border-emerald-100/50 rounded-2xl p-4 flex items-center gap-3">
+                    <TrendingUp className="h-5 w-5 text-emerald-600 shrink-0" />
+                    <p className="text-xs font-bold text-emerald-700 leading-relaxed">
+                      Kepemilikan saat ini: <strong>{sellAsset.units.toLocaleString("id-ID")} {getUnitLabel(sellAsset.type)}</strong> dengan harga beli rata-rata <strong>{formatRupiah(sellAsset.avgBuyPrice)}</strong>.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Units to Sell */}
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                        Jumlah {getUnitLabel(sellAsset.type)} yang Dijual
+                      </label>
+                      <input
+                        type="text"
+                        placeholder={`0 ${getUnitLabel(sellAsset.type)}`}
+                        value={sellUnits}
+                        onChange={(e) => {
+                          const raw = e.target.value.replace(/[^0-9.]/g, "");
+                          setSellUnits(raw);
+                        }}
+                        required
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-150 rounded-xl text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      />
+                    </div>
+
+                    {/* Sell Price */}
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                        Harga Jual per {getUnitLabel(sellAsset.type)} (Rp)
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-black text-slate-400 text-xs">
+                          Rp
+                        </span>
+                        <input
+                          type="text"
+                          placeholder="0"
+                          value={sellPrice}
+                          onChange={(e) => {
+                            const raw = e.target.value.replace(/\D/g, "");
+                            setSellPrice(raw ? Number(raw).toLocaleString("id-ID") : "");
+                          }}
+                          required
+                          className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-150 rounded-xl text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Calculations Preview */}
+                  {Number(sellUnits) > 0 && Number(sellPrice.replace(/\D/g, "")) > 0 && (
+                    <div className="bg-slate-50 border border-slate-150 rounded-2xl p-4 space-y-2">
+                      <div className="flex justify-between items-center text-xs font-bold text-slate-500">
+                        <span>Total Nilai Jual</span>
+                        <span className="text-slate-800 font-extrabold">
+                          {formatRupiah(Number(sellUnits) * Number(sellPrice.replace(/\D/g, "")))}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs font-bold text-slate-500">
+                        <span>Estimasi Keuntungan / Kerugian (P&L)</span>
+                        {(() => {
+                          const totalSell = Number(sellUnits) * Number(sellPrice.replace(/\D/g, ""));
+                          const costBasis = Number(sellUnits) * sellAsset.avgBuyPrice;
+                          const pnl = totalSell - costBasis;
+                          return (
+                            <span className={`font-extrabold ${pnl >= 0 ? "text-emerald-600" : "text-rose-500"}`}>
+                              {pnl >= 0 ? "+" : ""}{formatRupiah(pnl)} ({pnl >= 0 ? "+" : ""}{((pnl / costBasis) * 100).toFixed(1)}%)
+                            </span>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Checkbox Record Transaction */}
+                  <label className="flex items-center gap-2 cursor-pointer p-1">
+                    <input
+                      type="checkbox"
+                      checked={sellRecordTransaction}
+                      onChange={(e) => setSellRecordTransaction(e.target.checked)}
+                      className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                    />
+                    <span className="text-xs font-bold text-slate-700">
+                      Catat sebagai transaksi pemasukan (keuangan)
+                    </span>
+                  </label>
+
+                  {/* Receiver Account Dropdown */}
+                  {sellRecordTransaction && (
+                    <div className="relative" ref={sellAccountDropdownRef}>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                        Akun Keuangan Penerima Dana
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setIsSellAccountDropdownOpen(!isSellAccountDropdownOpen)}
+                        className="w-full bg-slate-50 border border-slate-150 rounded-xl py-2.5 px-4 text-sm font-bold text-slate-755 focus:outline-none focus:ring-2 focus:ring-blue-100 cursor-pointer flex items-center justify-between text-left"
+                      >
+                        {sellReceiverAccountId ? (
+                          <span>{sellReceiverAccountId}</span>
+                        ) : (
+                          <span className="text-slate-400 font-bold">Pilih akun penerima...</span>
+                        )}
+                        <ChevronDown className={`h-4 w-4 text-dashboard-gray transition-transform duration-200 ${isSellAccountDropdownOpen ? "rotate-180" : ""}`} />
+                      </button>
+
+                      {isSellAccountDropdownOpen && (
+                        <div className="absolute left-0 right-0 mt-1 bg-white border border-slate-150 rounded-xl shadow-xl z-[220] max-h-48 overflow-y-auto py-1">
+                          {dbAccounts.map((acc) => (
+                            <button
+                              key={acc.id}
+                              type="button"
+                              onClick={() => {
+                                setSellReceiverAccountId(acc.name);
+                                setIsSellAccountDropdownOpen(false);
+                              }}
+                              className={`w-full px-4 py-2 text-left text-sm font-bold transition-colors cursor-pointer border-none bg-transparent flex items-center justify-between ${
+                                sellReceiverAccountId === acc.name
+                                  ? "bg-blue-50/50 text-dashboard-blue font-black"
+                                  : "text-slate-700 hover:bg-slate-50"
+                              }`}
+                            >
+                              <span>{acc.name}</span>
+                              <span className="text-[10px] text-slate-400 font-bold">
+                                {formatRupiah(acc.balance)}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer */}
+                <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => { setIsSellModalOpen(false); setSellAsset(null); }}
+                    className="px-5 py-3 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-2xl text-sm font-bold transition-all cursor-pointer"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-6 py-3 bg-emerald-600 text-white rounded-2xl text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 transition-all cursor-pointer"
+                  >
+                    <Save className="h-4 w-4" />
+                    Konfirmasi Penjualan
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {/* Modal Tambah Akun Investasi Baru */}
+      {showAddAccountModal &&
+        createPortal(
+          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[250] flex items-center justify-center p-4">
+            <div className="absolute inset-0" onClick={() => setShowAddAccountModal(false)} />
+
+            <div className="bg-white rounded-3xl border border-slate-100 shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200 relative z-10">
+              <form onSubmit={handleCreateInvestmentAccount} className="flex flex-col h-full overflow-hidden">
+                {/* Header */}
+                <div className="flex justify-between items-center px-6 py-4 border-b border-slate-100 shrink-0">
+                  <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">
+                    <Plus className="h-5 w-5 text-blue-650" />
+                    Akun Investasi Baru 📈
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddAccountModal(false)}
+                    className="p-2 hover:bg-slate-50 text-slate-400 hover:text-slate-600 rounded-xl transition-colors cursor-pointer border-none"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+
+                {/* Body */}
+                <div className="p-6 space-y-4 overflow-y-auto flex-1">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                      Nama Akun Investasi (Contoh: "Ajaib Saham", "Bibit Reksadana")
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Nama akun..."
+                      value={newAccountName}
+                      onChange={(e) => setNewAccountName(e.target.value)}
+                      required
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-150 rounded-xl text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                      Saldo Awal Akun (Rp)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-black text-slate-400 text-xs">
+                        Rp
+                      </span>
+                      <input
+                        type="text"
+                        placeholder="0"
+                        value={newAccountBalance}
+                        onChange={(e) => {
+                          const raw = e.target.value.replace(/\D/g, "");
+                          setNewAccountBalance(raw ? Number(raw).toLocaleString("id-ID") : "");
+                        }}
+                        className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-150 rounded-xl text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddAccountModal(false)}
+                    className="px-5 py-3 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-2xl text-sm font-bold transition-all cursor-pointer"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingAccount}
+                    className="px-6 py-3 bg-blue-600 text-white rounded-2xl text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    {savingAccount ? (
+                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4" />
+                    )}
+                    Simpan Akun
                   </button>
                 </div>
               </form>

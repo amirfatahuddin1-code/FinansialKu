@@ -55,7 +55,7 @@ export interface Category {
   name: string;
   icon: string;
   color: string;
-  type: 'income' | 'expense' | 'savings';
+  type: 'income' | 'expense' | 'savings' | 'investment';
   is_default: boolean;
   created_at: string;
 }
@@ -67,7 +67,7 @@ export interface Transaction {
   id: string;
   user_id: string;
   workspace_id?: string;
-  type: 'income' | 'expense' | 'savings';
+  type: 'income' | 'expense' | 'savings' | 'investment';
   amount: number;
   description: string;
   date: string;
@@ -93,7 +93,7 @@ export interface Transaction {
 export interface TransactionFilters {
   startDate?: string;
   endDate?: string;
-  type?: 'income' | 'expense' | 'savings';
+  type?: 'income' | 'expense' | 'savings' | 'investment';
   categoryId?: string;
 }
 
@@ -382,6 +382,10 @@ export interface ShoppingItem {
   total: number;
   isRealized: boolean;
   realizedAmount?: number;
+  plannedName?: string;
+  plannedQty?: number;
+  plannedUnitPrice?: number;
+  plannedTotal?: number;
 }
 
 export interface ShoppingPlan {

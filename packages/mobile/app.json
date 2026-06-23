@@ -24,7 +24,8 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.karsafin.app"
+      "package": "com.karsafin.app",
+      "versionCode": 3
     },
     "plugins": [
       [

@@ -14,3 +14,6 @@ export { default as AdBanner } from './AdBanner'
 export { default as SyncPopup } from './SyncPopup'
 export { default as SyncStatusBar } from './SyncStatusBar'
 export { default as OfflineBanner } from './OfflineBanner'
+export { default as ShoppingTab } from './ShoppingTab'
+export { default as InvestmentTab } from './InvestmentTab'
+

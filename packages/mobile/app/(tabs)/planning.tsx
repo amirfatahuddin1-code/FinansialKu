@@ -20,7 +20,7 @@ import { Spacing, BorderRadius } from '@/constants/DesignSystem';
 import { formatCurrencyCompact, parseAmount, getLocalToday } from '@karsafin/shared';
 import type { Savings, Budget, Event, Category, Transaction, FinancialAccount } from '@karsafin/shared';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { SavingsCard, EmptyState, FAB, BottomSheet, CategoryIcon, AccountIcon } from '@/components';
+import { SavingsCard, EmptyState, FAB, BottomSheet, CategoryIcon, AccountIcon, ShoppingTab, InvestmentTab } from '@/components';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
@@ -653,8 +653,8 @@ export default function PlanningScreen() {
 
   const COLOR_OPTIONS = [Colors.primary, Colors.success, Colors.danger, '#F59E0B', '#8B5CF6', '#EC4899'];
 
-  const params = useLocalSearchParams<{ tab?: 'anggaran' | 'acara' | 'tabungan' }>();
-  const [activeTab, setActiveTab] = useState<'anggaran' | 'acara' | 'tabungan'>(params.tab || 'anggaran');
+  const params = useLocalSearchParams<{ tab?: 'anggaran' | 'acara' | 'tabungan' | 'investasi' | 'belanja' }>();
+  const [activeTab, setActiveTab] = useState<'anggaran' | 'acara' | 'tabungan' | 'investasi' | 'belanja'>(params.tab || 'anggaran');
 
   useEffect(() => {
     if (params.tab) {
@@ -681,18 +681,30 @@ export default function PlanningScreen() {
         showsVerticalScrollIndicator={false}
         bounces={false}
       >
-        <View style={{ paddingTop: Math.max(insets.top, 20), paddingHorizontal: 20, paddingBottom: 24, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, marginBottom: 20, backgroundColor: colors.tint }}
-        >
-          <View style={[styles.segmentContainer, { marginBottom: 0, backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-            {(['anggaran', 'acara', 'tabungan'] as const).map((tab) => (
+        <View style={{ paddingTop: Math.max(insets.top, 20) + 32, paddingHorizontal: 20, paddingBottom: 24, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, marginBottom: 20, backgroundColor: colors.tint }}>
+          <View style={[styles.segmentContainer, { marginBottom: 0, backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 2, paddingVertical: 2 }]}>
+            {(['anggaran', 'acara', 'tabungan', 'investasi', 'belanja'] as const).map((tab) => (
               <TouchableOpacity
                 key={tab}
-                style={[styles.segmentBtn, activeTab === tab && { backgroundColor: '#fff' }]}
+                style={[
+                  styles.segmentBtn,
+                  { paddingVertical: 8, borderRadius: 8 },
+                  activeTab === tab && { backgroundColor: '#fff' }
+                ]}
                 onPress={() => setActiveTab(tab)}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.segmentText, { color: activeTab === tab ? colors.tint : 'rgba(255,255,255,0.8)' }, activeTab === tab && { fontWeight: '700' }]}>
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                <Text
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  style={[
+                    styles.segmentText,
+                    { color: activeTab === tab ? colors.tint : 'rgba(255,255,255,0.8)' },
+                    activeTab === tab && { fontWeight: '700' },
+                    { fontSize: 10.5 }
+                  ]}
+                >
+                  {tab === 'anggaran' ? 'Anggaran' : tab === 'acara' ? 'Acara' : tab === 'tabungan' ? 'Tabungan' : tab === 'investasi' ? 'Investasi' : 'Belanja'}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -872,18 +884,28 @@ export default function PlanningScreen() {
           </View>
         )}
 
+        {activeTab === 'investasi' && (
+          <InvestmentTab colors={colors} insets={insets} />
+        )}
+
+        {activeTab === 'belanja' && (
+          <ShoppingTab colors={colors} insets={insets} />
+        )}
+
         </View>
 
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      <View style={styles.fabContainer} pointerEvents="box-none">
-        <FAB 
-          label={activeTab === 'anggaran' ? '+ Anggaran' : activeTab === 'acara' ? '+ Acara' : '+ Target'} 
-          onPress={activeTab === 'anggaran' ? openBudgetModal : activeTab === 'acara' ? openAddEventModal : openAddModal} 
-          color={Colors.primary} 
-        />
-      </View>
+      {activeTab !== 'investasi' && activeTab !== 'belanja' && (
+        <View style={styles.fabContainer} pointerEvents="box-none">
+          <FAB 
+            label={activeTab === 'anggaran' ? '+ Anggaran' : activeTab === 'acara' ? '+ Acara' : '+ Target'} 
+            onPress={activeTab === 'anggaran' ? openBudgetModal : activeTab === 'acara' ? openAddEventModal : openAddModal} 
+            color={Colors.primary} 
+          />
+        </View>
+      )}
 
       <BottomSheet
         visible={showModal}

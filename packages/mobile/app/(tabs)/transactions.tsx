@@ -17,7 +17,7 @@ import { useWorkspace } from '@/providers/WorkspaceProvider';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors, { useColors } from '@/constants/Colors';
 import { Spacing, BorderRadius } from '@/constants/DesignSystem';
-import { formatCurrency, parseAmount, getLocalToday } from '@karsafin/shared';
+import { formatCurrency, formatCurrencyCompact, parseAmount, getLocalToday } from '@karsafin/shared';
 import type { Transaction, Category, FinancialAccount } from '@karsafin/shared';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
@@ -25,14 +25,23 @@ import { TransactionRow, CategoryIcon, EmptyState, FAB, BottomSheet, AccountIcon
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Circle } from 'react-native-svg';
 
-type TxType = 'income' | 'expense' | 'savings';
+type TxType = 'income' | 'expense' | 'savings' | 'investment';
 
 const formatInputAmount = (val: string) => {
   const numericVal = val.replace(/[^0-9]/g, '');
   if (!numericVal) return '';
   return parseInt(numericVal, 10).toLocaleString('id-ID');
 };
+
+const isInvestmentTransaction = (t: Transaction) => {
+  if (t.type === 'investment') return true;
+  if (t.type === 'expense' && t.category?.name?.toLowerCase() === 'investasi') return true;
+  if (t.type === 'income' && t.category?.name?.toLowerCase() === 'hasil investasi') return true;
+  return false;
+};
+
 
 export default function TransactionsScreen() {
   const { user, api } = useAuth();
@@ -76,7 +85,33 @@ export default function TransactionsScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showAddCategory, setShowAddCategory] = useState(false);
-  const [typeFilter, setTypeFilter] = useState<'all' | 'income' | 'expense' | 'savings'>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'income' | 'expense' | 'savings' | 'investment'>('all');
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const [currentCalendarDate, setCurrentCalendarDate] = useState(new Date());
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date | null>(null);
+
+  const getDaysInMonth = (date: Date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    
+    const days: Date[] = [];
+    const startOffset = firstDay.getDay();
+    
+    for (let i = startOffset; i > 0; i--) {
+      days.push(new Date(year, month, 1 - i));
+    }
+    for (let i = 1; i <= lastDay.getDate(); i++) {
+      days.push(new Date(year, month, i));
+    }
+    const totalCells = Math.ceil(days.length / 7) * 7;
+    const endOffset = totalCells - days.length;
+    for (let i = 1; i <= endOffset; i++) {
+      days.push(new Date(year, month + 1, i));
+    }
+    return days;
+  };
 
   const loadData = useCallback(async () => {
     if (!user) return;
@@ -108,23 +143,7 @@ export default function TransactionsScreen() {
     setRefreshing(false);
   };
 
-  const filtered = transactions.filter(t => {
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      const matchDesc = t.description?.toLowerCase().includes(q);
-      const matchCat = t.category?.name?.toLowerCase().includes(q);
-      const matchAmount = t.amount.toString().includes(q);
-      if (!matchDesc && !matchCat && !matchAmount) return false;
-    }
-
-    if (filterCategoryIds.size > 0 && !filterCategoryIds.has(t.category_id)) return false;
-    if (filterAccountIds.size > 0 && (!t.account_id || !filterAccountIds.has(t.account_id))) return false;
-    if (filterRecorderNames.size > 0 && (!t.sender_name || !filterRecorderNames.has(t.sender_name))) return false;
-    if (filterSource !== 'all') {
-      const src = (t.source || 'manual').toLowerCase();
-      if (src !== filterSource.toLowerCase()) return false;
-    }
-
+  const timeFilteredTransactions = transactions.filter(t => {
     if (timeFilter === 'today') {
       const now = new Date();
       const txDate = new Date(t.date);
@@ -156,8 +175,35 @@ export default function TransactionsScreen() {
         if (txDate > end) return false;
       }
     }
+    return true;
+  });
 
-    if (typeFilter !== 'all' && t.type !== typeFilter) return false;
+  const filtered = timeFilteredTransactions.filter(t => {
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      const matchDesc = t.description?.toLowerCase().includes(q);
+      const matchCat = t.category?.name?.toLowerCase().includes(q);
+      const matchAmount = t.amount.toString().includes(q);
+      if (!matchDesc && !matchCat && !matchAmount) return false;
+    }
+
+    if (filterCategoryIds.size > 0 && !filterCategoryIds.has(t.category_id)) return false;
+    if (filterAccountIds.size > 0 && (!t.account_id || !filterAccountIds.has(t.account_id))) return false;
+    if (filterRecorderNames.size > 0 && (!t.sender_name || !filterRecorderNames.has(t.sender_name))) return false;
+    if (filterSource !== 'all') {
+      const src = (t.source || 'manual').toLowerCase();
+      if (src !== filterSource.toLowerCase()) return false;
+    }
+    if (typeFilter !== 'all') {
+      const isInv = isInvestmentTransaction(t);
+      const isSavingsTx = t.type === 'savings';
+      
+      if (typeFilter === 'investment' && !isInv) return false;
+      if (typeFilter === 'savings' && !isSavingsTx) return false;
+      if (typeFilter === 'income' && (t.type !== 'income' || isInv)) return false;
+      if (typeFilter === 'expense' && (t.type !== 'expense' || isInv)) return false;
+    }
+
 
     return true;
   });
@@ -254,7 +300,10 @@ export default function TransactionsScreen() {
   const totalIncome = filtered.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
   const totalExpense = filtered.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
 
-  const modalTitle = `${editId ? 'Edit' : 'Tambah'} ${modalType === 'income' ? 'Pemasukan' : modalType === 'expense' ? 'Pengeluaran' : 'Tabungan'}`;
+  const timeTotalIncome = timeFilteredTransactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+  const timeTotalExpense = timeFilteredTransactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+
+  const modalTitle = `${editId ? 'Edit' : 'Tambah'} ${modalType === 'income' ? 'Pemasukan' : modalType === 'expense' ? 'Pengeluaran' : modalType === 'savings' ? 'Tabungan' : 'Investasi'}`;
 
   if (loading) {
     return (
@@ -278,24 +327,36 @@ export default function TransactionsScreen() {
           <View style={{ alignItems: 'center', flex: 1 }}>
             <Text style={styles.headerTitleText}>Transaksi Anda</Text>
           </View>
-          <View style={{ width: 28 }} />
+          <View style={{ width: 36 }} />
         </View>
 
-        <View style={styles.searchWrap}>
-          <Text style={styles.searchIcon}>🔍</Text>
-          <TextInput 
-            style={[styles.searchInput, { backgroundColor: colors.card, color: colors.text }]}
-            placeholder="Cari transaksi..."
-            placeholderTextColor={colors.textMuted}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 8 }}>
+          <View style={[styles.searchWrap, { flex: 1, marginBottom: 0 }]}>
+            <Text style={styles.searchIcon}>🔍</Text>
+            <TextInput 
+              style={[styles.searchInput, { backgroundColor: colors.card, color: colors.text }]}
+              placeholder="Cari transaksi..."
+              placeholderTextColor={colors.textMuted}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          </View>
+          <TouchableOpacity 
+            style={[styles.filterBtn, { backgroundColor: filterCategoryIds.size > 0 || filterAccountIds.size > 0 || filterRecorderNames.size > 0 || filterSource !== 'all' ? colors.card : colors.card, height: 44, marginBottom: 0, paddingHorizontal: 12 }]} 
+            onPress={() => { setTempFilterCategoryIds(new Set(filterCategoryIds)); setTempFilterAccountIds(new Set(filterAccountIds)); setTempFilterRecorderNames(new Set(filterRecorderNames)); setTempFilterSource(filterSource); setShowFilterModal(true); }} 
+            activeOpacity={0.7}
+          >
+            <FontAwesome name="sliders" size={16} color={filterCategoryIds.size > 0 || filterAccountIds.size > 0 || filterRecorderNames.size > 0 || filterSource !== 'all' ? colors.tint : colors.text} />
+            {(filterCategoryIds.size > 0 || filterAccountIds.size > 0 || filterRecorderNames.size > 0 || filterSource !== 'all') && (
+              <View style={{ position: 'absolute', top: 8, right: 8, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.tint }} />
+            )}
+          </TouchableOpacity>
         </View>
 
         <View style={{ flexDirection: 'row', marginBottom: 10, backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 14, padding: 3 }}>
-          {(['all', 'income', 'expense', 'savings'] as const).map((type) => {
+          {(['all', 'income', 'expense', 'savings', 'investment'] as const).map((type) => {
             const active = typeFilter === type;
-            const label = type === 'all' ? 'Semua' : type === 'income' ? 'Pemasukan' : type === 'expense' ? 'Pengeluaran' : 'Tabungan';
+            const label = type === 'all' ? 'Semua' : type === 'income' ? 'Pemasukan' : type === 'expense' ? 'Pengeluaran' : type === 'savings' ? 'Tabungan' : 'Investasi';
             return (
               <TouchableOpacity
                 key={type}
@@ -305,15 +366,20 @@ export default function TransactionsScreen() {
                   borderRadius: 11,
                   backgroundColor: active ? '#fff' : 'transparent',
                   alignItems: 'center',
+                  paddingHorizontal: 2,
                 }}
                 onPress={() => setTypeFilter(type)}
                 activeOpacity={0.7}
               >
-                <Text style={{
-                  fontSize: 12,
-                  fontWeight: '700',
-                  color: active ? '#333' : 'rgba(255,255,255,0.7)',
-                }}>
+                <Text 
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  style={{
+                    fontSize: 9.5,
+                    fontWeight: '800',
+                    color: active ? '#333' : 'rgba(255,255,255,0.8)',
+                  }}
+                >
                   {label}
                 </Text>
               </TouchableOpacity>
@@ -321,50 +387,60 @@ export default function TransactionsScreen() {
           })}
         </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll} contentContainerStyle={{ gap: 6, paddingRight: 16 }}>
+        <View style={{ flexDirection: 'row', gap: 6 }}>
           <TouchableOpacity 
             style={timeFilter === 'all' ? styles.chipActive : styles.chipInactive}
             onPress={() => setTimeFilter('all')}
           >
-            <Text style={timeFilter === 'all' ? styles.chipTextActive : styles.chipTextInactive}>Semua</Text>
+            <Text style={timeFilter === 'all' ? styles.chipTextActive : styles.chipTextInactive} numberOfLines={1} adjustsFontSizeToFit>Semua</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={timeFilter === 'today' ? styles.chipActive : styles.chipInactive}
             onPress={() => setTimeFilter('today')}
           >
-            <Text style={timeFilter === 'today' ? styles.chipTextActive : styles.chipTextInactive}>Hari Ini</Text>
+            <Text style={timeFilter === 'today' ? styles.chipTextActive : styles.chipTextInactive} numberOfLines={1} adjustsFontSizeToFit>Hari Ini</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={timeFilter === 'month' ? styles.chipActive : styles.chipInactive}
             onPress={() => setTimeFilter('month')}
           >
-            <Text style={timeFilter === 'month' ? styles.chipTextActive : styles.chipTextInactive}>Bulan Ini</Text>
+            <Text style={timeFilter === 'month' ? styles.chipTextActive : styles.chipTextInactive} numberOfLines={1} adjustsFontSizeToFit>Bulan Ini</Text>
           </TouchableOpacity>
           <TouchableOpacity 
-            style={timeFilter === 'custom' ? styles.chipActive : styles.chipInactive}
+            style={[timeFilter === 'custom' ? styles.chipActive : styles.chipInactive, { flex: 1.4 }]}
             onPress={() => {
               setTempStartDate(customStartDate);
               setTempEndDate(customEndDate);
               setShowRangeModal(true);
             }}
           >
-            <Text style={timeFilter === 'custom' ? styles.chipTextActive : styles.chipTextInactive}>
+            <Text style={timeFilter === 'custom' ? styles.chipTextActive : styles.chipTextInactive} numberOfLines={1} adjustsFontSizeToFit>
               {timeFilter === 'custom' && (customStartDate || customEndDate)
                 ? `📅 ${customStartDate ? customStartDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : '...'} - ${customEndDate ? customEndDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : '...'}` 
                 : '📅 Pilih Tanggal'}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.filterBtn, { backgroundColor: filterCategoryIds.size > 0 || filterAccountIds.size > 0 || filterRecorderNames.size > 0 || filterSource !== 'all' ? colors.tint : colors.card }]} onPress={() => { setTempFilterCategoryIds(new Set(filterCategoryIds)); setTempFilterAccountIds(new Set(filterAccountIds)); setTempFilterRecorderNames(new Set(filterRecorderNames)); setTempFilterSource(filterSource); setShowFilterModal(true); }} activeOpacity={0.7}>
-            <Text style={{ fontSize: 12 }}>🔍</Text>
-            <Text style={[styles.filterBtnText, { color: filterCategoryIds.size > 0 || filterAccountIds.size > 0 || filterRecorderNames.size > 0 || filterSource !== 'all' ? '#fff' : colors.text }]}>
-              Filter{(filterCategoryIds.size > 0 || filterAccountIds.size > 0 || filterRecorderNames.size > 0 || filterSource !== 'all') ? ' ✓' : ''}
-            </Text>
-          </TouchableOpacity>
-        </ScrollView>
+        </View>
 
-        <TouchableOpacity style={{ alignItems: 'center', marginTop: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', borderRadius: 16, paddingVertical: 6, paddingHorizontal: 16, alignSelf: 'center' }} onPress={() => router.push('/buku-transaksi')} activeOpacity={0.7}>
-          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>📒 Lihat Buku Transaksi</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', marginTop: 10, gap: 8 }}>
+          <TouchableOpacity style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', borderRadius: 16, paddingVertical: 8 }} onPress={() => router.push('/buku-transaksi')} activeOpacity={0.7}>
+            <Text style={{ color: '#fff', fontWeight: '600', fontSize: 12 }}>📒 Lihat Buku Transaksi</Text>
+          </TouchableOpacity>
+          <View style={{ flex: 1, flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 16, padding: 3 }}>
+            <TouchableOpacity 
+              style={{ flex: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: viewMode === 'list' ? '#fff' : 'transparent' }}
+              onPress={() => setViewMode('list')}
+            >
+              <Text style={{ fontSize: 12, fontWeight: '700', color: viewMode === 'list' ? colors.tint : '#fff' }}><FontAwesome name="list" size={10} color={viewMode === 'list' ? colors.tint : '#fff'} /> List</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={{ flex: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: viewMode === 'calendar' ? '#fff' : 'transparent' }}
+              onPress={() => setViewMode('calendar')}
+            >
+              <Text style={{ fontSize: 12, fontWeight: '700', color: viewMode === 'calendar' ? colors.tint : '#fff' }}><FontAwesome name="calendar" size={10} color={viewMode === 'calendar' ? colors.tint : '#fff'} /> Calendar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
 
       </View>
 
@@ -657,49 +733,180 @@ export default function TransactionsScreen() {
         />
       )}
 
-      <FlatList
-        style={{ flex: 1 }}
-        data={dateKeys}
-        keyExtractor={(item) => item}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.tint} />} 
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 + insets.bottom }}
-        ListEmptyComponent={
-          <EmptyState
-            icon="📭"
-            title="Belum ada transaksi"
-            subtitle="Mulai catat pemasukan dan pengeluaran pertama Anda"
-            actionLabel="Buat Transaksi"
-            onAction={() => openAddModal('expense')}
-          />
-        }
-        renderItem={({ item: dateKey }) => {
-          const txs = grouped[dateKey];
-          const dateLabel = new Date(dateKey).toLocaleDateString('id-ID', {
-            weekday: 'long', day: 'numeric', month: 'long',
-          });
-          return (
-            <View style={styles.dateGroup}>
-              <Text style={[styles.dateHeader, { color: colors.textSecondary }]}>{dateLabel}</Text>
-              {txs.map((t) => (
-                <TransactionRow
-                  key={t.id}
-                  transaction={t}
-                  onPress={() => openEditModal(t)}
-                  onLongPress={() => handleDelete(t.id)}
-                  workspaceType={activeWorkspace?.type}
-                />
-              ))}
-            </View>
-          );
-        }}
-      />
+      {viewMode === 'list' ? (
+        <FlatList
+          style={{ flex: 1 }}
+          data={dateKeys}
+          keyExtractor={(item) => item}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.tint} />} 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 110 + insets.bottom }}
+          ListEmptyComponent={
+            <EmptyState
+              icon="📭"
+              title="Belum ada transaksi"
+              subtitle="Mulai catat pemasukan dan pengeluaran pertama Anda"
+              actionLabel="Buat Transaksi"
+              onAction={() => openAddModal('expense')}
+            />
+          }
+          renderItem={({ item: dateKey }) => {
+            const txs = grouped[dateKey];
+            const dateLabel = new Date(dateKey).toLocaleDateString('id-ID', {
+              weekday: 'long', day: 'numeric', month: 'long',
+            });
+            return (
+              <View style={styles.dateGroup}>
+                <Text style={[styles.dateHeader, { color: colors.textSecondary }]}>{dateLabel}</Text>
+                {txs.map((t) => (
+                  <TransactionRow
+                    key={t.id}
+                    transaction={t}
+                    onPress={() => openEditModal(t)}
+                    onLongPress={() => handleDelete(t.id)}
+                    workspaceType={activeWorkspace?.type}
+                  />
+                ))}
+              </View>
+            );
+          }}
+        />
+      ) : (
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 110 + insets.bottom }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 20, gap: 24 }}>
+            <TouchableOpacity onPress={() => setCurrentCalendarDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))} style={{ padding: 8, backgroundColor: colors.card, borderRadius: 20 }}>
+              <FontAwesome name="chevron-left" size={14} color={colors.text} />
+            </TouchableOpacity>
+            <Text style={{ fontWeight: '800', fontSize: 16, color: colors.text, minWidth: 120, textAlign: 'center' }}>
+              {currentCalendarDate.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
+            </Text>
+            <TouchableOpacity onPress={() => setCurrentCalendarDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))} style={{ padding: 8, backgroundColor: colors.card, borderRadius: 20 }}>
+              <FontAwesome name="chevron-right" size={14} color={colors.text} />
+            </TouchableOpacity>
+          </View>
+          
+          <View style={{ flexDirection: 'row', marginBottom: 12 }}>
+            {["MIN", "SEN", "SEL", "RAB", "KAM", "JUM", "SAB"].map(d => (
+              <Text key={d} style={{ flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '800', color: colors.textMuted }}>{d}</Text>
+            ))}
+          </View>
+          
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
+            {getDaysInMonth(currentCalendarDate).map((day, idx) => {
+              const dayTxs = filtered.filter(tx => {
+                const d = new Date(tx.date);
+                return d.getDate() === day.getDate() && d.getMonth() === day.getMonth() && d.getFullYear() === day.getFullYear();
+              });
+              const isCurrentMonth = day.getMonth() === currentCalendarDate.getMonth();
+              const isToday = day.getDate() === new Date().getDate() && day.getMonth() === new Date().getMonth() && day.getFullYear() === new Date().getFullYear();
+              
+              const dayIncome = dayTxs.filter(t => t.type === 'income' && !isInvestmentTransaction(t)).reduce((s, t) => s + t.amount, 0);
+              const dayExpense = dayTxs.filter(t => t.type === 'expense' && !isInvestmentTransaction(t)).reduce((s, t) => s + Math.abs(t.amount), 0);
+              const daySavings = dayTxs.filter(t => t.type === 'savings' || isInvestmentTransaction(t)).reduce((s, t) => s + Math.abs(t.amount), 0);
+              
+              const hasIncome = dayTxs.some(t => t.type === 'income' && !isInvestmentTransaction(t));
+              const hasExpense = dayTxs.some(t => t.type === 'expense' && !isInvestmentTransaction(t));
+              const hasSavings = dayTxs.some(t => t.type === 'savings' || isInvestmentTransaction(t));
 
-      <View style={styles.fabRow}>
-        <FAB label="+ Masuk" onPress={() => openAddModal('income')} color={Colors.success} />
-        <FAB label="+ Keluar" onPress={() => openAddModal('expense')} color={Colors.danger} />
-        <FAB label="+ Tabung" onPress={() => openAddModal('savings')} color={Colors.warning} />
-      </View>
+
+              return (
+                <TouchableOpacity 
+                  key={idx}
+                  onPress={() => {
+                    if (dayTxs.length > 0) {
+                      setSelectedCalendarDate(day);
+                    }
+                  }}
+                  activeOpacity={0.7}
+                  style={{ 
+                    width: '13.3%', // roughly 1/7 minus gap
+                    aspectRatio: 0.75, 
+                    backgroundColor: isCurrentMonth ? colors.card : 'transparent',
+                    borderRadius: 12,
+                    padding: 4,
+                    borderWidth: isToday ? 1 : 0,
+                    borderColor: isToday ? Colors.warning : 'transparent',
+                    opacity: isCurrentMonth ? 1 : 0.4
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <View style={{ flexDirection: 'row', gap: 2, flexWrap: 'wrap', width: 14 }}>
+                      {hasIncome && <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: Colors.success }} />}
+                      {hasExpense && <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: Colors.danger }} />}
+                      {hasSavings && <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: Colors.warning }} />}
+                    </View>
+                    <Text style={{ fontSize: 12, fontWeight: isToday ? '800' : '600', color: isCurrentMonth ? colors.text : colors.textMuted }}>
+                      {day.getDate()}
+                    </Text>
+                  </View>
+                  <View style={{ flex: 1, justifyContent: 'flex-end', alignItems: 'flex-end' }}>
+                    {dayIncome > 0 && <Text style={{ fontSize: 8, fontWeight: '700', color: Colors.success }} numberOfLines={1}>+{formatCurrencyCompact(dayIncome)}</Text>}
+                    {dayExpense > 0 && <Text style={{ fontSize: 8, fontWeight: '700', color: Colors.danger }} numberOfLines={1}>-{formatCurrencyCompact(dayExpense)}</Text>}
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </ScrollView>
+      )}
+
+      {filtered.length > 0 && (
+        <View style={[styles.bottomBar, { backgroundColor: colors.card, paddingBottom: insets.bottom + 12, borderTopColor: colors.border }]}>
+          <View style={styles.bottomBarContent}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 12, color: colors.textSecondary, fontWeight: '600', marginBottom: 2 }}>Total Bersih (Ditampilkan)</Text>
+              <Text style={{ fontSize: 18, fontWeight: '800', color: (totalIncome - totalExpense) >= 0 ? Colors.success : Colors.danger }}>
+                {formatCurrency(totalIncome - totalExpense)}
+              </Text>
+              <View style={{ flexDirection: 'row', gap: 12, marginTop: 4 }}>
+                <Text style={{ fontSize: 11, color: Colors.success, fontWeight: '600' }}>In: {formatCurrency(totalIncome)}</Text>
+                <Text style={{ fontSize: 11, color: Colors.danger, fontWeight: '600' }}>Out: {formatCurrency(totalExpense)}</Text>
+              </View>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              {/* Pemasukan (Income) Chart */}
+              <View style={{ alignItems: 'center' }}>
+                <View style={{ width: 44, height: 44, justifyContent: 'center', alignItems: 'center' }}>
+                  <Svg width="44" height="44" viewBox="0 0 50 50">
+                    <Circle cx="25" cy="25" r="20" stroke={colors.border} strokeWidth="5" fill="none" />
+                    <Circle 
+                      cx="25" cy="25" r="20" 
+                      stroke={Colors.success} strokeWidth="5" fill="none" 
+                      strokeDasharray={2 * Math.PI * 20} 
+                      strokeDashoffset={(2 * Math.PI * 20) - ((timeTotalIncome > 0 ? totalIncome / timeTotalIncome : 0) * (2 * Math.PI * 20))} 
+                      strokeLinecap="round" rotation="-90" origin="25, 25" 
+                    />
+                  </Svg>
+                  <Text style={{ position: 'absolute', fontSize: 10, fontWeight: '800', color: colors.text }}>
+                    {timeTotalIncome > 0 ? Math.round((totalIncome / timeTotalIncome) * 100) : 0}%
+                  </Text>
+                </View>
+                <Text style={{ fontSize: 10, color: colors.textSecondary, fontWeight: '600', marginTop: 4 }}>In</Text>
+              </View>
+
+              {/* Pengeluaran (Expense) Chart */}
+              <View style={{ alignItems: 'center' }}>
+                <View style={{ width: 44, height: 44, justifyContent: 'center', alignItems: 'center' }}>
+                  <Svg width="44" height="44" viewBox="0 0 50 50">
+                    <Circle cx="25" cy="25" r="20" stroke={colors.border} strokeWidth="5" fill="none" />
+                    <Circle 
+                      cx="25" cy="25" r="20" 
+                      stroke={Colors.danger} strokeWidth="5" fill="none" 
+                      strokeDasharray={2 * Math.PI * 20} 
+                      strokeDashoffset={(2 * Math.PI * 20) - ((timeTotalExpense > 0 ? totalExpense / timeTotalExpense : 0) * (2 * Math.PI * 20))} 
+                      strokeLinecap="round" rotation="-90" origin="25, 25" 
+                    />
+                  </Svg>
+                  <Text style={{ position: 'absolute', fontSize: 10, fontWeight: '800', color: colors.text }}>
+                    {timeTotalExpense > 0 ? Math.round((totalExpense / timeTotalExpense) * 100) : 0}%
+                  </Text>
+                </View>
+                <Text style={{ fontSize: 10, color: colors.textSecondary, fontWeight: '600', marginTop: 4 }}>Out</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      )}
 
       <BottomSheet visible={showModal} onClose={() => setShowModal(false)} title={modalTitle}>
         <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Jumlah (Rp)</Text>
@@ -874,6 +1081,37 @@ export default function TransactionsScreen() {
         </TouchableOpacity>
       </BottomSheet>
 
+      {selectedCalendarDate && (
+        <BottomSheet 
+          visible={!!selectedCalendarDate} 
+          onClose={() => setSelectedCalendarDate(null)} 
+          title={`Transaksi ${selectedCalendarDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`}
+        >
+          <ScrollView style={{ maxHeight: 400 }} showsVerticalScrollIndicator={false}>
+            {filtered.filter(tx => {
+              const d = new Date(tx.date);
+              return d.getDate() === selectedCalendarDate.getDate() && 
+                     d.getMonth() === selectedCalendarDate.getMonth() && 
+                     d.getFullYear() === selectedCalendarDate.getFullYear();
+            }).map(t => (
+              <TransactionRow
+                key={t.id}
+                transaction={t}
+                onPress={() => {
+                  setSelectedCalendarDate(null);
+                  openEditModal(t);
+                }}
+                onLongPress={() => {
+                  setSelectedCalendarDate(null);
+                  handleDelete(t.id);
+                }}
+                workspaceType={activeWorkspace?.type}
+              />
+            ))}
+          </ScrollView>
+        </BottomSheet>
+      )}
+
       <AddCategoryModal
         visible={showAddCategory}
         onClose={() => setShowAddCategory(false)}
@@ -882,7 +1120,7 @@ export default function TransactionsScreen() {
           setSelectedCategory(newCat.id);
           setShowAddCategory(false);
         }}
-        initialType={modalType}
+        initialType={modalType === 'investment' ? 'expense' : modalType}
       />
     </View>
   );
@@ -905,6 +1143,25 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 6,
     marginBottom: 8,
+  },
+  bottomBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    borderTopWidth: 1,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  bottomBarContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   headerTitleText: {
     fontSize: 18,
@@ -935,7 +1192,9 @@ const styles = StyleSheet.create({
   },
   chipActive: {
     backgroundColor: '#785900',
-    paddingHorizontal: 14,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 6,
     borderRadius: 16,
   },
@@ -943,7 +1202,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.1)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 14,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 6,
     borderRadius: 16,
   },

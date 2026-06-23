@@ -41,14 +41,6 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   const initRef = useRef(false);
   const apiReplacedRef = useRef(false);
 
-  React.useMemo(() => {
-    if (!user || !api.supabase || apiReplacedRef.current) return;
-    const db = createMobileDatabase();
-    dbRef.current = db;
-    const offlineApi = createOfflineAPI(api, db);
-    setApi(offlineApi);
-    apiReplacedRef.current = true;
-  }, [user, api]);
 
   useEffect(() => {
     if (!user || !api.supabase || initRef.current) return;

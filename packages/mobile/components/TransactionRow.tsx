@@ -126,12 +126,28 @@ export default function TransactionRow({
   useColors();
   const colors = Colors[colorScheme]
   const isIncome = transaction.type === 'income'
+  const isInvestment = transaction.type === 'investment'
   const isSavings = transaction.type === 'savings'
+  const isSavingsOrInvestment = isSavings || isInvestment
   const cat = isSavings
     ? (transaction.category || (transaction.savings ? { name: transaction.savings.name, icon: '🏦', color: Colors.warning } : { name: 'Tabungan', icon: '🏦', color: Colors.warning }))
-    : transaction.category
+    : isInvestment
+      ? (transaction.category || { name: 'Investasi', icon: '📈', color: Colors.warning })
+      : transaction.category
 
-  const catColor = cat?.color || (isIncome ? Colors.success : isSavings ? Colors.warning : Colors.danger)
+  const catColor = cat?.color || (isIncome ? Colors.success : isSavingsOrInvestment ? Colors.warning : Colors.danger)
+
+  let rawDescription = transaction.description || cat?.name || 'Lainnya';
+  let extractedTags: string[] = [];
+  
+  if (transaction.description) {
+    const tagMatch = transaction.description.match(/\[tags?:\s*([^\]]+)\]/i);
+    if (tagMatch) {
+      extractedTags = tagMatch[1].split(',').map(t => t.trim()).filter(Boolean);
+      rawDescription = transaction.description.replace(tagMatch[0], '').trim() || cat?.name || 'Lainnya';
+    }
+  }
+
   const content = (
     <View style={[
       styles.row,
@@ -143,13 +159,20 @@ export default function TransactionRow({
       </View>
       <View style={styles.info}>
         <Text style={[styles.desc, { color: colors.text }]} numberOfLines={1}>
-          {transaction.description || cat?.name || 'Lainnya'}
+          {rawDescription}
         </Text>
         {!compact && (
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, flexWrap: 'wrap', gap: 6 }}>
             <Text style={[styles.category, { color: colors.textMuted }]}>
               {cat?.name || 'Lainnya'}
             </Text>
+            {extractedTags.map((tag, idx) => (
+              <View key={`tag-${idx}`} style={[styles.badge, { backgroundColor: colors.inputBg, borderColor: colors.border }]}>
+                <Text style={[styles.badgeText, { color: colors.textSecondary }]}>
+                  🏷️ {tag}
+                </Text>
+              </View>
+            ))}
             {transaction.source && (transaction.source === 'telegram' || transaction.source === 'telegram-receipt') && (
               <View style={[styles.badge, { backgroundColor: '#e0f2fe', borderColor: '#bae6fd' }]}>
                 <Text style={[styles.badgeText, { color: '#0284c7' }]}>
@@ -207,8 +230,8 @@ export default function TransactionRow({
           </Text>
         )}
       </View>
-      <Text style={[styles.amount, { color: isIncome ? Colors.success : isSavings ? Colors.warning : Colors.danger }]}>
-        {isIncome ? '+' : isSavings ? '' : '-'}Rp {formatCurrencyCompact(transaction.amount)}
+      <Text style={[styles.amount, { color: isIncome ? Colors.success : isSavingsOrInvestment ? Colors.warning : Colors.danger }]}>
+        {isIncome ? '+' : isSavingsOrInvestment ? '' : '-'}Rp {formatCurrencyCompact(transaction.amount)}
       </Text>
     </View>
   )

@@ -2,16 +2,16 @@ import { Platform } from 'react-native';
 
 const AD_UNIT_IDS: Record<string, { banner: string; rewarded: string }> = {
   android: {
-    banner: 'ca-app-pub-3940256099942544/6300978111',
-    rewarded: 'ca-app-pub-3940256099942544/5224354917',
+    banner: 'ca-app-pub-2634705417877623/2098554452',
+    rewarded: 'ca-app-pub-2634705417877623/6315103854',
   },
   ios: {
     banner: 'ca-app-pub-3940256099942544/2934735716',
     rewarded: 'ca-app-pub-3940256099942544/1712485313',
   },
   default: {
-    banner: 'ca-app-pub-3940256099942544/6300978111',
-    rewarded: 'ca-app-pub-3940256099942544/5224354917',
+    banner: 'ca-app-pub-2634705417877623/2098554452',
+    rewarded: 'ca-app-pub-2634705417877623/6315103854',
   },
 };
 

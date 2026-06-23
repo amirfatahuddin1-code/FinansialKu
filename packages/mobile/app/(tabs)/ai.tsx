@@ -1432,10 +1432,19 @@ const handleQuickReply = async (text: string) => {
           : undefined;
 
         const txDate = item.date || today;
+        const qtyVal = Number(item.qty) || 1;
+        const amountVal = Number(item.amount) || 0;
+        const unitPriceVal = Number(item.unit_price) || (qtyVal > 0 ? Math.round(amountVal / qtyVal) : amountVal) || 0;
+        const totalVal = amountVal || (qtyVal * unitPriceVal);
+        let desc = item.description || 'Tanpa keterangan';
+        if (qtyVal > 1) {
+          desc = `${desc} (${qtyVal}x @ Rp ${formatCurrency(unitPriceVal)})`;
+        }
+
         const { data: txData } = await api.transactions.create(user.id, {
           type: txType,
-          amount: item.amount,
-          description: item.description || 'Tanpa keterangan',
+          amount: totalVal,
+          description: desc,
           date: txDate,
           category_id: matchedCat.id,
           account_id: matchedAcc?.id,
@@ -1446,7 +1455,7 @@ const handleQuickReply = async (text: string) => {
           savedTxs.push({
             id: txData.id,
             type: txType,
-            amount: item.amount,
+            amount: totalVal,
             description: item.description || 'Tanpa keterangan',
             date: txDate,
             categoryName: matchedCat.name,
@@ -1456,7 +1465,7 @@ const handleQuickReply = async (text: string) => {
           const dateParts = txDate.split('-');
           const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : txDate;
           const accountStr = matchedAcc?.name ? ` | ${matchedAcc.name}` : '';
-          details += `\n${icon} ${item.description || 'Item'} — Rp ${formatCurrency(item.amount)} (${categories.find(c => c.id === matchedCat.id)?.name || matchedCat.name}${accountStr} | ${formattedDate})`;
+          details += `\n${icon} ${item.description || 'Item'} — Rp ${formatCurrency(totalVal)} (${categories.find(c => c.id === matchedCat.id)?.name || matchedCat.name}${accountStr} | ${formattedDate})`;
         }
       }
 
