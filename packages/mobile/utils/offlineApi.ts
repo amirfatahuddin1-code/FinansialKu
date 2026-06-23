@@ -20,6 +20,7 @@ function getTableForResource(resource: string): SyncTable | null {
     events: 'events',
     eventItems: 'event_items',
     eventIncomes: 'event_incomes',
+    investmentAssets: 'investment_assets',
   };
   return mapping[resource] || null;
 }
@@ -204,9 +205,9 @@ export function createOfflineAPI(api: KarsafinAPI, db: LocalDatabase): KarsafinA
       const wrapped = wrapWithOffline('categories', api.categories);
       const originalGetOrCreate = api.categories.getOrCreateByName?.bind(api.categories);
       if (originalGetOrCreate) {
-        wrapped.getOrCreateByName = async (userId: string, name: string, type: string) => {
+        wrapped.getOrCreateByName = async (userId: string, name: string, type: 'income' | 'expense') => {
           if (isOnline()) {
-            try { return await originalGetOrCreate(userId, name, type); } catch {}
+            try { return await originalGetOrCreate(userId, { name, type, icon: 'help-circle', color: '#64748b' }); } catch {}
           }
           const all = await wrapped.getAll({ type });
           if (all.data) {
@@ -224,7 +225,8 @@ export function createOfflineAPI(api: KarsafinAPI, db: LocalDatabase): KarsafinA
       const originalGetByMonth = api.budgets.getByMonth.bind(api.budgets);
       wrapped.getByMonth = async (wsId: string, month: string) => {
         let result = { data: null as any, error: null as any };
-        try { result = await originalGetByMonth(wsId, month); } catch(e) { result.error = e; }
+        const [yr, mo] = month.split('-').map(Number);
+        try { result = await originalGetByMonth(yr, mo); } catch(e) { result.error = e; }
         if (result.data && !result.error) {
           try {
             for (const b of result.data) {
@@ -245,7 +247,7 @@ export function createOfflineAPI(api: KarsafinAPI, db: LocalDatabase): KarsafinA
       if (originalUpsert) {
         wrapped.upsert = async (...args: any[]) => {
           if (isOnline()) {
-            try { return await originalUpsert(...args); } catch {}
+            try { return await originalUpsert(...(args as [string, any])); } catch {}
           }
           return { data: null, error: new Error('Offline') };
         };
@@ -264,7 +266,7 @@ export function createOfflineAPI(api: KarsafinAPI, db: LocalDatabase): KarsafinA
       const origGetAll = api.workspaces.getAll.bind(api.workspaces);
       wrapped.getAll = async (...args: any[]) => {
         let result = { data: null as any, error: null as any };
-        try { result = await origGetAll(...args); } catch(e) { result.error = e; }
+        try { result = await origGetAll(); } catch(e) { result.error = e; }
         if (result.data && !result.error) {
           try {
             for (const ws of result.data) {

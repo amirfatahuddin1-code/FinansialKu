@@ -21,6 +21,7 @@ function getTableForResource(resource: string): SyncTable | null {
     eventItems: 'event_items',
     eventIncomes: 'event_incomes',
     shoppingPlans: 'shopping_plans',
+    investmentAssets: 'investment_assets',
   };
   return mapping[resource] || null;
 }

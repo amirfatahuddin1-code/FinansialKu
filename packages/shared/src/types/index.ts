@@ -404,3 +404,29 @@ export interface ShoppingPlan {
 }
 
 export type CreateShoppingPlanInput = Omit<ShoppingPlan, 'id' | 'user_id' | 'created_at' | 'updated_at'>;
+
+// ========== Investment Asset ==========
+export interface InvestmentAsset {
+  id: string;
+  user_id: string;
+  workspace_id?: string;
+  name: string;
+  type: 'saham' | 'reksadana' | 'emas' | 'obligasi' | 'crypto';
+  units: number;
+  avgBuyPrice: number;
+  currentPrice: number;
+  platform: string;
+  accountId?: string;
+  purchaseDate?: string;
+  transactionId?: string;
+  createdAt: string;
+  updatedAt?: string;
+  _sync_status?: string;
+  _local_updated_at?: string;
+  _server_updated_at?: string;
+}
+
+export type CreateInvestmentAssetInput = Omit<
+  InvestmentAsset,
+  'id' | 'user_id' | 'createdAt' | 'updatedAt' | '_sync_status' | '_local_updated_at' | '_server_updated_at'
+>;

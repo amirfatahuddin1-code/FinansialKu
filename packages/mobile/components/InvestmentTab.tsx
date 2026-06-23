@@ -110,20 +110,45 @@ export default function InvestmentTab({ colors, insets }: InvestmentTabProps) {
   const investmentAccounts = accounts.filter(a => a.type === 'investment')
   const allAccounts = accounts  // all accounts for sell receiver
 
+  const migrateFromAsyncStorage = async () => {
+    if (!user || !storageKey) return
+    try {
+      const stored = await AsyncStorage.getItem(storageKey)
+      if (stored) {
+        const localAssets = JSON.parse(stored)
+        for (const asset of localAssets) {
+          await api.investmentAssets.create(user.id, {
+            name: asset.name,
+            type: asset.type,
+            units: asset.units,
+            avgBuyPrice: asset.avgBuyPrice,
+            currentPrice: asset.currentPrice,
+            platform: asset.platform,
+            accountId: asset.accountId || undefined,
+            purchaseDate: asset.purchaseDate || undefined,
+            transactionId: asset.transactionId || undefined,
+          })
+        }
+        await AsyncStorage.removeItem(storageKey)
+      }
+    } catch (err) {
+      console.error('Failed to migrate investments from AsyncStorage:', err)
+    }
+  }
+
   // Fetch local and API data
   const loadData = async () => {
     if (!user) return
     setLoading(true)
     try {
-      // 1. Load Assets
+      // 0. Migrate if needed
       if (storageKey) {
-        const stored = await AsyncStorage.getItem(storageKey)
-        if (stored) {
-          setAssets(JSON.parse(stored))
-        } else {
-          setAssets([])
-        }
+        await migrateFromAsyncStorage()
       }
+
+      // 1. Load Assets from Database
+      const { data: dbAssets } = await api.investmentAssets.getAll()
+      setAssets(dbAssets || [])
 
       // 2. Load DB data (Accounts and Categories)
       const [accRes, catRes] = await Promise.all([
@@ -247,113 +272,112 @@ export default function InvestmentTab({ colors, insets }: InvestmentTabProps) {
     const selectedAccount = accounts.find(a => a.id === selectedAccountId)
     const platformName = selectedAccount?.name ?? 'Manual'
 
-    let updatedAssets: InvestmentAsset[] = []
-
-    if (editAssetId) {
-      // If the asset has a linked transaction, update it in Supabase
-      const assetToUpdate = assets.find(a => a.id === editAssetId)
-      if (assetToUpdate?.transactionId) {
-        try {
-          const totalExpense = units * avgPrice
-          let catId = ''
-          const existingCat = categories.find(
-            c => c.name.toLowerCase() === 'investasi' && c.type === 'expense'
-          )
-          if (existingCat) {
-            catId = existingCat.id
-          }
-          await api.transactions.update(assetToUpdate.transactionId, {
-            amount: totalExpense,
-            date: purchaseDate,
-            description: `Beli ${upperTicker} — ${units} ${getUnitLabel(assetType)} @ Rp ${formatCurrency(avgPrice)}`,
-            category_id: catId || undefined,
-          } as any)
-        } catch (txErr) {
-          console.error('Failed to update linked transaction:', txErr)
-        }
-      }
-
-      updatedAssets = assets.map(a => {
-        if (a.id === editAssetId) {
-          return {
-            ...a,
-            name: upperTicker,
-            type: assetType,
-            units,
-            avgBuyPrice: avgPrice,
-            currentPrice: curPrice,
-            accountId: selectedAccountId,
-            platform: platformName,
-            purchaseDate,
-          }
-        }
-        return a
-      })
-    } else {
-      const newAsset: InvestmentAsset = {
-        id: 'asset_' + Math.random().toString(36).substring(2, 11),
-        name: upperTicker,
-        type: assetType,
-        units,
-        avgBuyPrice: avgPrice,
-        currentPrice: curPrice,
-        accountId: selectedAccountId,
-        platform: platformName,
-        purchaseDate,
-        createdAt: new Date().toISOString(),
-      }
-
-      // Record transaction if requested — BUY = EXPENSE from source account
-      if (syncToTransactions && buySourceAccountId) {
-        try {
-          const totalExpense = units * avgPrice
-
-          // Find or create a generic 'Investasi' EXPENSE category (not per-ticker)
-          let catId = ''
-          const existingCat = categories.find(
-            c => c.name.toLowerCase() === 'investasi' && c.type === 'expense'
-          )
-          if (existingCat) {
-            catId = existingCat.id
-          } else {
-            const { data: newCat, error: catErr } = await api.categories.create(user.id, {
-              name: 'Investasi',
-              icon: '📈',
-              color: '#f59e0b',
-              type: 'expense',
-            })
-            if (catErr) throw catErr
-            if (newCat) {
-              catId = newCat.id
-              setCategories(prev => [...prev, newCat])
+    setLoading(true)
+    try {
+      if (editAssetId) {
+        // If the asset has a linked transaction, update it in Supabase
+        const assetToUpdate = assets.find(a => a.id === editAssetId)
+        if (assetToUpdate?.transactionId) {
+          try {
+            const totalExpense = units * avgPrice
+            let catId = ''
+            const existingCat = categories.find(
+              c => c.name.toLowerCase() === 'investasi' && c.type === 'expense'
+            )
+            if (existingCat) {
+              catId = existingCat.id
             }
+            await api.transactions.update(assetToUpdate.transactionId, {
+              amount: totalExpense,
+              date: purchaseDate,
+              description: `Beli ${upperTicker} — ${units} ${getUnitLabel(assetType)} @ Rp ${formatCurrency(avgPrice)}`,
+              category_id: catId || undefined,
+            } as any)
+          } catch (txErr) {
+            console.error('Failed to update linked transaction:', txErr)
           }
-
-          // Single EXPENSE transaction from source account
-          const { data: newTx, error: txErr } = await api.transactions.create(user.id, {
-            type: 'expense',
-            amount: totalExpense,
-            account_id: buySourceAccountId,
-            category_id: catId || undefined,
-            date: purchaseDate,
-            description: `Beli ${upperTicker} — ${units} ${getUnitLabel(assetType)} @ Rp ${formatCurrency(avgPrice)}`,
-            source: 'manual',
-          } as any)
-          if (txErr) throw txErr
-          if (newTx) {
-            newAsset.transactionId = newTx.id
-          }
-        } catch (txErr: any) {
-          console.error('Failed to create investment buy transaction:', txErr)
-          Alert.alert('Error', 'Gagal mencatat transaksi pembelian investasi.')
         }
-      }
-      updatedAssets = [...assets, newAsset]
-    }
 
-    setAssets(updatedAssets)
-    await AsyncStorage.setItem(storageKey, JSON.stringify(updatedAssets))
-    setShowAddEditModal(false)
+        await api.investmentAssets.update(editAssetId, {
+          name: upperTicker,
+          type: assetType,
+          units,
+          avgBuyPrice: avgPrice,
+          currentPrice: curPrice,
+          accountId: selectedAccountId || undefined,
+          platform: platformName,
+          purchaseDate,
+        })
+      } else {
+        let transactionId = undefined
+
+        // Record transaction if requested — BUY = EXPENSE from source account
+        if (syncToTransactions && buySourceAccountId) {
+          try {
+            const totalExpense = units * avgPrice
+
+            // Find or create a generic 'Investasi' EXPENSE category (not per-ticker)
+            let catId = ''
+            const existingCat = categories.find(
+              c => c.name.toLowerCase() === 'investasi' && c.type === 'expense'
+            )
+            if (existingCat) {
+              catId = existingCat.id
+            } else {
+              const { data: newCat, error: catErr } = await api.categories.create(user.id, {
+                name: 'Investasi',
+                icon: '📈',
+                color: '#f59e0b',
+                type: 'expense',
+              })
+              if (catErr) throw catErr
+              if (newCat) {
+                catId = newCat.id
+                setCategories(prev => [...prev, newCat])
+              }
+            }
+
+            // Single EXPENSE transaction from source account
+            const { data: newTx, error: txErr } = await api.transactions.create(user.id, {
+              type: 'expense',
+              amount: totalExpense,
+              account_id: buySourceAccountId,
+              category_id: catId || undefined,
+              date: purchaseDate,
+              description: `Beli ${upperTicker} — ${units} ${getUnitLabel(assetType)} @ Rp ${formatCurrency(avgPrice)}`,
+              source: 'manual',
+            } as any)
+            if (txErr) throw txErr
+            if (newTx) {
+              transactionId = newTx.id
+            }
+          } catch (txErr: any) {
+            console.error('Failed to create investment buy transaction:', txErr)
+            Alert.alert('Error', 'Gagal mencatat transaksi pembelian investasi.')
+          }
+        }
+
+        await api.investmentAssets.create(user.id, {
+          name: upperTicker,
+          type: assetType,
+          units,
+          avgBuyPrice: avgPrice,
+          currentPrice: curPrice,
+          accountId: selectedAccountId || undefined,
+          platform: platformName,
+          purchaseDate,
+          transactionId,
+        })
+      }
+
+      setShowAddEditModal(false)
+      await loadData()
+    } catch (err: any) {
+      console.error('Failed to save asset:', err)
+      Alert.alert('Error', 'Gagal menyimpan aset investasi.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleDeleteAsset = (id: string) => {
@@ -367,24 +391,30 @@ export default function InvestmentTab({ colors, insets }: InvestmentTabProps) {
           {
             text: 'Hapus Aset Saja',
             onPress: async () => {
-              if (!storageKey) return
-              const updated = assets.filter(a => a.id !== id)
-              setAssets(updated)
-              await AsyncStorage.setItem(storageKey, JSON.stringify(updated))
+              setLoading(true)
+              try {
+                await api.investmentAssets.delete(id)
+                await loadData()
+              } catch (err) {
+                console.error(err)
+              } finally {
+                setLoading(false)
+              }
             },
           },
           {
             text: 'Hapus Keduanya',
             style: 'destructive',
             onPress: async () => {
-              if (!storageKey) return
-              const updated = assets.filter(a => a.id !== id)
-              setAssets(updated)
-              await AsyncStorage.setItem(storageKey, JSON.stringify(updated))
+              setLoading(true)
               try {
+                await api.investmentAssets.delete(id)
+                await loadData()
                 await api.transactions.delete(asset.transactionId!)
               } catch (err) {
                 console.error('Failed to delete linked transaction:', err)
+              } finally {
+                setLoading(false)
               }
             },
           },
@@ -400,10 +430,15 @@ export default function InvestmentTab({ colors, insets }: InvestmentTabProps) {
             text: 'Hapus',
             style: 'destructive',
             onPress: async () => {
-              if (!storageKey) return
-              const updated = assets.filter(a => a.id !== id)
-              setAssets(updated)
-              await AsyncStorage.setItem(storageKey, JSON.stringify(updated))
+              setLoading(true)
+              try {
+                await api.investmentAssets.delete(id)
+                await loadData()
+              } catch (err) {
+                console.error(err)
+              } finally {
+                setLoading(false)
+              }
             },
           },
         ]
@@ -426,7 +461,7 @@ export default function InvestmentTab({ colors, insets }: InvestmentTabProps) {
   }
 
   const handleConfirmSell = async () => {
-    if (!user || !storageKey || !sellAsset) return
+    if (!user || !sellAsset) return
 
     const unitsSold = parseFloat(sellUnits.replace(/\./g, '').replace(',', '.')) || 0
     const pricePerUnit = parseAmount(sellPrice)
@@ -447,67 +482,68 @@ export default function InvestmentTab({ colors, insets }: InvestmentTabProps) {
     const totalSellValue = unitsSold * pricePerUnit
     const unitLabel = getUnitLabel(sellAsset.type)
 
-    // Update asset units
-    const newUnits = sellAsset.units - unitsSold
-    let updatedAssets: InvestmentAsset[]
-    if (newUnits <= 0) {
-      // Remove asset entirely if all units sold
-      updatedAssets = assets.filter(a => a.id !== sellAsset.id)
-    } else {
-      updatedAssets = assets.map(a => {
-        if (a.id === sellAsset.id) {
-          return { ...a, units: newUnits }
-        }
-        return a
-      })
-    }
-
-    setAssets(updatedAssets)
-    await AsyncStorage.setItem(storageKey, JSON.stringify(updatedAssets))
-
-    // Record transaction — SELL = single INCOME to receiver account
-    if (sellRecordTransaction && sellReceiverAccountId) {
-      try {
-        const upperTicker = sellAsset.name.toUpperCase()
-
-        // Find or create 'Hasil Investasi' INCOME category
-        let catId = ''
-        const existingCat = categories.find(
-          c => c.name.toLowerCase() === 'hasil investasi' && c.type === 'income'
-        )
-        if (existingCat) {
-          catId = existingCat.id
-        } else {
-          const { data: newCat } = await api.categories.create(user.id, {
-            name: 'Hasil Investasi',
-            icon: '💹',
-            color: '#10b981',
-            type: 'income',
-          })
-          if (newCat) {
-            catId = newCat.id
-            setCategories(prev => [...prev, newCat])
-          }
-        }
-
-        // Single INCOME transaction to receiver account
-        await api.transactions.create(user.id, {
-          type: 'income',
-          amount: totalSellValue,
-          account_id: sellReceiverAccountId,
-          category_id: catId || undefined,
-          date: getLocalToday(),
-          description: `Jual ${upperTicker} — ${unitsSold} ${unitLabel} @ Rp ${formatCurrency(pricePerUnit)}`,
-          source: 'manual',
-        } as any)
-      } catch (txErr: any) {
-        console.error('Failed to record sell transaction:', txErr)
-        Alert.alert('Error', 'Gagal mencatat transaksi penjualan.')
+    setLoading(true)
+    try {
+      // Update asset units
+      const newUnits = sellAsset.units - unitsSold
+      if (newUnits <= 0) {
+        // Remove asset entirely if all units sold
+        await api.investmentAssets.delete(sellAsset.id)
+      } else {
+        await api.investmentAssets.update(sellAsset.id, {
+          units: newUnits
+        })
       }
-    }
 
-    setShowSellModal(false)
-    setSellAsset(null)
+      // Record transaction — SELL = single INCOME to receiver account
+      if (sellRecordTransaction && sellReceiverAccountId) {
+        try {
+          const upperTicker = sellAsset.name.toUpperCase()
+
+          // Find or create 'Hasil Investasi' INCOME category
+          let catId = ''
+          const existingCat = categories.find(
+            c => c.name.toLowerCase() === 'hasil investasi' && c.type === 'income'
+          )
+          if (existingCat) {
+            catId = existingCat.id
+          } else {
+            const { data: newCat } = await api.categories.create(user.id, {
+              name: 'Hasil Investasi',
+              icon: '💹',
+              color: '#10b981',
+              type: 'income',
+            })
+            if (newCat) {
+              catId = newCat.id
+              setCategories(prev => [...prev, newCat])
+            }
+          }
+
+          // Single INCOME transaction to receiver account
+          await api.transactions.create(user.id, {
+            type: 'income',
+            amount: totalSellValue,
+            account_id: sellReceiverAccountId,
+            category_id: catId || undefined,
+            date: getLocalToday(),
+            description: `Jual ${upperTicker} — ${unitsSold} ${unitLabel} @ Rp ${formatCurrency(pricePerUnit)}`,
+            source: 'manual',
+          } as any)
+        } catch (txErr: any) {
+          console.error('Failed to record sell transaction:', txErr)
+          Alert.alert('Error', 'Gagal mencatat transaksi penjualan.')
+        }
+      }
+
+      setShowSellModal(false)
+      setSellAsset(null)
+      await loadData()
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const openBulkModal = () => {
@@ -520,19 +556,24 @@ export default function InvestmentTab({ colors, insets }: InvestmentTabProps) {
   }
 
   const handleSaveBulkPrices = async () => {
-    if (!storageKey) return
-    const updated = assets.map(a => {
-      const priceStr = bulkPrices[a.id]
-      const price = priceStr ? parseAmount(priceStr) : a.currentPrice
-      return {
-        ...a,
-        currentPrice: price,
+    setLoading(true)
+    try {
+      for (const a of assets) {
+        const priceStr = bulkPrices[a.id]
+        const price = priceStr ? parseAmount(priceStr) : a.currentPrice
+        if (price !== a.currentPrice) {
+          await api.investmentAssets.update(a.id, {
+            currentPrice: price,
+          })
+        }
       }
-    })
-
-    setAssets(updated)
-    await AsyncStorage.setItem(storageKey, JSON.stringify(updated))
-    setShowBulkModal(false)
+      setShowBulkModal(false)
+      await loadData()
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   // Calculations

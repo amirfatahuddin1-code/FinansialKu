@@ -134,17 +134,19 @@ export default function FinancialProfilePage() {
     if (!user) return;
     setLoading(true);
     try {
-      const [accountsRes, debtsRes, savingsRes, txRes] = await Promise.all([
+      const [accountsRes, debtsRes, savingsRes, txRes, invRes] = await Promise.all([
         api.accounts.getAll(),
         api.debts.getAll(user.id),
         api.savings.getAll(),
         api.transactions.getAll(),
+        api.investmentAssets.getAll(),
       ]);
 
       setDbAccounts(accountsRes.data || []);
       setDbDebts(debtsRes.data || []);
       setDbSavings(savingsRes.data || []);
       setTransactions(txRes.data || []);
+      setInvestments(invRes.data || []);
     } catch (err) {
       console.error("Gagal mengambil data profil keuangan:", err);
     } finally {
@@ -169,13 +171,6 @@ export default function FinancialProfilePage() {
         setCreditCards(JSON.parse(cachedCards));
       } else {
         setCreditCards([]);
-      }
-
-      const cachedInvestments = localStorage.getItem(`karsafin_investments_${user.id}`);
-      if (cachedInvestments) {
-        setInvestments(JSON.parse(cachedInvestments));
-      } else {
-        setInvestments([]);
       }
 
       const cachedDebtNet = localStorage.getItem(`karsafin_calc_debt_net_${user.id}`);

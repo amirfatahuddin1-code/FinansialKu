@@ -177,19 +177,50 @@ export default function InvestmentsPage() {
     setMounted(true);
   }, []);
 
-  // Load from localStorage
-  useEffect(() => {
-    if (!user || !mounted) return;
-    try {
-      const key = `karsafin_investments_${user.id}`;
-      const saved = localStorage.getItem(key);
-      if (saved) {
-        setAssets(JSON.parse(saved));
+  const migrateFromLocalStorage = async () => {
+    if (!user) return;
+    const key = `karsafin_investments_${user.id}`;
+    const saved = localStorage.getItem(key);
+    if (saved) {
+      try {
+        const localAssets = JSON.parse(saved);
+        for (const asset of localAssets) {
+          await api.investmentAssets.create(user.id, {
+            name: asset.name,
+            type: asset.type,
+            units: asset.units,
+            avgBuyPrice: asset.avgBuyPrice,
+            currentPrice: asset.currentPrice,
+            platform: asset.platform,
+            accountId: asset.accountId || undefined,
+            purchaseDate: asset.purchaseDate || undefined,
+            transactionId: asset.transactionId || undefined,
+          });
+        }
+        localStorage.removeItem(key);
+      } catch (err) {
+        console.error("Gagal bermigrasi investasi dari localStorage:", err);
       }
+    }
+  };
+
+  const loadAssets = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      await migrateFromLocalStorage();
+      const { data: dbAssets } = await api.investmentAssets.getAll();
+      setAssets(dbAssets || []);
     } catch (err) {
       console.error("Gagal memuat portofolio investasi:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user && mounted) {
+      loadAssets();
     }
   }, [user, mounted]);
 
@@ -354,25 +385,29 @@ export default function InvestmentsPage() {
   };
 
   // Save bulk prices
-  const handleSaveBulkPrices = (e: React.FormEvent) => {
+  const handleSaveBulkPrices = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
 
-    const updatedAssets = assets.map((asset) => {
-      const rawPriceStr = bulkPrices[asset.id] || "";
-      const numericPrice = Number(rawPriceStr.replace(/\D/g, ""));
-      return {
-        ...asset,
-        currentPrice: isNaN(numericPrice) ? asset.currentPrice : numericPrice,
-      };
-    });
-
-    setAssets(updatedAssets);
-    const key = `karsafin_investments_${user.id}`;
-    localStorage.setItem(key, JSON.stringify(updatedAssets));
-    
-    setIsBulkUpdateModalOpen(false);
-    alert("Seluruh harga pasar aset portofolio berhasil diperbarui secara masal!");
+    setLoading(true);
+    try {
+      for (const asset of assets) {
+        const rawPriceStr = bulkPrices[asset.id] || "";
+        const numericPrice = Number(rawPriceStr.replace(/\D/g, ""));
+        if (!isNaN(numericPrice) && numericPrice !== asset.currentPrice) {
+          await api.investmentAssets.update(asset.id, {
+            currentPrice: numericPrice,
+          });
+        }
+      }
+      setIsBulkUpdateModalOpen(false);
+      await loadAssets();
+      alert("Seluruh harga pasar aset portofolio berhasil diperbarui secara masal!");
+    } catch (err) {
+      console.error("Gagal memperbarui harga masal:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Save custom platform
@@ -547,7 +582,6 @@ export default function InvestmentsPage() {
         }
       }
 
-      let updatedAssets = [];
       if (editingId) {
         // If the asset has a linked transaction, update it in Supabase
         const assetToUpdate = assets.find(a => a.id === editingId);
@@ -581,23 +615,7 @@ export default function InvestmentsPage() {
           }
         }
 
-        updatedAssets = assets.map((a) =>
-          a.id === editingId
-            ? {
-                ...a,
-                name: formName.trim().toUpperCase(),
-                type: formType,
-                units: unitsNum,
-                avgBuyPrice: avgBuyNum,
-                currentPrice: currentPriceNum,
-                platform: formPlatform,
-                purchaseDate: purchaseDateTimeStr,
-              }
-            : a
-        );
-      } else {
-        const newAsset: InvestmentAsset = {
-          id: crypto.randomUUID(),
+        await api.investmentAssets.update(editingId, {
           name: formName.trim().toUpperCase(),
           type: formType,
           units: unitsNum,
@@ -605,17 +623,24 @@ export default function InvestmentsPage() {
           currentPrice: currentPriceNum,
           platform: formPlatform,
           purchaseDate: purchaseDateTimeStr,
-          transactionId,
-          createdAt: new Date().toISOString(),
-        };
-        updatedAssets = [...assets, newAsset];
+          accountId: formAccountId || undefined,
+        });
+      } else {
+        await api.investmentAssets.create(user.id, {
+          name: formName.trim().toUpperCase(),
+          type: formType,
+          units: unitsNum,
+          avgBuyPrice: avgBuyNum,
+          currentPrice: currentPriceNum,
+          platform: formPlatform,
+          purchaseDate: purchaseDateTimeStr,
+          accountId: formAccountId || undefined,
+          transactionId: transactionId || undefined,
+        });
       }
 
-      setAssets(updatedAssets);
-      const key = `karsafin_investments_${user.id}`;
-      localStorage.setItem(key, JSON.stringify(updatedAssets));
-
       setIsModalOpen(false);
+      await loadAssets();
 
       if (!editingId && formCatatTransaksi) {
         alert("Aset berhasil disimpan dan transaksi pembelian tercatat di riwayat keuangan!");
@@ -772,27 +797,20 @@ export default function InvestmentsPage() {
         const avgPrice = amountNum / unitsNum;
         
         // Check if asset already exists in portfolio
-        const existingAssetIndex = assets.findIndex(
+        const existingAsset = assets.find(
           (a) => a.name.toUpperCase() === txAssetTicker.trim().toUpperCase()
         );
 
-        let updatedAssets = [];
-        if (existingAssetIndex > -1) {
+        if (existingAsset) {
           // Update existing asset
-          updatedAssets = assets.map((a, idx) => {
-            if (idx === existingAssetIndex) {
-              const newUnits = a.units + unitsNum;
-              const newTotalCost = (a.units * a.avgBuyPrice) + amountNum;
-              const newAvgBuyPrice = newTotalCost / newUnits;
-              return {
-                ...a,
-                units: newUnits,
-                avgBuyPrice: newAvgBuyPrice,
-                currentPrice: avgPrice, // Update current price to latest purchase price
-                transactionId: newTx?.id,
-              };
-            }
-            return a;
+          const newUnits = existingAsset.units + unitsNum;
+          const newTotalCost = (existingAsset.units * existingAsset.avgBuyPrice) + amountNum;
+          const newAvgBuyPrice = newTotalCost / newUnits;
+          await api.investmentAssets.update(existingAsset.id, {
+            units: newUnits,
+            avgBuyPrice: newAvgBuyPrice,
+            currentPrice: avgPrice, // Update current price to latest purchase price
+            transactionId: newTx?.id || undefined,
           });
         } else {
           // Map category to asset type
@@ -808,8 +826,7 @@ export default function InvestmentsPage() {
             assetType = "crypto";
           }
 
-          const newAsset: InvestmentAsset = {
-            id: crypto.randomUUID(),
+          await api.investmentAssets.create(user.id, {
             name: txAssetTicker.trim().toUpperCase(),
             type: assetType,
             units: unitsNum,
@@ -817,15 +834,11 @@ export default function InvestmentsPage() {
             currentPrice: avgPrice,
             platform: txAssetPlatform,
             purchaseDate: txDateTimeStr,
-            transactionId: newTx?.id,
-            createdAt: new Date().toISOString(),
-          };
-          updatedAssets = [...assets, newAsset];
+            transactionId: newTx?.id || undefined,
+          });
         }
 
-        setAssets(updatedAssets);
-        const key = `karsafin_investments_${user.id}`;
-        localStorage.setItem(key, JSON.stringify(updatedAssets));
+        await loadAssets();
       }
 
       alert("Transaksi investasi berhasil disimpan!");
@@ -855,20 +868,25 @@ export default function InvestmentsPage() {
     const asset = assets.find((a) => a.id === id);
     if (!confirm("Apakah Anda yakin ingin menghapus aset investasi ini dari portofolio?")) return;
 
-    if (asset?.transactionId) {
-      if (confirm("Apakah Anda juga ingin menghapus transaksi pembelian terkait dari riwayat keuangan?")) {
-        try {
-          await api.transactions.delete(asset.transactionId);
-        } catch (err) {
-          console.error("Failed to delete linked transaction:", err);
+    setLoading(true);
+    try {
+      if (asset?.transactionId) {
+        if (confirm("Apakah Anda juga ingin menghapus transaksi pembelian terkait dari riwayat keuangan?")) {
+          try {
+            await api.transactions.delete(asset.transactionId);
+          } catch (err) {
+            console.error("Failed to delete linked transaction:", err);
+          }
         }
       }
-    }
 
-    const updatedAssets = assets.filter((a) => a.id !== id);
-    setAssets(updatedAssets);
-    const key = `karsafin_investments_${user.id}`;
-    localStorage.setItem(key, JSON.stringify(updatedAssets));
+      await api.investmentAssets.delete(id);
+      await loadAssets();
+    } catch (err: any) {
+      console.error("Gagal menghapus aset:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleOpenSellModal = (asset: InvestmentAsset, e: React.MouseEvent) => {
@@ -911,21 +929,15 @@ export default function InvestmentsPage() {
 
       // Update asset units
       const newUnits = sellAsset.units - unitsSold;
-      let updatedAssets: InvestmentAsset[];
       if (newUnits <= 0) {
-        updatedAssets = assets.filter((a) => a.id !== sellAsset.id);
+        await api.investmentAssets.delete(sellAsset.id);
       } else {
-        updatedAssets = assets.map((a) => {
-          if (a.id === sellAsset.id) {
-            return { ...a, units: newUnits };
-          }
-          return a;
+        await api.investmentAssets.update(sellAsset.id, {
+          units: newUnits,
         });
       }
 
-      setAssets(updatedAssets);
-      const key = `karsafin_investments_${user.id}`;
-      localStorage.setItem(key, JSON.stringify(updatedAssets));
+      await loadAssets();
 
       // Record transaction if requested
       if (sellRecordTransaction && sellReceiverAccountId) {

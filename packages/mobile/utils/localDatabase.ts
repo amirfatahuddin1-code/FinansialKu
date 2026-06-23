@@ -333,7 +333,7 @@ export function createMobileDatabase(dbName = 'karsafin_offline.db'): LocalDatab
       if (!db) return;
       await db.runAsync(
         `UPDATE _sync_conflicts SET resolved = 1, resolution = ? WHERE id = ?`,
-        resolution, id
+        resolution || null, id
       );
     },
 

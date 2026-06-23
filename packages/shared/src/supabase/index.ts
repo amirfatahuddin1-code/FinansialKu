@@ -16,6 +16,7 @@ import { createSubscriptionAPI } from './subscription';
 import { createWorkspacesAPI } from './workspaces';
 import { createFeaturesAPI } from './features';
 import { createShoppingPlansAPI } from './shoppingPlans';
+import { createInvestmentAssetsAPI } from './investmentAssets';
 
 /**
  * Create the full Karsafin API object.
@@ -77,6 +78,8 @@ export function createKarsafinAPI(supabase?: SupabaseClient) {
     features: createFeaturesAPI(client),
     /** Shopping plans planning module */
     shoppingPlans: createShoppingPlansAPI(client),
+    /** Investment assets portfolio module */
+    investmentAssets: createInvestmentAssetsAPI(client),
   };
 }
 
