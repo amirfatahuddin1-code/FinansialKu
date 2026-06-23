@@ -2,7 +2,7 @@
   "expo": {
     "name": "Karsafin",
     "slug": "karsafin",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "karsafin",
@@ -25,7 +25,7 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.karsafin.app",
-      "versionCode": 3
+      "versionCode": 4
     },
     "plugins": [
       [
