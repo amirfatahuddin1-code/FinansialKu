@@ -45,4 +45,17 @@ export {
   ACCOUNT_TYPE_LABELS,
   MIDTRANS_CLIENT_KEY,
   MIDTRANS_SNAP_URL,
+  computeAllAchievements,
+  computeRecordingStreak,
+  computeNoSpendStreak,
+  computeBudgetDiscipline,
+  ACHIEVEMENT_DEFINITIONS,
+  ACHIEVEMENT_CATEGORIES,
+} from './utils';
+export type {
+  AchievementCategory,
+  AchievementDefinition,
+  AchievementResult,
+  AchievementsSummary,
+  StreakInfo,
 } from './utils';

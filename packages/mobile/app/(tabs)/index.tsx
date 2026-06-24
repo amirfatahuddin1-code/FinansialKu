@@ -223,15 +223,23 @@ export default function DashboardScreen() {
                 </TouchableOpacity>
               </View>
             </View>
-            <AnimatedPressable 
-              style={styles.avatarWrap}
-              onPress={() => {
-                router.push('/settings');
-              }}
-            >
-              <Text style={[styles.avatarText, { color: colors.tint }]}>{profileName.charAt(0).toUpperCase()}</Text>
-              <View style={[styles.avatarDot, { backgroundColor: colors.tint, borderColor: colors.tint }]} />
-            </AnimatedPressable>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <AnimatedPressable 
+                style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' }}
+                onPress={() => { router.push('/pencapaian' as never); }}
+              >
+                <FontAwesome name="trophy" size={16} color="#FFD700" />
+              </AnimatedPressable>
+              <AnimatedPressable 
+                style={styles.avatarWrap}
+                onPress={() => {
+                  router.push('/settings');
+                }}
+              >
+                <Text style={[styles.avatarText, { color: colors.tint }]}>{profileName.charAt(0).toUpperCase()}</Text>
+                <View style={[styles.avatarDot, { backgroundColor: colors.tint, borderColor: colors.tint }]} />
+              </AnimatedPressable>
+            </View>
           </View>
 
           <View style={styles.dateWrap}>

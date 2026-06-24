@@ -21,3 +21,18 @@ export {
   MIDTRANS_CLIENT_KEY,
   MIDTRANS_SNAP_URL,
 } from './constants';
+export {
+  computeAllAchievements,
+  computeRecordingStreak,
+  computeNoSpendStreak,
+  computeBudgetDiscipline,
+  ACHIEVEMENT_DEFINITIONS,
+  ACHIEVEMENT_CATEGORIES,
+} from './achievements';
+export type {
+  AchievementCategory,
+  AchievementDefinition,
+  AchievementResult,
+  AchievementsSummary,
+  StreakInfo,
+} from './achievements';

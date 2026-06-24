@@ -24,7 +24,8 @@ import {
   User,
   Loader2,
   AlertCircle,
-  Settings
+  Settings,
+  Trophy
 } from "lucide-react";
 import { useAuth, useWorkspace, useFeatures } from "@/providers";
 import { formatCurrency, formatCurrencyCompact, getMonthlyRange } from "@karsafin/shared";
@@ -345,6 +346,13 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
+        <Link
+          href="/dashboard/pencapaian"
+          className="flex items-center gap-2 bg-amber-50 text-amber-700 px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-amber-100 transition-colors border border-amber-200 shadow-sm cursor-pointer"
+        >
+          <Trophy className="h-4 w-4 text-amber-500" />
+          Pencapaian
+        </Link>
 
         {/* View Toggle */}
         <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200 shrink-0">
