@@ -98,7 +98,15 @@ export default function PencapaianScreen() {
     );
   }
 
-  const s = summary!;
+  const s = summary ?? {
+    totalAchievements: 12,
+    unlockedCount: 0,
+    percentage: 0,
+    recordingStreak: { current: 0, best: 0 },
+    noSpendStreak: { current: 0, best: 0 },
+    totalTransactions: 0,
+    achievements: [],
+  };
   const percentage = s.percentage;
 
   const getAchievementsByCategory = (categoryKey: string): AchievementResult[] => {
