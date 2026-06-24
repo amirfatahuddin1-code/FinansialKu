@@ -129,7 +129,7 @@ export default function PencapaianScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) }]}>
+      <View style={[styles.header, { paddingTop: Math.max(insets.top, 20), backgroundColor: colors.tint }]}>
         <View style={styles.headerRow}>
           <TouchableOpacity onPress={() => router.back()} style={{ padding: 4 }}>
             <FontAwesome name="chevron-left" size={18} color="#fff" />
@@ -148,7 +148,7 @@ export default function PencapaianScreen() {
         }
       >
         {/* Hero Card */}
-        <View style={styles.heroCard}>
+        <View style={[styles.heroCard, { backgroundColor: colors.tint }]}>
           <Text style={styles.heroEmoji}>🏆</Text>
           <Text style={styles.heroCount}>
             {s.unlockedCount} / {s.totalAchievements}
@@ -348,7 +348,6 @@ const styles = StyleSheet.create({
 
   // Header
   header: {
-    backgroundColor: '#2d7a4f',
     paddingHorizontal: Spacing.xl,
     paddingBottom: Spacing.lg,
   },
@@ -385,7 +384,6 @@ const styles = StyleSheet.create({
 
   // Hero Card
   heroCard: {
-    backgroundColor: '#2d7a4f',
     marginHorizontal: Spacing.lg,
     borderRadius: BorderRadius['2xl'],
     paddingVertical: Spacing['3xl'],

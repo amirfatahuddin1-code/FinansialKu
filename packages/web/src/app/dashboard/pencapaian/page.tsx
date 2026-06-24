@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Lock } from "lucide-react";
-import { useAuth, useWorkspace } from "@/providers";
+import { useAuth, useWorkspace, useTheme } from "@/providers";
 import {
   computeAllAchievements,
   ACHIEVEMENT_CATEGORIES,
@@ -13,6 +13,7 @@ import {
 export default function PencapaianPage() {
   const { user, api } = useAuth();
   const { activeWorkspace } = useWorkspace();
+  const { primaryColor } = useTheme();
 
   const [summary, setSummary] = useState<AchievementsSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -55,7 +56,7 @@ export default function PencapaianPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-slate-50">
-        <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+        <Loader2 className="h-8 w-8 animate-spin" style={{ color: primaryColor }} />
         <p className="text-sm text-slate-500">Memuat pencapaian...</p>
       </div>
     );
@@ -87,16 +88,19 @@ export default function PencapaianPage() {
         </div>
 
         {/* ── Hero Card ── */}
-        <div className="mb-8 overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-600 to-emerald-700 p-6 shadow-lg">
+        <div
+          className="mb-8 overflow-hidden rounded-2xl p-6 shadow-lg"
+          style={{ backgroundColor: primaryColor }}
+        >
           <div className="flex flex-col items-center text-center">
             <span className="mb-2 text-5xl">🏆</span>
             <p className="text-4xl font-extrabold text-white">
               {s.unlockedCount}{" "}
-              <span className="text-2xl font-semibold text-emerald-100">
+              <span className="text-2xl font-semibold text-white/80">
                 / {s.totalAchievements}
               </span>
             </p>
-            <p className="mt-1 text-sm font-medium text-emerald-100">
+            <p className="mt-1 text-sm font-medium text-white/80">
               Pencapaian Terbuka
             </p>
 
@@ -193,19 +197,21 @@ export default function PencapaianPage() {
                   return (
                     <div
                       key={ach.definition.id}
-                      className={`flex items-center gap-4 rounded-xl border p-4 shadow-sm transition-colors ${
-                        ach.unlocked
-                          ? "border-emerald-200 bg-emerald-50"
-                          : "border-slate-100 bg-white"
+                      className={`relative flex items-start gap-4 overflow-hidden rounded-xl border p-4 transition-all ${
+                        !ach.unlocked ? "border-slate-100 bg-slate-50 opacity-70" : ""
                       }`}
+                      style={
+                        ach.unlocked
+                          ? { borderColor: `${primaryColor}4D`, backgroundColor: `${primaryColor}1A` }
+                          : {}
+                      }
                     >
                       {/* Icon */}
                       <div
-                        className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full text-xl ${
-                          ach.unlocked
-                            ? "bg-emerald-100"
-                            : "bg-slate-100"
+                        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-2xl ${
+                          !ach.unlocked ? "bg-slate-200 opacity-50 grayscale" : ""
                         }`}
+                        style={ach.unlocked ? { backgroundColor: `${primaryColor}33` } : {}}
                       >
                         {ach.unlocked ? (
                           <span>{ach.definition.icon}</span>
@@ -217,25 +223,25 @@ export default function PencapaianPage() {
                       {/* Content */}
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <p
-                            className={`text-sm font-semibold ${
-                              ach.unlocked
-                                ? "text-emerald-800"
-                                : "text-slate-700"
-                            }`}
+                          <h3
+                            className={`font-bold ${!ach.unlocked ? "text-slate-700" : ""}`}
+                            style={ach.unlocked ? { color: primaryColor } : {}}
                           >
                             {ach.definition.name}
-                          </p>
+                          </h3>
                           {ach.unlocked && (
-                            <span className="rounded-full bg-emerald-200 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
-                              ✅ Terbuka
+                            <span
+                              className="rounded-full px-2 py-0.5 text-[10px] font-bold"
+                              style={{ backgroundColor: `${primaryColor}33`, color: primaryColor }}
+                            >
+                              SELESAI
                             </span>
                           )}
                         </div>
                         <p
                           className={`mt-0.5 text-xs ${
                             ach.unlocked
-                              ? "text-emerald-600"
+                              ? "text-slate-600"
                               : "text-slate-500"
                           }`}
                         >
@@ -246,18 +252,18 @@ export default function PencapaianPage() {
                         <div className="mt-2 flex items-center gap-2">
                           <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-200">
                             <div
-                              className={`h-full rounded-full transition-all duration-500 ${
+                              className={`h-full rounded-full transition-all duration-1000 ${!ach.unlocked ? "bg-slate-400" : ""}`}
+                              style={
                                 ach.unlocked
-                                  ? "bg-emerald-500"
-                                  : "bg-blue-500"
-                              }`}
-                              style={{ width: `${pct}%` }}
+                                  ? { width: `${pct}%`, backgroundColor: primaryColor }
+                                  : { width: `${pct}%` }
+                              }
                             />
                           </div>
                           <span
                             className={`text-[11px] font-semibold ${
                               ach.unlocked
-                                ? "text-emerald-600"
+                                ? "text-slate-700"
                                 : "text-slate-500"
                             }`}
                           >
