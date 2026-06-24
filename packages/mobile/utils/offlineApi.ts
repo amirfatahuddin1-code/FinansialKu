@@ -20,6 +20,7 @@ function getTableForResource(resource: string): SyncTable | null {
     events: 'events',
     eventItems: 'event_items',
     eventIncomes: 'event_incomes',
+    shoppingPlans: 'shopping_plans',
     investmentAssets: 'investment_assets',
   };
   return mapping[resource] || null;
@@ -223,10 +224,9 @@ export function createOfflineAPI(api: KarsafinAPI, db: LocalDatabase): KarsafinA
     budgets: (() => {
       const wrapped = wrapWithOffline('budgets', api.budgets);
       const originalGetByMonth = api.budgets.getByMonth.bind(api.budgets);
-      wrapped.getByMonth = async (wsId: string, month: string) => {
+      wrapped.getByMonth = async (year: number, month: number) => {
         let result = { data: null as any, error: null as any };
-        const [yr, mo] = month.split('-').map(Number);
-        try { result = await originalGetByMonth(yr, mo); } catch(e) { result.error = e; }
+        try { result = await originalGetByMonth(year, month); } catch(e) { result.error = e; }
         if (result.data && !result.error) {
           try {
             for (const b of result.data) {
@@ -238,7 +238,12 @@ export function createOfflineAPI(api: KarsafinAPI, db: LocalDatabase): KarsafinA
         }
         try {
           const all = await db.findAll('budgets');
-          const filtered = all.filter((b: any) => b.month === month && b.workspace_id === wsId);
+          const activeWsId = workspaceContext.getActiveWorkspaceId();
+          const filtered = all.filter((b: any) => 
+            b.year === year && 
+            b.month === month && 
+            (!activeWsId || b.workspace_id === activeWsId)
+          );
           return { data: filtered, error: null };
         } catch {}
         return result;
@@ -291,6 +296,8 @@ export function createOfflineAPI(api: KarsafinAPI, db: LocalDatabase): KarsafinA
     messaging: api.messaging,
     subscription: api.subscription,
     features: api.features,
+    shoppingPlans: wrapWithOffline('shoppingPlans', api.shoppingPlans),
+    investmentAssets: wrapWithOffline('investmentAssets', api.investmentAssets),
   };
 
   return wrappedAPI;
