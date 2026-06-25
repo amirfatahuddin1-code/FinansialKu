@@ -19,6 +19,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { router } from 'expo-router';
 import Purchases from 'react-native-purchases';
 import { useAuth } from '@/providers/AuthProvider';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useWorkspace } from '@/providers/WorkspaceProvider';
 import * as Clipboard from 'expo-clipboard';
 import * as WebBrowser from 'expo-web-browser';
@@ -82,6 +83,13 @@ export default function SettingsScreen() {
   const [newCategoryType, setNewCategoryType] = useState<'income' | 'expense' | 'savings' | 'investment'>('expense');
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
+  // Custom Labels (Tags) States
+  const [labels, setLabels] = useState<string[]>([]);
+  const [showLabels, setShowLabels] = useState(false);
+  const [showLabelForm, setShowLabelForm] = useState(false);
+  const [editingLabel, setEditingLabel] = useState<string | null>(null);
+  const [formLabelName, setFormLabelName] = useState('');
+
   const { workspaces, activeWorkspace, switchWorkspace, refreshWorkspaces } = useWorkspace();
   const [showWorkspace, setShowWorkspace] = useState(false);
   const [showCreateFamily, setShowCreateFamily] = useState(false);
@@ -123,6 +131,85 @@ export default function SettingsScreen() {
   }, [user]);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // Labels (Tags) settings management
+  const loadLabels = useCallback(async () => {
+    if (!user) return;
+    try {
+      const stored = await AsyncStorage.getItem(`karsafin_tags_${user.id}`);
+      if (stored) {
+        setLabels(JSON.parse(stored));
+      } else {
+        const defaults = ["Penting", "Bulanan", "Harian", "Pribadi", "Keluarga"];
+        setLabels(defaults);
+        await AsyncStorage.setItem(`karsafin_tags_${user.id}`, JSON.stringify(defaults));
+      }
+    } catch (err) {
+      console.error("Failed to load labels:", err);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    loadLabels();
+  }, [loadLabels]);
+
+  const handleSaveLabel = async () => {
+    if (!user) return;
+    const trimmed = formLabelName.trim();
+    if (!trimmed) {
+      Alert.alert("Error", "Nama label tidak boleh kosong");
+      return;
+    }
+
+    if (trimmed.length > 20) {
+      Alert.alert("Error", "Nama label terlalu panjang (maksimal 20 karakter)");
+      return;
+    }
+
+    const isDuplicate = labels.some(
+      (l) =>
+        l.toLowerCase() === trimmed.toLowerCase() &&
+        (!editingLabel || l.toLowerCase() !== editingLabel.toLowerCase())
+    );
+
+    if (isDuplicate) {
+      Alert.alert("Error", "Label dengan nama ini sudah ada");
+      return;
+    }
+
+    let updated: string[];
+    if (editingLabel) {
+      updated = labels.map((l) =>
+        l.toLowerCase() === editingLabel.toLowerCase() ? trimmed : l
+      );
+    } else {
+      updated = [...labels, trimmed];
+    }
+
+    setLabels(updated);
+    await AsyncStorage.setItem(`karsafin_tags_${user.id}`, JSON.stringify(updated));
+    setShowLabelForm(false);
+  };
+
+  const handleDeleteLabel = async (labelToDelete: string) => {
+    if (!user) return;
+    Alert.alert(
+      "Hapus Label",
+      `Apakah Anda yakin ingin menghapus label "${labelToDelete}"?`,
+      [
+        { text: "Batal", style: "cancel" },
+        {
+          text: "Hapus",
+          style: "destructive",
+          onPress: async () => {
+            const updated = labels.filter((l) => l.toLowerCase() !== labelToDelete.toLowerCase());
+            setLabels(updated);
+            await AsyncStorage.setItem(`karsafin_tags_${user.id}`, JSON.stringify(updated));
+          },
+        },
+      ]
+    );
+  };
 
   const handleSaveProfile = async () => {
     if (!user) return;
@@ -913,6 +1000,7 @@ export default function SettingsScreen() {
             {menuItem('✉️', 'Status Email', () => setShowEmailVerification(true))}
             {menuItem('🏦', 'Akun Keuangan', () => router.push('/akun-keuangan'))}
             {menuItem('🏷️', 'Kategori Transaksi', () => setShowCategory(true))}
+            {menuItem('🏷️', 'Kelola Label (Tag)', () => setShowLabels(true))}
             {menuItem('📅', 'Atur Tanggal Pemasukan', () => router.push('/atur-tanggal-pemasukan'))}
             {menuItem('👨‍👩‍👧', 'Anggota Workspace', () => router.push('/workspace-members'))}
 
@@ -1399,6 +1487,79 @@ export default function SettingsScreen() {
           activeOpacity={0.8}
         >
           {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>{editingCategory ? 'Simpan Perubahan' : 'Tambah Kategori'}</Text>}
+        </TouchableOpacity>
+      </BottomSheet>
+
+      {/* Label List Sheet */}
+      <BottomSheet visible={showLabels} onClose={() => { setShowLabels(false); setEditingLabel(null); }} title="Kelola Label (Tag)">
+        <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 400 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <Text style={[styles.inputLabel, { color: colors.textSecondary, margin: 0 }]}>Daftar Label Kustom</Text>
+            <TouchableOpacity
+              style={[styles.smallAddBtn, { backgroundColor: Colors.primary }]}
+              onPress={() => {
+                setEditingLabel(null);
+                setFormLabelName("");
+                setShowLabelForm(true);
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={{ color: '#fff', fontSize: 18, fontWeight: '700' }}>+</Text>
+            </TouchableOpacity>
+          </View>
+          {labels.length === 0 ? (
+            <Text style={[styles.emptyText, { color: colors.textMuted }]}>Belum ada label kustom</Text>
+          ) : (
+            labels.map((label) => (
+              <View key={label} style={[styles.categoryItem, { borderBottomColor: colors.border }]}>
+                <View style={[styles.categoryIconBox, { backgroundColor: colors.inputBg }]}>
+                  <Text style={{ fontSize: 14 }}>🏷️</Text>
+                </View>
+                <View style={styles.categoryTextContainer}>
+                  <Text style={[styles.categoryItemName, { color: colors.text }]}>{label}</Text>
+                </View>
+                <View style={styles.categoryActions}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setEditingLabel(label);
+                      setFormLabelName(label);
+                      setShowLabelForm(true);
+                    }}
+                    style={styles.categoryEditBtn}
+                  >
+                    <FontAwesome name="pencil" size={14} color={Colors.primary} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => handleDeleteLabel(label)}
+                    style={styles.categoryDeleteBtn}
+                  >
+                    <FontAwesome name="trash" size={14} color={Colors.danger} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))
+          )}
+        </ScrollView>
+      </BottomSheet>
+
+      {/* Add/Edit Label Form Sheet */}
+      <BottomSheet visible={showLabelForm} onClose={() => { setShowLabelForm(false); setEditingLabel(null); }} title={editingLabel ? 'Edit Label' : 'Tambah Label'}>
+        <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Nama Label</Text>
+        <TextInput
+          style={[styles.input, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
+          value={formLabelName}
+          onChangeText={setFormLabelName}
+          placeholder="Nama label kustom"
+          placeholderTextColor={colors.textMuted}
+          maxLength={20}
+        />
+        <TouchableOpacity
+          style={[styles.saveBtn, { backgroundColor: Colors.primary, opacity: !formLabelName.trim() ? 0.7 : 1 }]}
+          onPress={handleSaveLabel}
+          disabled={!formLabelName.trim()}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.saveBtnText}>Simpan Label</Text>
         </TouchableOpacity>
       </BottomSheet>
 

@@ -36,6 +36,7 @@ import {
   Loader2,
   FolderOpen,
   UserPlus,
+  Tag,
 } from "lucide-react";
 import { useAuth, useWorkspace } from "@/providers";
 
@@ -455,6 +456,14 @@ export default function SettingsPage() {
               description="Kelola kategori pemasukan dan pengeluaran"
               iconBg="bg-orange-50"
               iconColor="text-orange-500"
+            />
+            <SettingsItem
+              href="/dashboard/settings/labels"
+              icon={<Tag className="h-5 w-5" />}
+              label="Kelola Label (Tag)"
+              description="Atur daftar label transaksi kustom Anda"
+              iconBg="bg-rose-50"
+              iconColor="text-rose-500"
             />
             <button
               onClick={() => {

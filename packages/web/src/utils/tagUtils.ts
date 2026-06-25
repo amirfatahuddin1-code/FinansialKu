@@ -115,3 +115,44 @@ export function addUserTag(userId: string, newTag: string): string[] {
   }
   return updated;
 }
+
+/**
+ * Delete a user tag from localStorage.
+ */
+export function deleteUserTag(userId: string, tagToDelete: string): string[] {
+  const current = getUserTags(userId);
+  const updated = current.filter((t) => t.toLowerCase() !== tagToDelete.toLowerCase());
+  if (typeof window !== "undefined") {
+    try {
+      const key = `karsafin_tags_${userId}`;
+      localStorage.setItem(key, JSON.stringify(updated));
+    } catch (err) {
+      console.error("Failed to delete user tag:", err);
+    }
+  }
+  return updated;
+}
+
+/**
+ * Update a user tag in localStorage.
+ */
+export function updateUserTag(userId: string, oldTag: string, newTag: string): string[] {
+  const current = getUserTags(userId);
+  const cleanNewTag = newTag.trim();
+  if (!cleanNewTag) return current;
+  
+  const updated = current.map((t) => 
+    t.toLowerCase() === oldTag.toLowerCase() ? cleanNewTag : t
+  );
+  const uniqueUpdated = Array.from(new Set(updated));
+
+  if (typeof window !== "undefined") {
+    try {
+      const key = `karsafin_tags_${userId}`;
+      localStorage.setItem(key, JSON.stringify(uniqueUpdated));
+    } catch (err) {
+      console.error("Failed to update user tag:", err);
+    }
+  }
+  return uniqueUpdated;
+}
