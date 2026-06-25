@@ -15,14 +15,14 @@ export interface ParsedTx {
 export function parseDescriptionAndTags(fullDesc: string = ""): ParsedTx {
   if (!fullDesc) return { description: "", tags: [] };
   
-  // 1. Try to parse bracket tags: [tags: tag1, tag2]
-  const bracketMatch = fullDesc.match(/^(.*)\s*\[tags:\s*([^\]]+)\]$/i);
+  // 1. Try to parse bracket tags: [tags: tag1, tag2] anywhere in the string
+  const bracketMatch = fullDesc.match(/\[tags?:\s*([^\]]+)\]/i);
   if (bracketMatch) {
-    const description = bracketMatch[1].trim();
-    const tags = bracketMatch[2]
+    const tags = bracketMatch[1]
       .split(",")
       .map((t) => t.trim())
       .filter((t) => t.length > 0);
+    const description = fullDesc.replace(bracketMatch[0], "").trim();
     return { description, tags };
   }
 

@@ -1053,9 +1053,9 @@ export default function TransactionsPage() {
                       {tx.tags.map((tag: string) => (
                         <span
                           key={tag}
-                          className="inline-block px-2.5 py-0.5 rounded-lg text-[10px] font-black bg-blue-50 text-blue-600 border border-blue-100/50"
+                          className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[10px] font-black bg-blue-50 text-blue-600 border border-blue-100/50"
                         >
-                          {tag}
+                          🏷️ {tag}
                         </span>
                       ))}
                     </div>
